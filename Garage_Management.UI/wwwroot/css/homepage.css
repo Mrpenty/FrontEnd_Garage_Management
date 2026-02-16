@@ -1,0 +1,100 @@
+:root {
+    --primary-red: #d32f2f;
+    --dark-bg: #333;
+    --light-blue: #e3f2fd;
+}
+
+body { font-family: 'Roboto', sans-serif; margin: 0; padding: 0; color: #333; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+
+/* Header & Nav */
+.top-bar { padding: 10px 0; background: #fff; }
+.header-content { display: flex; align-items: center; justify-content: space-between; }
+.logo img { height: 60px; }
+.search-box { display: flex; border: 1px solid #ccc; border-radius: 20px; padding: 5px 15px; width: 30%; }
+.search-box input { border: none; outline: none; width: 100%; }
+.contact-info { display: flex; align-items: center; gap: 20px; }
+.btn-auth { text-decoration: none; color: #333; font-size: 14px; font-weight: bold; }
+.btn-auth.login { color: var(--primary-red); }
+.btn-booking { background: #fff; border: 2px solid var(--light-blue); color: #0288d1; padding: 8px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+.main-nav { background: var(--primary-red); color: #fff; }
+.main-nav ul { list-of-style: none; display: flex; margin: 0; padding: 0; }
+.main-nav ul li a { color: #fff; text-decoration: none; padding: 15px 20px; display: block; font-weight: bold; font-size: 14px; }
+.main-nav ul li a.active { border-bottom: 3px solid #fff; }
+
+/* Hero Banner */
+.hero-banner { 
+    background: url('../images/garage-bg.jpg') no-repeat center center/cover;
+    height: 450px; position: relative; display: flex; align-items: center; color: #fff;
+}
+.hero-banner .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+.hero-content { position: relative; z-index: 1; }
+.hero-content h1 { font-size: 36px; color: #fbc02d; margin: 10px 0; }
+.btn-main-action { background: var(--primary-red); color: #fff; padding: 12px 30px; border-radius: 25px; text-decoration: none; display: inline-block; font-weight: bold; margin-top: 20px; }
+
+/* Services */
+.services-section { padding: 50px 0; text-align: center; }
+.section-title { position: relative; padding-bottom: 10px; margin-bottom: 40px; }
+.section-title::after { content: ""; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 3px; background: #0288d1; }
+
+.service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+.service-card { text-align: center; }
+.card-inner { 
+    display: flex; background: var(--light-blue); border-radius: 8px; overflow: hidden; 
+    height: 120px; align-items: center; cursor: pointer; transition: 0.3s;
+}
+.card-inner:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.card-text { flex: 1; font-weight: bold; color: #0277bd; padding: 10px; }
+.card-img { width: 45%; height: 100%; }
+.card-img img { width: 100%; height: 100%; object-fit: cover; }
+.service-name { margin-top: 15px; color: #e57373; font-weight: bold; }
+
+/* CSS bổ sung cho Profile Header */
+.user-profile-wrapper {
+    position: relative;
+    cursor: pointer;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: var(--primary-red);
+}
+
+.profile-icon {
+    font-size: 24px;
+}
+
+.profile-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    width: 160px;
+    z-index: 100;
+}
+
+.profile-dropdown a {
+    display: block;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+}
+
+.profile-dropdown a:hover {
+    background: #f8f8f8;
+    color: var(--primary-red);
+}
+
+/* Hiển thị dropdown khi hover */
+.user-profile-wrapper:hover .profile-dropdown {
+    display: block;
+}
