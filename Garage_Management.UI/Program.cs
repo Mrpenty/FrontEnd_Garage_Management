@@ -1,8 +1,12 @@
-var builder = WebApplication.CreateBuilder(args);
+﻿var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorPages();
-
+builder.Services.AddRazorPages(options =>
+{
+    // Map root "/" tới page Auth/Login (hoặc bất kỳ page nào bạn muốn làm default)
+    options.Conventions.AddPageRoute("/Auth/Login", "");  // ← Dòng này quan trọng
+    // Hoặc nếu có Homepage: options.Conventions.AddPageRoute("/Dashboard/Homepage", "");
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
