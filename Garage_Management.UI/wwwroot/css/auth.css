@@ -1,0 +1,212 @@
+:root {
+    --primary-red: #d32f2f;
+    --dark-red: #b71c1c;
+    --bg-white: #ffffff;
+    --text-gray: #666;
+    --border-color: #ddd;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    height: 100%;
+}
+
+.login-page {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar bên trái */
+.login-sidebar {
+    flex: 1;
+    background: url('https://imgcdn.zigwheels.ph/large/gallery/exterior/73/3016/honda-airblade-160-slant-rear-view-full-image-769608.jpg') no-repeat center center;
+    background-size: cover;
+    position: relative;
+    display: none; /* Ẩn trên mobile */
+}
+
+@media (min-width: 768px) {
+    .login-sidebar { display: block; }
+}
+
+.login-sidebar .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4); /* Làm tối ảnh một chút */
+}
+
+/* Vùng Form bên phải */
+.login-main {
+    flex: 1;
+    background: var(--bg-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.login-box {
+    width: 100%;
+    max-width: 450px;
+    text-align: center;
+}
+
+.brand-title {
+    color: var(--primary-red);
+    font-size: 2.5rem;
+    margin-bottom: 5px;
+}
+
+.sub-title {
+    color: var(--text-gray);
+    margin-bottom: 30px;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.tab-btn {
+    border: none;
+    background: none;
+    font-weight: bold;
+    color: #999;
+    cursor: pointer;
+    padding-bottom: 5px;
+}
+
+.tab-btn.active {
+    color: var(--primary-red);
+    border-bottom: 2px solid var(--primary-red);
+}
+
+/* Form Styles */
+.input-group {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* OTP Wrapper */
+.otp-wrapper {
+    display: flex;
+    gap: 10px;
+}
+
+.otp-wrapper input { flex: 2; }
+
+#send-otp-btn {
+    flex: 1;
+    background: var(--primary-red);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.resend-otp {
+    color: var(--primary-red);
+    font-size: 0.9rem;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+/* Buttons */
+.btn-submit {
+    width: 100%;
+    padding: 15px;
+    background: var(--primary-red);
+    color: white;
+    border: none;
+    border-radius: 30px; /* Bo tròn theo mẫu */
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.btn-submit:hover { background: var(--dark-red); }
+
+.divider {
+    margin: 30px 0;
+    position: relative;
+    border-bottom: 1px solid var(--primary-red);
+}
+
+.divider span {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 0 15px;
+    color: var(--text-gray);
+    font-size: 0.8rem;
+}
+
+.btn-secondary {
+    width: auto;
+    padding: 8px 25px;
+    background: white;
+    color: var(--primary-red);
+    border: 1px solid var(--primary-red);
+    border-radius: 20px;
+    cursor: pointer;
+    margin-bottom: 40px;
+}
+
+/* Footer Links */
+.auth-footer {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid var(--primary-red);
+    padding-top: 20px;
+}
+
+.link-item {
+    text-decoration: none;
+    color: var(--primary-red);
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.link-item.highlight {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.hidden { display: none !important; }
+
+.link-item.highlight {
+    color: #d32f2f;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+#otp-code:focus {
+    border-color: #d32f2f;
+    box-shadow: 0 0 8px rgba(211, 47, 47, 0.2);
+    outline: none;
+}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký - MGMS</title>
+    <link rel="stylesheet" href="../../wwwroot/css/auth.css">
+    <link rel="stylesheet" href="../../wwwroot/css/homepage.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header" id="header-placeholder"></header>
+
+    <div class="login-page">
+        <div class="login-sidebar"><div class="overlay"></div></div>
+        <div class="login-main">
+            <div class="login-box">
+                <h1 class="brand-title">Đăng Ký</h1>
+                <p class="sub-title">Tạo tài khoản để nhận ưu đãi từ MGMS</p>
+
+                <form id="register-form">
+                    <div class="input-row" style="display: flex; gap: 10px;">
+                        <div class="input-group" style="flex: 1;">
+                            <label>Họ</label>
+                            <input type="text" id="lastName" placeholder="Vd: Nguyễn" required>
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Tên</label>
+                            <input type="text" id="firstName" placeholder="Vd: An" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Số Điện Thoại</label>
+                        <input type="text" id="reg-phone" placeholder="Nhập số điện thoại" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Mật Khẩu</label>
+                        <input type="password" id="reg-password" placeholder="Tối thiểu 9 ký tự, 1 hoa, 1 số" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Nhập Lại Mật Khẩu</label>
+                        <input type="password" id="confirm-password" placeholder="Nhập lại mật khẩu phía trên" required>
+                    </div>
+
+                    <button type="submit" class="btn-submit">ĐĂNG KÝ NGAY</button>
+                </form>
+
+                <div class="auth-footer" style="justify-content: center; border: none;">
+                    <span>Đã có tài khoản? <a href="Login.html" class="link-item">Đăng nhập</a></span>
+                </div>
+                <p id="msg-display" class="message"></p>
+            </div>
+        </div>
+    </div>
+    <script src="/FrontEnd_Garage_Management/Garage_Management.UI/wwwroot/js/common.js"></script>
+    <script type="module" src="../../wwwroot/js/auth/register-main.js"></script>
+</body>
+</html>

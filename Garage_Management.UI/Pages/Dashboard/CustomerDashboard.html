@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard</title>
+    <link rel="stylesheet" href="../../wwwroot/css/homepage.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<script type="module">
+    import { authGuard } from '../../wwwroot/js/auth-guard.js';
+    
+    // Chỉ cho phép Role 'Customer' vào trang này
+    authGuard.authorize('Customer');
+</script>
+
+
+<body>
+    <header class="main-header" id="header-placeholder"></header>
+
+    <h1>Chào mừng Customer</h1>
+</body>
+
+<script src="/FrontEnd_Garage_Management/Garage_Management.UI/wwwroot/js/common.js"></script>
