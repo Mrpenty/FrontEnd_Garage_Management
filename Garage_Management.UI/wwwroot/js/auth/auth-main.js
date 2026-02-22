@@ -45,7 +45,7 @@ authUi.elements.form.addEventListener('submit', async (e) => {
 
             // Chuyển hướng đến Dashboard của Customer
             setTimeout(() => {
-                window.location.href = CONFIG.PAGES.DASHBOARD_CUSTOMER;
+                window.location.href = CONFIG.PAGES.HOMEPAGE;
             }, 1000);
         }
         else{
@@ -127,3 +127,4 @@ if (forgotLink) {
         authUi.renderMessage(result.message, result.success);
     });
 }
+

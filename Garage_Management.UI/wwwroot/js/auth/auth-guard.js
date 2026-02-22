@@ -3,7 +3,7 @@ export const authGuard = {
     checkLogin() {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-            window.location.href = '/pages/login.html';
+            window.location.href = '/Pages/Auth/Login.html';
         }
     },
 
@@ -14,13 +14,13 @@ export const authGuard = {
         
         if (role !== requiredRole) {
             alert("Bạn không có quyền truy cập vào trang này!");
-            window.location.href = '/pages/login.html';
+            window.location.href = '/Pages/Auth/Login.html';
         }
     },
 
     // Đăng xuất
     logout() {
         localStorage.clear();
-        window.location.href = '/pages/login.html';
+        window.location.href = '/Pages/Auth/Login.html';
     }
 };

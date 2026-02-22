@@ -1,6 +1,6 @@
 const IS_PRODUCTION = false;  // Chuyển thành true khi deploy 
 
-const BASE_PATH = '/FrontEnd_Garage_Management/Garage_Management.UI';
+const BASE_PATH = '../..';
 
 const CONFIG = {
     API_BASE_URL: IS_PRODUCTION 

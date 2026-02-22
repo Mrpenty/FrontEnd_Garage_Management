@@ -1,0 +1,85 @@
+<link rel="stylesheet" href="../../wwwroot/css/booking.css">
+
+<section class="booking-container">
+    <div class="container">
+
+        <!-- STEP BAR -->
+        <div class="step-bar">
+            <div class="step active" data-step="0">Chọn xe</div>
+            <div class="step" data-step="1">Dịch vụ</div>
+            <div class="step" data-step="2">Chọn phụ kiện</div>
+            <div class="step" data-step="3">Thông tin đặt hẹn</div>
+            <div class="step" data-step="4">Hoàn thành</div>
+        </div>
+
+        <!-- STEP 0 -->
+        <div class="step-content active" id="step-0">
+            <h3>ĐẶT LỊCH HẸN</h3>
+
+            <div class="vehicle-selection">
+                <div class="form-group">
+                    <label>Hãng xe</label>
+                    <select id="vehicleBrand">
+                        <option value="">-- Chọn hãng xe --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Loại xe</label>
+                    <select id="vehicleModel" disabled>
+                        <option value="">-- Chọn loại xe --</option>
+                    </select>
+                </div>
+
+                <button class="btn-next" onclick="handleVehicleStep()">
+                    Tiếp tục
+                </button>
+            </div>
+        </div>
+
+
+        <!-- STEP 1 -->
+        <div class="step-content" id="step-1">
+            <h3>CHỌN DỊCH VỤ</h3>
+            <div id="service-list" class="service-grid"></div>
+            <button class="btn-next" onclick="nextStep(2)">Tiếp tục</button>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step-content" id="step-2">
+            <h3>CHỌN PHỤ KIỆN</h3>
+            <div id="part-list"></div>
+            <button class="btn-back" onclick="nextStep(1)">Bỏ qua</button>
+            <button class="btn-next" onclick="nextStep(3)">Tiếp tục</button>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="step-content" id="step-3">
+            <h3>THÔNG TIN ĐẶT HẸN</h3>
+
+            <form id="booking-form">
+                <input type="text" id="fullName" placeholder="Họ tên *" required>
+                <input type="text" id="phone" placeholder="Số điện thoại *" required>
+                <input type="email" id="email" placeholder="Email">
+                <input type="datetime-local" id="appointmentDateTime" required>
+                <textarea id="note" placeholder="Ghi chú"></textarea>
+
+                <button type="submit" class="btn-submit">
+                    Xác nhận đặt lịch
+                </button>
+            </form>
+
+            <div id="booking-message"></div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="step-content" id="step-4">
+            <h3>🎉 ĐẶT LỊCH THÀNH CÔNG</h3>
+            <p>Hệ thống đã ghi nhận lịch hẹn của bạn.</p>
+            <a href="../Dashboard/Homepage.html">Quay về trang chủ</a>
+        </div>
+
+    </div>
+</section>
+
+<script type="module" src="../../wwwroot/js/appointment/booking.js"></script>
