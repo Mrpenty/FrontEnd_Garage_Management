@@ -7,7 +7,18 @@ export const authUi = {
             msgDisplay: document.getElementById('msg-display'),
             btnSendOtp: document.getElementById('send-otp-btn'),
             tabs: document.querySelectorAll('.tab-btn'),
-            phoneInput: document.getElementById('phone')
+            phoneInput: document.getElementById('phone'),
+            pFullName: document.getElementById('p-fullname'),
+            pRole: document.getElementById('p-role'),
+            pPhone: document.getElementById('p-phone'),
+            pEmail: document.getElementById('p-email'),
+            pCreated: document.getElementById('p-created'),
+            pStatus: document.getElementById('p-status'),
+            btnOpenChangePw: document.querySelector('.btn-auth'), // Nút "Đổi mật khẩu" trên trang Profile
+            modalChangePw: document.getElementById('change-password-modal'),
+            btnCloseModal: document.getElementById('close-modal'),
+            formChangePw: document.getElementById('change-password-form'),
+            cpwMsg: document.getElementById('cpw-msg')
         };
     },
 
@@ -32,8 +43,31 @@ export const authUi = {
         });
     },
 
+    // Hàm render dữ liệu Profile
+    renderProfile(data) {
+        if (this.elements.pFullName) this.elements.pFullName.innerText = data.fullName;
+        if (this.elements.pRole) this.elements.pRole.innerText = data.roles.join(', ');
+        if (this.elements.pPhone) this.elements.pPhone.innerText = data.phoneNumber || 'Chưa cập nhật';
+        if (this.elements.pEmail) this.elements.pEmail.innerText = data.email || 'Chưa cập nhật';
+        
+        if (this.elements.pCreated) {
+            this.elements.pCreated.innerText = new Date(data.createdAt).toLocaleDateString('vi-VN');
+        }
+        
+        if (this.elements.pStatus) {
+            this.elements.pStatus.innerHTML = data.isActive 
+                ? '<span style="color: green;">● Đang hoạt động</span>' 
+                : '<span style="color: red;">● Bị khóa</span>';
+        }
+    },
+
     renderMessage(message, isSuccess) {
-        this.elements.msgDisplay.innerText = message;
-        this.elements.msgDisplay.className = isSuccess ? 'msg-success' : 'msg-error';
+    const display = this.elements.msgDisplay;
+    if (display) {
+        display.innerText = message;
+        display.className = isSuccess ? 'msg-success' : 'msg-error';
+    } else {
+        if (!isSuccess) console.warn("Thông báo:", message);
     }
+}
 };

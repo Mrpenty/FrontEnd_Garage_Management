@@ -1,37 +1,55 @@
 document.addEventListener("DOMContentLoaded", function() {
     // Load Header
-    fetch('/FrontEnd_Garage_Management/Garage_Management.UI/Pages/Components/Header.html')
+    fetch('../../Pages/Components/Header.html')
         .then(response => response.text())
         .then(data => {
             document.getElementById('header-placeholder').innerHTML = data;
             // Sau khi load xong header mới bắt đầu check login
             checkLoginStatus();
-        });
+        })
+        .catch(err => console.error("Lỗi khi load header:", err));
 });
 
-
-//Để tạm chưa chính xác, đợi session của Đồng sửa lại rồi update
-//Đây là hàm để phân quyền hiện login hay profile
 function checkLoginStatus() {
     const token = localStorage.getItem('accessToken');
+    
+    // LẤY CÁC PHẦN TỬ TỪ DOM (Quan trọng: Phải lấy sau khi fetch header xong)
+    const guestZone = document.querySelector('.auth-buttons');
+    const userZone = document.getElementById('auth-user');
+    const nameDisplay = document.getElementById('user-display-name');
+    const logoutBtn = document.getElementById('btn-logout-header');
 
     if (token) {
         // Đã đăng nhập
-        guestZone.style.display = 'none';
-        userZone.style.display = 'flex';
+        if (guestZone) guestZone.style.display = 'none';
+        if (userZone) userZone.style.display = 'flex';
         
-        // Lấy tên từ userInfo đã lưu lúc login
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        nameDisplay.innerText = userInfo.fullName || "Người dùng";
+        if (nameDisplay) {
+            nameDisplay.innerText = `Xin chào, ${userInfo.fullName || "Người dùng"}!`;
+        }
 
         // Xử lý nút đăng xuất
-        document.getElementById('btn-logout-header').addEventListener('click', (e) => {
-            e.preventDefault();
-            logoutUser();
-        });
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                logoutUser();
+            });
+        }
     } else {
         // Chưa đăng nhập
-        guestZone.style.display = 'flex';
-        userZone.style.display = 'none';
+        if (guestZone) guestZone.style.display = 'flex';
+        if (userZone) userZone.style.display = 'none';
     }
+}
+
+function logoutUser() {
+    // Xóa dữ liệu trong localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('userRole');
+    
+    // Chuyển hướng về trang chủ
+    window.location.href = '../../Pages/Dashboard/Homepage.html';
 }

@@ -1,6 +1,7 @@
 import CONFIG from '../config.js';
 
 const AUTH_URL = `${CONFIG.API_BASE_URL}/Auth`;
+const USER_URL = `${CONFIG.API_BASE_URL}/User`;
 
 export const authApi = {
     //API gửi thông tin đăng nhập
@@ -77,5 +78,44 @@ export const authApi = {
             body: JSON.stringify({ email: email })
         });
         return await response.json();
-    }
+    },
+
+    //API Xem Profile
+    async getProfile(){
+        const token = localStorage.getItem('accessToken');
+        
+        try {
+            const response = await fetch(`${USER_URL}/profile`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.status === 401) {
+                // Token hết hạn hoặc không hợp lệ
+                return { success: false, message: "Unauthorized" };
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error("Profile API Error:", error);
+            return { success: false, message: "Lỗi kết nối server" };
+        }
+    },
+
+    //API Đổi mật khẩu
+    async changePassword(changePasswordRequest) {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${AUTH_URL}/reset-password`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(changePasswordRequest)
+        });
+        return await response.json();
+    },
 };
