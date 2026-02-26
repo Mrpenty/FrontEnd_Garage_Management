@@ -1,4 +1,4 @@
-import { authApi } from './auth-api.js';
+import { authApi, customerApi } from './auth-api.js';
 import { authUi } from './auth-ui.js';
 import CONFIG from '../config.js';
 
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 //Hàm xử lý load Profile
 async function loadUserProfile() {
-    const result = await authApi.getProfile();
+    const result = await customerApi.getProfile();
 
     if (result.success) {
         authUi.renderProfile(result.data);

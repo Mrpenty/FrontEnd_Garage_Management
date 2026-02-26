@@ -18,7 +18,10 @@ export const authUi = {
             modalChangePw: document.getElementById('change-password-modal'),
             btnCloseModal: document.getElementById('close-modal'),
             formChangePw: document.getElementById('change-password-form'),
-            cpwMsg: document.getElementById('cpw-msg')
+            cpwMsg: document.getElementById('cpw-msg'),
+            btnViewBookings: document.getElementById('btn-view-bookings'),
+            carListBody: document.getElementById('car-list-body'),
+            historyListBody: document.getElementById('history-list-body')
         };
     },
 

@@ -1,3 +1,5 @@
+import { authGuard } from "./auth/auth-guard.js";
+
 document.addEventListener("DOMContentLoaded", function() {
     // Load Header
     fetch('../../Pages/Components/Header.html')
@@ -44,12 +46,5 @@ function checkLoginStatus() {
 }
 
 function logoutUser() {
-    // Xóa dữ liệu trong localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('userRole');
-    
-    // Chuyển hướng về trang chủ
-    window.location.href = '../../Pages/Dashboard/Homepage.html';
+    authGuard.logout();
 }

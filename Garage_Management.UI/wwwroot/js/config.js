@@ -12,9 +12,12 @@ const CONFIG = {
         LOGIN: `${BASE_PATH}/Pages/Auth/Login.html`,
         STAFF_LOGIN: `${BASE_PATH}/Pages/Auth/StaffLogin.html`,
         REGISTER: `${BASE_PATH}/Pages/Auth/Register.html`,
-        DASHBOARD_CUSTOMER: `${BASE_PATH}/Pages/Dashboard/CustomerDashboard.html`,
-        DASHBOARD_STAFF: `${BASE_PATH}/Pages/DashboardStaff.html`, //Trang này sau này sẽ tách theo từng role
-        HOMEPAGE: `${BASE_PATH}/Pages/Dashboard/Homepage.html`
+        DASHBOARD_RECEPTIONIST: `${BASE_PATH}/Pages/Dashboard/ReceptionistDashboard.html`,
+        DASHBOARD_SUPERVISOR: `${BASE_PATH}/Pages/SupervisorDashboard.html`, 
+        DASHBOARD_MECHANIC: `${BASE_PATH}/Pages/MechanicDashboard.html`, 
+        DASHBOARD_STOCKER: `${BASE_PATH}/Pages/StockerDashboard.html`, 
+        DASHBOARD_ADMIN: `${BASE_PATH}/Pages/AdminDashboard.html`, 
+        HOMEPAGE: `${BASE_PATH}/Pages/Dashboard/Index.html`
     },
 
     TIMEOUT: 5000,
