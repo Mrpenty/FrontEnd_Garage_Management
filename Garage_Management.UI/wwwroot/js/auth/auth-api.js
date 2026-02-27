@@ -80,6 +80,22 @@ export const authApi = {
         return await response.json();
     },
 
+    //API Đổi mật khẩu
+    async changePassword(changePasswordRequest) {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${AUTH_URL}/reset-password`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(changePasswordRequest)
+        });
+        return await response.json();
+    },
+};
+
+export const customerApi = {
     //API Xem Profile
     async getProfile(){
         const token = localStorage.getItem('accessToken');
@@ -105,17 +121,5 @@ export const authApi = {
         }
     },
 
-    //API Đổi mật khẩu
-    async changePassword(changePasswordRequest) {
-        const token = localStorage.getItem('accessToken');
-        const response = await fetch(`${AUTH_URL}/reset-password`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
-            body: JSON.stringify(changePasswordRequest)
-        });
-        return await response.json();
-    },
-};
+    //API xem xe cá nhân
+}

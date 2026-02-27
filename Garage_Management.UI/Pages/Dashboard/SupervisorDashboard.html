@@ -9,17 +9,15 @@
 </head>
 
 <script type="module">
-    import { authGuard } from '../../wwwroot/js/auth-guard.js';
-    
-    // Chỉ cho phép Role 'Customer' vào trang này
-    authGuard.authorize('Customer');
+    import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
+    // Kiểm tra đúng role mới cho ở lại
+    authGuard.authorize('Supervisor'); 
 </script>
-
 
 <body>
     <header class="main-header" id="header-placeholder"></header>
 
-    <h1>Chào mừng Customer</h1>
+    <h1>Chào mừng Supervisor</h1>
 </body>
 
 <script src="../../wwwroot/js/common.js"></script>

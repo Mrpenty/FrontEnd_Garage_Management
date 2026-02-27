@@ -1,26 +1,35 @@
+import CONFIG from '../config.js';
+
 export const authGuard = {
-    // Kiểm tra xem đã đăng nhập chưa
     checkLogin() {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-            window.location.href = '/Pages/Auth/Login.html';
+            window.location.href = CONFIG.PAGES.LOGIN;
+            return false;
         }
+        return true;
     },
 
-    // Kiểm tra quyền truy cập cụ thể
     authorize(requiredRole) {
-        this.checkLogin();
+        if (!this.checkLogin()) return;
+
         const role = localStorage.getItem('userRole');
         
-        if (role !== requiredRole) {
+        // Chấp nhận requiredRole là 1 chuỗi hoặc 1 mảng các chuỗi
+        const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+
+        if (!roles.includes(role)) {
             alert("Bạn không có quyền truy cập vào trang này!");
-            window.location.href = '/Pages/Auth/Login.html';
+            // Nếu là Staff đăng nhập nhầm trang Customer thì về STAFF_LOGIN, ngược lại về LOGIN
+            window.location.href = role ? CONFIG.PAGES.HOMEPAGE : CONFIG.PAGES.LOGIN;
         }
     },
 
-    // Đăng xuất
     logout() {
-        localStorage.clear();
-        window.location.href = '/Pages/Auth/Login.html';
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('userRole');
+        window.location.href = CONFIG.PAGES.HOMEPAGE;
     }
 };
