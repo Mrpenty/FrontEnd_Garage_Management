@@ -21,7 +21,7 @@ export const authGuard = {
         if (!roles.includes(role)) {
             alert("Bạn không có quyền truy cập vào trang này!");
             // Nếu là Staff đăng nhập nhầm trang Customer thì về STAFF_LOGIN, ngược lại về LOGIN
-            window.location.href = role ? CONFIG.PAGES.HOMEPAGE : CONFIG.PAGES.LOGIN;
+            window.location.href = role ? CONFIG.PAGES.STAFF_LOGIN : CONFIG.PAGES.LOGIN;
         }
     },
 

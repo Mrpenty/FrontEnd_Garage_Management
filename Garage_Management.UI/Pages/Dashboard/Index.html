@@ -16,7 +16,20 @@
             <h3>MGMS - Motorcycle Garage Management System</h3>
             <h1>XƯỞNG SỬA CHỮA XE MÁY UY TÍN TẠI HÀ NỘI</h1>
             <p>Dịch vụ chất lượng - Cam kết giá tốt - Bảo hành tận tình<br>Sửa chữa mọi lỗi của xe máy nhanh nhất</p>
-            <a href="../../Pages/Appointment/Booking.html" class="btn-main-action">ĐẶT LỊCH HẸN</a>
+            <div class="hero-actions">
+                <a href="../../Pages/Appointment/Booking.html" class="btn-main-action">
+                    <i class="fa-solid fa-calendar-plus"></i> ĐẶT LỊCH HẸN
+                </a>
+                
+                <div class="quick-search-wrapper">
+                    <div class="quick-search-box">
+                        <input type="text" id="hero-tracking-input" placeholder="Nhập mã lịch hẹn / SĐT...">
+                        <button id="btn-hero-tracking" title="Tra cứu nhanh">
+                            <i class="fa-solid fa-magnifying-glass"></i> TRA CỨU
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -27,8 +40,15 @@
             </div>
         </div>
     </section>
-
+    <div id="service-detail-modal" class="modal">
+        <div class="modal-content service-modal-width">
+            <span class="close-modal">&times;</span>
+            <div id="service-detail-content">
+                </div>
+        </div>
+    </div>
     <script type="module" src="../../wwwroot/js/common.js"></script>
-    <script type="module" src="../../wwwroot/js/appointment/homepage.js"></script>
+    <script type="module" src="../../wwwroot/js/appointment/homepage-main.js"></script>
+    
 </body>
 </html>
