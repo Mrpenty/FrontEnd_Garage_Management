@@ -1,0 +1,207 @@
+/* Card Wrapper */
+.appointment-card-wrapper {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+    margin-bottom: 40px;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+.appointment-card-wrapper:hover {
+    transform: translateY(-3px);
+}
+
+/* Headers & Sections */
+.section-title {
+    background-color: #f27474; /* Màu đỏ nhạt đặc trưng */
+    color: #fff;
+    padding: 12px;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 0;
+}
+
+.section-body {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+/* Typography */
+.section-body p {
+    font-size: 0.9rem;
+    color: #444;
+}
+
+.group-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.list-services {
+    list-style: none;
+    padding-left: 0;
+}
+
+.list-services li {
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+/* Status & Highlights */
+.badge-status {
+    background-color: #f27474;
+    color: white;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.phone-highlight {
+    color: #dc3545;
+    font-weight: 800;
+    margin-left: 5px;
+}
+
+/* Footer & Actions */
+.card-footer-actions {
+    padding: 10px;
+    text-align: center;
+    background-color: #fdfdfd;
+    border-top: 1px dashed #eee;
+}
+
+.btn-cancel {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.btn-cancel:hover {
+    color: #dc3545;
+}
+
+/* Alerts */
+.alert-success-custom {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 15px 25px;
+    border-radius: 10px;
+    border-left: 5px solid #4caf50;
+    font-weight: 500;
+}
+
+.search-results-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.appointment-row {
+    display: flex;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 15px;
+    align-items: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.appointment-row:hover {
+    border-color: #f27474;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.col-info {
+    padding: 0 15px;
+}
+
+/* Cột thời gian nổi bật */
+.time-box {
+    flex: 0 0 150px;
+    text-align: center;
+    border-right: 2px solid #f27474;
+}
+
+.time-box .date {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.time-box .time {
+    color: #f27474;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+/* Các cột thông tin khác */
+.service-box { flex: 2; }
+.vehicle-box { flex: 1.5; border-left: 1px solid #eee; border-right: 1px solid #eee; }
+.garage-box { flex: 1.5; }
+
+.label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.value {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.duration, .address {
+    font-size: 0.8rem;
+    color: #777;
+    margin-top: 4px;
+}
+
+.badge-status {
+    display: inline-block;
+    background-color: #f27474;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-top: 5px;
+}
+
+/* Responsive cho điện thoại */
+@media (max-width: 768px) {
+    .appointment-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .time-box {
+        border-right: none;
+        border-bottom: 2px solid #f27474;
+        width: 100%;
+        text-align: left;
+        padding-bottom: 10px;
+    }
+    .vehicle-box {
+        border: none;
+    }
+}
+
+.btn-back:hover {
+    color: #f27474 !important;
+}
+
