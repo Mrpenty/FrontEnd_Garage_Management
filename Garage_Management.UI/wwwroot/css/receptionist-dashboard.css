@@ -161,25 +161,61 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
 .status-badge.complete { background: var(--primary-green); }
 
 .action-buttons { display: flex; gap: 8px; justify-content: center; }
+/* Màu sắc cho các nút thao tác trong bảng */
 .btn-action {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
     border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    color: var(--white);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
+}
+
+/* Nút Chi tiết (Màu xanh dương đậm) */
+.btn-action.view {
+    background-color: #ebf5ff;
+    color: #2563eb;
+}
+.btn-action.view:hover {
+    background-color: #2563eb;
+    color: #fff;
+}
+
+/* Nút In phiếu (Màu xanh lá hoặc Slate) */
+.btn-action.print {
+    background-color: #f1f5f9;
+    color: #475569;
+}
+.btn-action.print:hover {
+    background-color: #475569;
+    color: #fff;
+}
+
+/* Icon bên trong nút */
+.btn-action i {
+    opacity: 1 !important; /* Đảm bảo không bị mờ */
 }
 .btn-action.detail { background: var(--primary-blue); }
 .btn-action.update { background: var(--primary-orange); }
 
 .btn-primary {
     background: var(--primary-green);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     color: var(--white);
     border: none;
-    padding: 10px 18px;
+    padding: 12px 24px;
     border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 .btn-logout {
@@ -204,12 +240,12 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
 .modal {
     display: none; 
     position: fixed;
-    z-index: 9000;
+    z-index: 10000;
     left: 0; top: 0;
     width: 100vw; /* Đổi thành 100vw để phủ kín màn hình */
     height: 100vh;
-    background-color: rgba(0,0,0,0.5);
-    backdrop-filter: blur(4px);
+    background-color: rgba(15, 23, 42, 0.6); /* Màu slate dark trong suốt */
+    backdrop-filter: blur(8px); /* Làm mờ nền mạnh hơn */
     align-items: center; /* Căn giữa dọc */
     justify-content: center; /* Căn giữa ngang */
 }
@@ -222,16 +258,18 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
 /* Khung Modal Chính */
 .modal-content {
     background-color: #fff;
+    border: none;
     width: 90%; 
     max-width: 950px; /* Tăng chiều rộng để form giãn theo chiều ngang */
     max-height: 90vh; /* QUAN TRỌNG: Giới hạn chiều cao tối đa là 90% màn hình */
     display: flex;
     flex-direction: column; /* Chia modal thành các phần Header - Body - Footer */
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     animation: slideDown 0.3s ease-out;
     margin: 5vh auto;
     overflow: hidden; /* Tránh viền bị lồi */
+    transition: all 0.3s ease;
 }
 
 @keyframes slideDown {
@@ -240,21 +278,40 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
 }
 
 .modal-header {
-    padding: 16px 24px;
-    border-bottom: 1px solid #eee;
+    padding: 20px 24px;
+    border-bottom: 2px solid #f1f5f9;
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: #f8f9fa;
 }
 
-.modal-header h3 { margin: 0; font-size: 18px; color: var(--primary-red); }
+.modal-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #1e293b;
+}
+
+.modal-header h3 i {
+    color: var(--primary-red);
+}
 
 /* Phần nội dung Form - Sẽ cuộn được nếu quá dài */
 .modal-body { 
     padding: 24px; 
+    background-color: #ffffff;
     overflow-y: auto; /* QUAN TRỌNG: Sinh thanh cuộn dọc ở đây */
     flex: 1; 
+}
+
+.form-section {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
 }
 
 /* Form Elements */
@@ -270,11 +327,12 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
     flex-direction: column; 
 }
 
-.form-group label { 
-    font-size: 13.5px; 
-    font-weight: 600; 
-    margin-bottom: 8px; 
-    color: #444; 
+.form-group label {
+    color: #475569;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin-bottom: 6px;
 }
 
 .flex-3 { flex: 3; }
@@ -284,8 +342,10 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
 /* Tối ưu Input, Select, Textarea */
 .modal-body select, .modal-body textarea, .modal-body input {
     width: 100%;
-    padding: 10px 14px;
+    padding: 12px;
+    background-color: #fff;
     border: 1px solid #ced4da;
+    color: #1e293b;
     border-radius: 6px;
     outline: none;
     font-size: 14px;
@@ -296,6 +356,13 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
 .modal-body select:focus, .modal-body textarea:focus, .modal-body input:focus {
     border-color: var(--primary-blue);
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15); /* Hiệu ứng focus xịn xò */
+}
+
+#addVehicleModal {
+    z-index: 10001;
+}
+#addCustomerModal {
+    z-index: 10002;
 }
 
 /* Input Group (Nút bấm liền input) */
@@ -338,17 +405,32 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
 
 /* QUAN TRỌNG: Sticky Footer - Giữ nút bấm luôn ở dưới cùng */
 .modal-footer {
-    position: sticky;
-    bottom: -24px; /* Kéo xuống sát đáy của phần padding modal-body */
-    background: #fff;
-    padding: 16px 24px;
-    margin: 20px -24px -24px -24px; /* Trải dài ra sát viền modal */
-    border-top: 1px solid #eee;
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 12px;
-    z-index: 10;
-    box-shadow: 0 -4px 10px rgba(0,0,0,0.02); /* Đổ bóng nhẹ lên trên */
+    padding: 16px 24px;
+    background: #ffffff;
+    border-top: 1px solid #edf2f7;
+    flex-shrink: 0; /* QUAN TRỌNG: Không cho phép footer bị co lại hoặc đè lên */
+    z-index: 100;
+}
+
+/* Đảm bảo nút có kích thước ổn định */
+.modal-footer button {
+    margin: 0 !important; /* Xóa bỏ mọi margin thừa có thể gây lệch */
+    padding: 10px 20px;
+    height: 42px;
+    min-width: 120px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .close-modal { cursor: pointer; font-size: 24px; color: #888; transition: 0.2s; }
@@ -403,4 +485,106 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
 }
 .mt-15 {
     margin-top: 15px;
+}
+
+.info-alert {
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    border: 1px solid transparent;
+}
+.info-alert.success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+.info-alert.warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
+.info-alert.error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+
+.detail-modal {
+    max-width: 800px;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.info-group {
+    background: #fff;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.info-group label {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.info-group span {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 15px;
+}
+
+/* Biển số xe badge */
+.plate-badge {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    color: #1e293b;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-family: 'Roboto Mono', monospace;
+    display: inline-block;
+}
+
+/* Trạng thái */
+.status-1 { color: #f59e0b; background: #fef3c7; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.status-2 { color: #3b82f6; background: #dbeafe; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.status-3 { color: #10b981; background: #d1fae5; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+
+.full-width {
+    grid-column: span 2;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: none;
+}
+
+.full-width p {
+    margin: 8px 0 0 0;
+    line-height: 1.6;
+    color: #334155;
+}
+
+/* Giả lập tờ giấy trắng */
+.a5-paper {
+    background: white;
+    width: 100%;
+    max-width: 595px; /* Chiều rộng chuẩn A5 hoặc tùy chỉnh */
+    min-height: 400px;
+    padding: 40px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    color: #000;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.print-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+.print-logo { font-weight: bold; font-size: 20px; color: #d32f2f; }
+.print-title { text-align: center; margin-bottom: 30px; }
+.print-title h2 { margin: 0; text-transform: uppercase; }
+
+.print-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.print-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+.print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+
+/* CSS khi in thực tế */
+@media print {
+    body * { visibility: hidden; }
+    #printablePaper, #printablePaper * { visibility: visible; }
+    #printablePaper {
+        position: absolute;
+        left: 0; top: 0; width: 100%;
+        box-shadow: none; padding: 0;
+    }
+    .modal { background: none !important; }
 }

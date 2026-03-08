@@ -22,10 +22,10 @@
 
             <nav class="sidebar-nav">
                 <ul>
-                    <li class="active">
+                    <li class="active" id="menu-garage">
                         <a href="#"><i class="fa-solid fa-gauge"></i> Quản lý gara</a>
                     </li>
-                    <li>
+                    <li id="menu-appointment">
                         <a href="#"><i class="fa-solid fa-calendar-plus"></i> Đặt lịch</a>
                     </li>
                     <li>
@@ -34,7 +34,7 @@
                     <li>
                         <a href="#"><i class="fa-solid fa-credit-card"></i> Thanh toán</a>
                     </li>
-                    <li>
+                    <li id="menu-customers"> 
                         <a href="#"><i class="fa-solid fa-users"></i> Khách hàng</a>
                     </li>
                     <li>
@@ -50,263 +50,16 @@
             </div>
         </aside>
 
-        <main class="main-content">
-            <div class="top-widgets">
-                <div class="stats-card">
-                    <div class="stat-item"><span>Xe Đang Làm:</span><span class="stat-value red" id="stat-working">?</span></div>
-                    <div class="stat-item"><span>Xe Vào Hôm Nay:</span><span class="stat-value red" id="stat-today">?</span></div>
-                    <div class="stat-item"><span>Số lượng xe tháng này:</span><span class="stat-value red" id="stat-month">?</span></div>
-                    <div class="revenue-item">
-                        <span>Doanh Thu Tháng:</span>
-                        <div class="revenue-value red" id="stat-revenue">?</div>
-                    </div>
-                </div>
-                <div class="notice-card">
-                    <div class="notice-header">THÔNG BÁO</div>
-                    <div class="notice-body"></div>
-                </div>
-            </div>
-
-            <div class="job-card-section">
-                <h2 class="table-title-main">DANH SÁCH JOB CARD</h2>
-                
-                <div class="table-toolbar">
-                    <div class="left-tools">
-                        <div class="search-box">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" id="searchJobCard" placeholder="Tìm biển số, tên khách...">
-                        </div>
-                        <div class="filter-group">
-                            <select id="filterStatus">
-                                <option value="ALL">Tất cả trạng thái</option>
-                                <option value="PENDING">Chưa giao</option>
-                                <option value="DONE">Đã giao</option>
-                            </select>
-                            <select id="sortOrder">
-                                <option value="newest">Mới nhất</option>
-                                <option value="oldest">Cũ nhất</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="right-tools">
-                        <button id="btn-create-jobcard" class="btn-primary">
-                            <i class="fa-solid fa-plus"></i> Tạo JobCard
-                        </button>
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID <i class="fa-solid fa-sort"></i></th>
-                                <th>Tên khách hàng</th>
-                                <th>Hãng xe</th>
-                                <th>Loại xe</th>
-                                <th>Biển số xe</th>
-                                <th>Check-in</th>
-                                <th>Đặt lịch</th>
-                                <th>Tình trạng</th>
-                                <th class="text-center">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody id="job-card-body">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
+        <main class="main-content" id="main-display">
         </main>
-    </div>
-
-    <div id="jobCardModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-file-medical"></i> Tạo JobCard Mới</h3>
-                <span class="close-modal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="form-section">
-                    <label><i class="fa-solid fa-calendar-check"></i> Kiểm tra lịch hẹn (SĐT khách)</label>
-                    <div class="input-group">
-                        <input type="text" id="checkPhone" placeholder="Nhập số điện thoại khách...">
-                        <button type="button" class="btn-secondary" id="btnCheckAppointment">Kiểm tra</button>
-                    </div>
-                    <div id="appointmentResult" class="info-alert" style="display:none">
-                        </div>
-                </div>
-
-                <hr>
-
-                <form id="createJobCardForm">
-                    <div class="form-row">
-                        <div class="form-group flex-3">
-                            <label>Khách hàng (Nhập Tên hoặc SĐT để tìm)</label>
-                            <div class="search-customer-wrapper">
-                                <input type="text" id="searchCustomerInput" placeholder="VD: 0987... hoặc Nguyễn Văn A" autocomplete="off" class="form-control" required>
-                                <input type="hidden" id="selectedCustomerId" required>
-                                
-                                <ul id="customerSearchResults" class="autocomplete-dropdown" style="display: none;">
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="form-group flex-1 align-bottom">
-                            <button type="button" class="btn-outline" id="btnOpenAddCustomer">
-                                <i class="fa-solid fa-user-plus"></i> Thêm khách
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group flex-3">
-                            <label>Phương tiện (Biển số/Loại xe)</label>
-                            <select id="selectVehicle" class="select-searchable" required disabled>
-                                <option value="">-- Chọn xe --</option>
-                            </select>
-                        </div>
-                        <div class="form-group flex-1 align-bottom">
-                            <button type="button" class="btn-outline" id="btnOpenAddVehicle" disabled>
-                                <i class="fa-solid fa-motorcycle"></i> Thêm xe
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label><i class="fa-solid fa-gears"></i> Chọn dịch vụ sửa chữa/bảo dưỡng</label>
-                        <div class="input-group">
-                            <select id="selectService" class="select-searchable">
-                                <option value="">-- Tìm & Chọn dịch vụ --</option>
-                                </select>
-                            <button type="button" class="btn-secondary" id="btnAddService">
-                                <i class="fa-solid fa-plus"></i> Thêm
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="selected-services-container">
-                        <table class="table-mini" id="selectedServicesTable">
-                            <thead>
-                                <tr>
-                                    <th>Tên dịch vụ</th>
-                                    <th class="col-desc">Mô tả</th>
-                                    <th class="col-action"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="selectedServicesBody">
-                                <tr class="empty-row">
-                                    <td colspan="3" class="text-center text-muted">Chưa có dịch vụ nào được chọn</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="grid-2-cols">
-                        <div class="form-group">
-                            <label>Assign Supervisor (Người quản lý kỹ thuật)</label>
-                            <select id="selectSupervisor" class="select-searchable" required>
-                                <option value="">-- Chọn Supervisor --</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Ghi chú triệu chứng / Yêu cầu khách hàng</label>
-                            <textarea id="jobCardNote" rows="3" placeholder="Nhập tình trạng xe khi nhận..."></textarea>
-                        </div>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="button" class="btn-cancel close-modal">Hủy bỏ</button>
-                        <button type="submit" class="btn-primary">Xác nhận tạo JobCard</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal thêm khách hàng mới -->
-    <div id="addCustomerModal" class="modal customer-modal">
-        <div class="modal-content modal-sm">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-user-plus"></i> Thêm Khách Hàng Mới</h3>
-                <span class="close-modal close-customer-modal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <form id="createCustomerForm">
-                    <div class="form-group">
-                        <label>Họ và Tên *</label>
-                        <input type="text" id="newCustomerName" required placeholder="VD: Nguyễn Văn A">
-                    </div>
-                    <div class="form-group">
-                        <label>Số điện thoại *</label>
-                        <input type="text" id="newCustomerPhone" required placeholder="Nhập số điện thoại...">
-                    </div>
-                    <div class="grid-2-cols">
-                        <div class="form-group">
-                            <label>Email (Tùy chọn)</label>
-                            <input type="email" id="newCustomerEmail" placeholder="Nhập email...">
-                        </div>
-                        <div class="form-group">
-                            <label>Địa chỉ (Tùy chọn)</label>
-                            <input type="text" id="newCustomerAddress" placeholder="Nhập địa chỉ...">
-                        </div>
-                    </div>
-                    
-                    <div class="modal-footer mt-15">
-                        <button type="button" class="btn-cancel close-customer-modal">Hủy</button>
-                        <button type="submit" class="btn-primary" id="btnSubmitNewCustomer">Lưu Khách Hàng</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal thêm xe cho khách hàng -->
-    <div id="addVehicleModal" class="modal">
-        <div class="modal-content modal-sm">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-motorcycle"></i> Thêm Xe Cho Khách Hàng</h3>
-                <span class="close-modal close-vehicle-modal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <form id="createVehicleForm">
-                    <div class="form-group">
-                        <label>Biển số xe *</label>
-                        <input type="text" id="newVehiclePlate" required placeholder="VD: 29A1-12345">
-                    </div>
-                    <div class="form-group">
-                        <label>Hãng xe *</label>
-                        <select id="newVehicleBrand" required>
-                            <option value="">-- Chọn Hãng --</option>
-                            </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Dòng xe (Model) *</label>
-                        <select id="newVehicleModel" required disabled>
-                            <option value="">-- Chọn Dòng Xe --</option>
-                        </select>
-                    </div>
-                    <div class="grid-2-cols">
-                        <div class="form-group">
-                            <label>Năm sản xuất</label>
-                            <input type="number" id="newVehicleYear" placeholder="2024">
-                        </div>
-                        <div class="form-group">
-                            <label>Số khung (VIN)</label>
-                            <input type="text" id="newVehicleVin" placeholder="Tùy chọn">
-                        </div>
-                    </div>
-                    
-                    <div class="modal-footer mt-15">
-                        <button type="button" class="btn-cancel close-vehicle-modal">Hủy</button>
-                        <button type="submit" class="btn-primary" id="btnSubmitNewVehicle">Lưu Xe</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
 
     <script type="module">
         import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
         import CONFIG from '../../wwwroot/js/config.js';
+        import { initJobCardModule } from '../../wwwroot/js/jobcard/jobcard-main.js';
+        import { initAppointmentModule } from '../../wwwroot/js/appointment/appointment-main.js';
+        import { initCustomerModule } from '../../wwwroot/js/user/customer-main.js';
 
         // 1. Kiểm tra quyền
         authGuard.authorize('Receptionist'); 
@@ -315,13 +68,48 @@
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         document.getElementById('staff-name').innerText = userInfo.fullName || "Nhân viên";
 
-        // 3. Xử lý đăng xuất riêng cho Staff
+        // 3. Logic điều hướng Menu
+        const mainDisplay = document.getElementById('main-display');
+        const menuGarage = document.getElementById('menu-garage');
+        const menuApt = document.getElementById('menu-appointment');
+        const menuCust = document.getElementById('menu-customers');
+
+        function clearActiveMenu() {
+            document.querySelectorAll('.sidebar-nav li').forEach(li => li.classList.remove('active'));
+        }
+
+        menuGarage.onclick = (e) => {
+            e.preventDefault();
+            if(menuGarage.classList.contains('active')) return;
+            clearActiveMenu();
+            menuGarage.classList.add('active');
+            initJobCardModule(); // Nạp lại JobCard
+        };
+
+        menuApt.onclick = (e) => {
+            e.preventDefault();
+            if(menuApt.classList.contains('active')) return;
+            clearActiveMenu();
+            menuApt.classList.add('active');
+            initAppointmentModule(); // Nạp lại Appointment
+        };
+
+        menuCust.onclick = (e) => {
+            e.preventDefault();
+            if(menuCust.classList.contains('active')) return;
+            clearActiveMenu();
+            menuCust.classList.add('active');
+            initCustomerModule(); // Gọi hàm khởi tạo module khách hàng
+        };
+
+        // 4. Đăng xuất
         document.getElementById('btn-staff-logout').addEventListener('click', () => {
             localStorage.clear();
             window.location.href = CONFIG.PAGES.STAFF_LOGIN;
         });
-    </script>
 
-    <script type="module" src="../../wwwroot/js/jobcard/jobcard-main.js"></script>
+        // Khởi tạo mặc định khi vừa vào trang
+        initJobCardModule();
+    </script>
 </body>
 </html>

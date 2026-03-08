@@ -13,10 +13,10 @@ const CONFIG = {
         STAFF_LOGIN: `${BASE_PATH}/Pages/Auth/StaffLogin.html`,
         REGISTER: `${BASE_PATH}/Pages/Auth/Register.html`,
         DASHBOARD_RECEPTIONIST: `${BASE_PATH}/Pages/Dashboard/ReceptionistDashboard.html`,
-        DASHBOARD_SUPERVISOR: `${BASE_PATH}/Pages/SupervisorDashboard.html`, 
-        DASHBOARD_MECHANIC: `${BASE_PATH}/Pages/MechanicDashboard.html`, 
-        DASHBOARD_STOCKER: `${BASE_PATH}/Pages/StockerDashboard.html`, 
-        DASHBOARD_ADMIN: `${BASE_PATH}/Pages/AdminDashboard.html`, 
+        DASHBOARD_SUPERVISOR: `${BASE_PATH}/Pages/Dashboard/SupervisorDashboard.html`, 
+        DASHBOARD_MECHANIC: `${BASE_PATH}/Pages/Dashboard/MechanicDashboard.html`, 
+        DASHBOARD_STOCKER: `${BASE_PATH}/Pages/Dashboard/StockerDashboard.html`, 
+        DASHBOARD_ADMIN: `${BASE_PATH}/Pages/Dashboard/AdminDashboard.html`, 
         HOMEPAGE: `${BASE_PATH}/Pages/Dashboard/Index.html`
     },
 

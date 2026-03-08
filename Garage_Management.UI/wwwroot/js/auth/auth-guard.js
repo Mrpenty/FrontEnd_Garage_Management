@@ -30,6 +30,7 @@ export const authGuard = {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userInfo');
         localStorage.removeItem('userRole');
+        localStorage.removeItem('customerId');
         window.location.href = CONFIG.PAGES.HOMEPAGE;
     }
 };
