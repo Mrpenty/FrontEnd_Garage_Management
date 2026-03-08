@@ -2,8 +2,14 @@ import { BookingAPI } from './booking-api.js';
 import { bookingUI } from './booking-ui.js';
 
 const TIME_SLOTS = [
-    { time: "08:00" }, { time: "09:30" }, { time: "11:00" },
-    { time: "13:30" }, { time: "15:00" }, { time: "16:30" }
+    { label: "07:30 - 09:00", value: "07:30" },
+    { label: "09:00 - 10:30", value: "09:00" },
+    { label: "10:30 - 12:00", value: "10:30" },
+    { label: "13:00 - 14:30", value: "13:00" },
+    { label: "14:30 - 16:00", value: "14:30" },
+    { label: "16:00 - 17:30", value: "16:00" },
+    { label: "17:30 - 19:00", value: "17:30" },
+    { label: "20:00 - 21:30", value: "20:00" }
 ];
 
 let selectedTime = null;
@@ -12,7 +18,10 @@ let selectedTime = null;
 let bookingState = {
     brandId: null,
     modelId: null,
+    brandName: "",
+    modelName: "",
     vehicleId: null,
+    isNewVehicle: true,
     services: [],
     parts: []
 };
@@ -34,11 +43,16 @@ function initEvents() {
     // Gán hàm vào window cho HTML onclick
     window.handleVehicleStep = handleVehicleStep;
     window.nextStep = nextStep;
+    window.toggleVehicleSource = toggleVehicleSource;
 }
 
 // --- Logic functions ---
 
 async function loadInitialData() {
+    const customerId = getCustomerId();
+    const toggleArea = document.getElementById("vehicle-options-toggle");
+    const myVehicleGroup = document.getElementById("my-vehicle-group");
+    const newVehicleGroup = document.getElementById("new-vehicle-group");
     try {
         const [brandRes, modelRes] = await Promise.all([
             BookingAPI.getBrands(),
@@ -55,6 +69,26 @@ async function loadInitialData() {
         console.error("Initialization error:", err);
     }
 
+    if (customerId) {
+        toggleArea.style.display = "block";
+        myVehicleGroup.style.display = "block";
+        newVehicleGroup.style.display = "none";
+        bookingState.isNewVehicle = false;
+        try {
+            const res = await BookingAPI.getUserVehicles();
+           if (res.success && res.data) {
+                const vehicleList = res.data.items || [];
+                bookingUI.renderMyVehicles(vehicleList);
+            }
+        } catch (err) { console.error("Lỗi tải xe user:", err); }
+    } else {
+        // Khách vãng lai
+        toggleArea.style.display = "none";
+        myVehicleGroup.style.display = "none";
+        newVehicleGroup.style.display = "block";
+        bookingState.isNewVehicle = true;
+    }
+
     // Khi khởi tạo Step 3, điền data user
     const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
     const formContainer = document.getElementById("booking-form");
@@ -63,6 +97,17 @@ async function loadInitialData() {
     
     const slotContainer = document.getElementById("time-slots");
     bookingUI.renderTimeSlots(slotContainer, TIME_SLOTS);
+}
+
+function toggleVehicleSource(source) {
+    const isMine = source === 'mine';
+    bookingState.isNewVehicle = !isMine;
+    
+    document.getElementById("my-vehicle-group").style.display = isMine ? "block" : "none";
+    document.getElementById("new-vehicle-group").style.display = isMine ? "none" : "block";
+    
+    document.getElementById("btn-my-vehicle").classList.toggle("active", isMine);
+    document.getElementById("btn-new-vehicle").classList.toggle("active", !isMine);
 }
 
 function handleBrandChange(e) {
@@ -109,19 +154,34 @@ async function loadInventories() {
 }
 
 function handleVehicleStep() {
-    const brandId = document.getElementById("vehicleBrand").value;
-    const modelId = document.getElementById("vehicleModel").value;
+    if (!bookingState.isNewVehicle) {
+        // Lấy từ xe có sẵn
+        const select = document.getElementById("myVehicles");
+        const vehicleId = select.value;
+        if (!vehicleId) return alert("Vui lòng chọn xe!");
+        
+        bookingState.vehicleId = parseInt(vehicleId);
+        // Lưu brandName/modelName từ thuộc tính data- của option (nếu có) để BE hiển thị
+        const selectedOption = select.options[select.selectedIndex];
+        bookingState.brandId = parseInt(selectedOption.dataset.brandid);
+        bookingState.brandName = selectedOption.dataset.brand;
+        bookingState.modelName = selectedOption.dataset.model;
+        bookingState.modelId = parseInt(selectedOption.dataset.modelid);
+        bookingState.licensePlate = selectedOption.dataset.plate;
+    } else {
+        // Lấy từ form chọn hãng/loại
+        const brandSelect = document.getElementById("vehicleBrand");
+        const modelSelect = document.getElementById("vehicleModel");
+        if (!brandSelect.value || !modelSelect.value) return alert("Vui lòng chọn xe!");
 
-    if (!brandId || !modelId) {
-        alert("Vui lòng chọn đầy đủ hãng xe và loại xe");
-        return;
+        bookingState.vehicleId = 0; // Hoặc null tùy BE
+        bookingState.brandName = brandSelect.options[brandSelect.selectedIndex].text;
+        bookingState.modelName = modelSelect.options[modelSelect.selectedIndex].text;
+        bookingState.modelId = parseInt(modelSelect.value);
+        bookingState.brandId = parseInt(document.getElementById("vehicleBrand").value);
     }
-
-    bookingState.brandId = parseInt(brandId);
-    bookingState.modelId = parseInt(modelId);
-    bookingState.vehicleId = parseInt(modelId); 
-
-    loadServices(); 
+    
+    loadServices();
     nextStep(1);
 }
 
@@ -151,39 +211,54 @@ function nextStep(step) {
 
 async function handleFormSubmit(e) {
     e.preventDefault();
-    
+    const isBookForOthers = document.getElementById("bookForOthers")?.checked || false;
     const date = document.getElementById("appointmentDate").value;
     const timeSlot = document.querySelector('input[name="time-slot"]:checked')?.value;
-    const userId = getUserId(); 
+    const isLogged = !!getCustomerId();
 
     if (!date || !timeSlot) {
         alert("Vui lòng chọn đầy đủ ngày và giờ hẹn!");
         return;
     }
 
-    // BE dùng DateTime, nên gửi chuỗi định dạng ISO nhưng đảm bảo khớp múi giờ
+   // Xử lý thời gian chuẩn ISO
     const dateObj = new Date(`${date}T${timeSlot}:00`);
 
     // Tạo Payload với KEY viết hoa chữ cái đầu (PascalCase) để khớp tuyệt đối với C# DTO
     const payload = {
-        VehicleId: null,
-        VehicleModelId: bookingState.modelId ? Number(bookingState.modelId) : null,
         AppointmentDateTime: dateObj.toISOString(),
         ServiceIds: (bookingState.services || []).map(id => Number(id)),
         SparePartsIds: (bookingState.parts || []).map(id => Number(id)),
-        Status: 1, 
-        Description: document.getElementById("note").value.trim() || ""
+        VehicleModelId: bookingState.modelId ? Number(bookingState.modelId) : 0,
+        CustomVehicleBrand: bookingState.brandName,
+        CustomVehicleModel: bookingState.modelName,
+        LicensePlate: document.getElementById("licensePlate").value.trim(),
+        Description: document.getElementById("note").value.trim(),
+        Status: 1
     };
 
     // --- Xử lý Logic Role theo đúng AppointmentService.cs ---
-    if (userId && userId !== 0) {
-        payload.CustomerId = Number(userId);
-        // Bắt buộc phải để null để không dính "InvalidOperationException" ở BE
+   if (isLogged && !isBookForOthers) {
+        // TH1: Đăng nhập đặt cho mình
+        payload.CustomerId = getCustomerId();
+        payload.VehicleId = bookingState.vehicleId || null; 
+        // BE yêu cầu CustomerId thì FirstName/LastName/Phone nên để null hoặc bỏ qua tùy DTO
         payload.FirstName = null;
         payload.LastName = null;
         payload.Phone = null;
-    } else {
+    } 
+    else if (isLogged && isBookForOthers) {
+        // TH3: Đăng nhập nhưng đặt hộ bạn bè
+        payload.CustomerId = null; // Gửi null để BE hiểu là khách mới
+        payload.VehicleId = null;
+        payload.FirstName = document.getElementById("firstName").value.trim();
+        payload.LastName = document.getElementById("lastName").value.trim();
+        payload.Phone = document.getElementById("phone").value.trim();
+    }
+    else {
+        // TH4: Khách vãng lai (hoặc TH2 xe mới hoàn toàn)
         payload.CustomerId = null;
+        payload.VehicleId = null;
         payload.FirstName = document.getElementById("firstName").value.trim();
         payload.LastName = document.getElementById("lastName").value.trim();
         payload.Phone = document.getElementById("phone").value.trim();
@@ -193,24 +268,20 @@ async function handleFormSubmit(e) {
 
     try {
         const result = await BookingAPI.createAppointment(payload);
-        // Kiểm tra đúng cấu trúc ApiResponse của bạn
         if (result.success || result.data) {
-            nextStep(4); 
+            nextStep(4);
         } else {
-            alert(result.message || "Đặt lịch thất bại");
+            alert("Lỗi: " + (result.message || "Không thể đặt lịch"));
         }
     } catch (err) {
-        console.error("Submit Error:", err);
-        // Trả về message chi tiết từ server (Ví dụ: "VehicleId không tồn tại")
-        alert("Lỗi từ hệ thống: " + err.message);
+        alert("Lỗi hệ thống: " + err.message);
     }
 }
 
 // --- Helpers ---
-function getUserId() {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
-    const id = userInfo.userId || userInfo.id;
-    return id ? parseInt(id) : null; // Trả về null nếu không tìm thấy
+function getCustomerId() {
+    const id = localStorage.getItem("customerId");
+    return id ? parseInt(id) : null;
 }
 
 function formatCurrency(amount) {

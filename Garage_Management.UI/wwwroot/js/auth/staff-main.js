@@ -19,14 +19,18 @@ authUi.elements.form.addEventListener('submit', async (e) => {
 
         authUi.renderMessage("Đăng nhập thành công! Đang chuyển hướng...", true);
 
+        const tokenPayload = parseJwt(userData.accessToken);
+        const employeeId = tokenPayload.EmployeeId;
+
         // 1. Lưu thông tin đăng nhập
         localStorage.setItem('accessToken', userData.accessToken);
         localStorage.setItem('refreshToken', userData.refreshToken);
         localStorage.setItem('userRole', role);
+        localStorage.setItem('employeeId', employeeId);
         localStorage.setItem('userInfo', JSON.stringify({
             userId: userData.userId,
             fullName: userData.fullName,
-            email: userData.email
+            email: userData.email,
         }));
 
         // 2. Điều hướng dựa trên Role
@@ -69,3 +73,13 @@ authUi.elements.form.addEventListener('submit', async (e) => {
         }
     }
 });
+
+function parseJwt(token) {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+}

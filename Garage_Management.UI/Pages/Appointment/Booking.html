@@ -1,19 +1,7 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MGMS - Hệ thống quản lý Gara xe máy</title>
-    <link rel="stylesheet" href="../../wwwroot/css/booking.css">
-    <link rel="stylesheet" href="../../wwwroot/css/homepage.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <header class="main-header" id="header-placeholder"></header>
-    
-    <section class="booking-container">
-        <div class="container">
+<link rel="stylesheet" href="../../wwwroot/css/booking.css">
 
+<section class="booking-container">
+    <div class="container">
             <!-- STEP BAR -->
             <div class="step-bar">
                 <div class="step active" data-step="0">Chọn xe</div>
@@ -22,29 +10,39 @@
                 <div class="step" data-step="3">Thông tin đặt hẹn</div>
                 <div class="step" data-step="4">Hoàn thành</div>
             </div>
-
             <!-- STEP 0 -->
             <div class="step-content active" id="step-0">
                 <h3>ĐẶT LỊCH HẸN</h3>
 
+                <div id="vehicle-options-toggle" style="display: none; margin-bottom: 20px; text-align: center;">
+                    <button type="button" class="btn-toggle active" id="btn-my-vehicle" onclick="toggleVehicleSource('mine')">Xe của tôi</button>
+                    <button type="button" class="btn-toggle" id="btn-new-vehicle" onclick="toggleVehicleSource('new')">Thêm xe mới</button>
+                </div>
+
                 <div class="vehicle-selection">
-                    <div class="form-group">
-                        <label>Hãng xe</label>
-                        <select id="vehicleBrand">
-                            <option value="">-- Chọn hãng xe --</option>
+                    <div id="my-vehicle-group" class="form-group" style="display: none;">
+                        <label>Chọn xe của bạn</label>
+                        <select id="myVehicles">
+                            <option value="">-- Đang tải danh sách xe --</option>
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label>Loại xe</label>
-                        <select id="vehicleModel" disabled>
-                            <option value="">-- Chọn loại xe --</option>
-                        </select>
+                    <div id="new-vehicle-group">
+                        <div class="form-group">
+                            <label>Hãng xe</label>
+                            <select id="vehicleBrand">
+                                <option value="">-- Chọn hãng xe --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Loại xe</label>
+                            <select id="vehicleModel" disabled>
+                                <option value="">-- Chọn loại xe --</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <button class="btn-next" onclick="handleVehicleStep()">
-                        Tiếp tục
-                    </button>
+                    <button class="btn-next" onclick="handleVehicleStep()">Tiếp tục</button>
                 </div>
             </div>
 
@@ -77,7 +75,7 @@
                     <textarea id="note" placeholder="Ghi chú"></textarea>
                     <button class="btn-back" onclick="nextStep(2)">Quay lại</button>
                     <button type="submit" class="btn-submit">
-                        Xác nhận đặt lịch
+                        Đặt lịch
                     </button>
                 </form>
 
@@ -90,7 +88,6 @@
                 <p>Hệ thống đã ghi nhận lịch hẹn của bạn.</p>
                 <a href="../Dashboard/Index.html">Quay về trang chủ</a>
             </div>
-
         </div>
     </section>
 

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Dashboard</title>
-    <link rel="stylesheet" href="../../wwwroot/css/homepage.css">
+    <title>Supervisor Dashboard - MGMS</title>
+    <link rel="stylesheet" href="../../wwwroot/css/supervisor-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
@@ -15,9 +15,71 @@
 </script>
 
 <body>
-    <header class="main-header" id="header-placeholder"></header>
+    <div class="supervisor-container">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="brand-title">SUPERVISOR DASHBOARD</h1>
+                <p class="user-welcome">Xin chào, <span id="display-name">Người dùng</span></p>
+            </div>
+            <div class="header-right">
+                <button id="btn-stats" class="btn-secondary"><i class="fas fa-chart-bar"></i> Thống kê</button>
+                <button id="btn-view-inventory" class="btn-primary"><i class="fas fa-warehouse"></i> Xem kho phụ tùng</button>
+            </div>
+        </header>
 
-    <h1>Chào mừng Supervisor</h1>
+        <section class="section-box">
+            <div class="section-header-flex">
+                <h2 class="section-title">Job Card đang chờ kiểm tra tiếp theo</h2>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="job-search" placeholder="Tìm biển số, mã lệnh...">
+                </div>
+            </div>
+            
+            <div id="pending-jobs-list" class="job-list-vertical">
+            </div>
+        </section>
+
+        <section class="section-box">
+            <h2 class="section-title">Trạng thái Workbay thực tế</h2>
+            <div class="workbay-scroll-wrapper">
+                <div id="workbay-grid" class="workbay-grid">
+                    <div class="workbay-card active">
+                        <div class="workbay-timer" title="Thời gian còn lại ước tính">
+                            <i class="far fa-clock"></i> 25p
+                        </div>
+                        <h3>Workbay 1</h3>
+                        <div class="workbay-content">
+                            <p class="wb-plate">29L-555.66</p>
+                            <p class="wb-service">Sửa gầm & Động cơ</p>
+                            <p class="mechanic-name">Thợ: Nguyễn Văn An</p>
+                        </div>
+                        <button class="btn-detail-inner">Chi tiết</button>
+                    </div>
+
+                    <div class="workbay-card empty">
+                        <h3>Workbay 2</h3>
+                        <div class="workbay-content">
+                            <p class="status-text">Sẵn sàng</p>
+                        </div>
+                        <button class="btn-detail-inner">Chi tiết</button>
+                    </div>
+
+                    <div class="workbay-card active">
+                        <div class="workbay-timer"><i class="far fa-clock"></i> 10p</div>
+                        <h3>Workbay 3</h3>
+                        <div class="workbay-content">
+                            <p class="wb-plate">30H-111.22</p>
+                            <p class="wb-service">Thay lốp</p>
+                            <p class="mechanic-name">Thợ: Lê Văn Bình</p>
+                        </div>
+                        <button class="btn-detail-inner">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script type="module" src="../../wwwroot/js/workbay/workbay-main.js"></script>
 </body>
-
-<script src="../../wwwroot/js/common.js"></script>
+</html>

@@ -60,7 +60,7 @@ export const searchUI = {
     },
 
     getStatusText: (status) => {
-        const statusMap = { 1: "Đã xác nhận", 0: "Chờ xác nhận", 2: "Đang sửa", 3: "Hoàn thành" };
+        const statusMap = { 2: "Đã xác nhận", 1: "Chờ xác nhận", 3: "Chờ kiểm tra", 4: "Trễ lịch hẹn", 5: "Đã hủy", 6: "Đang sửa chữa", 7: "Hoàn thành" };
         return statusMap[status] || "Đang xử lý";
     }
 };

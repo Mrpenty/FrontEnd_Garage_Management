@@ -8,6 +8,24 @@ export const bookingUI = {
         selectElement.innerHTML = options;
     },
 
+    renderMyVehicles(vehicles) {
+        const select = document.getElementById("myVehicles");
+        if (!vehicles || vehicles.length === 0) {
+            select.innerHTML = `<option value="">Bạn chưa có xe nào. Hãy chọn "Thêm xe mới"</option>`;
+            return;
+        }
+        select.innerHTML = `<option value="">-- Chọn xe của bạn --</option>` + 
+        vehicles.map(v => `
+            <option value="${v.vehicleId}" 
+                    data-plate="${v.licensePlate}"
+                    data-brand="${v.brandName}" 
+                    data-brandid="${v.brandId}" 
+                    data-model="${v.modelName}"
+                    data-modelid="${v.vehicleModelId}">
+                ${v.licensePlate} - ${v.brandName} ${v.modelName}
+            </option>`).join('');
+    },
+
     // Render danh sách loại xe vào Select
     renderModelSelect: (selectElement, models) => {
         if (models.length === 0) {
@@ -72,44 +90,80 @@ export const bookingUI = {
     //Render Booking form
     renderBookingForm: (container, userInfo) => {
         // Kiểm tra xem có phải Customer không
-        const isCustomer = !!(userInfo.userId || userInfo.id);
-        
+        const isCustomer = !!(userInfo.userId || userInfo.id);       
         const fullName = userInfo.fullName || "";
         const nameParts = fullName.split(' ');
         const lastName = nameParts.length > 1 ? nameParts.pop() : "";
         const firstName = nameParts.join(' ');
-
-        // Nếu là Customer, thêm thuộc tính disabled và style mờ
-        const attr = isCustomer ? "disabled style='background-color: #e9ecef; cursor: not-allowed;'" : "";
-        const labelNote = isCustomer ? "<p style='font-size: 0.8rem; color: #666;'>* Thông tin được lấy từ hồ sơ cá nhân</p>" : "";
-
+        const licensePlateValue = window.bookingState?.licensePlate || "";
+        const isLogged = isCustomer;
         container.innerHTML = `
             <div class="booking-form-wrapper">
-                ${labelNote}
+                ${isCustomer ? `
+                    <div class="booking-option" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                        <input type="checkbox" id="bookForOthers">
+                        <label for="bookForOthers" style="font-weight: bold; color: #d9534f; cursor: pointer;">
+                            <i class="fas fa-user-friends"></i> Tôi muốn đặt lịch hộ người khác
+                        </label>
+                    </div>
+                ` : ""}
+
                 <div class="form-row">
-                    <input type="text" id="firstName" placeholder="Họ *" value="${firstName}" ${attr} required>
-                    <input type="text" id="lastName" placeholder="Tên *" value="${lastName}" ${attr} required>
+                    <input type="text" id="firstName" placeholder="Họ *" value="${firstName}" ${isLogged ? 'readonly' : ''} required>
+                    <input type="text" id="lastName" placeholder="Tên *" value="${lastName}" ${isLogged ? 'readonly' : ''} required>
                 </div>
-                <input type="text" id="phone" placeholder="Số điện thoại *" value="${userInfo.phoneNumber || ''}" ${attr} required>
+                <input type="text" id="phone" placeholder="Số điện thoại *" value="${userInfo.phoneNumber || ''}" ${isLogged ? 'readonly' : ''} required>
                 
+                <input type="text" id="licensePlate" placeholder="Biển số xe *" value="${licensePlateValue}" required>
+
                 <label style="margin-top: 10px; display: block;">Chọn ngày hẹn:</label>
                 <input type="date" id="appointmentDate" min="${new Date().toISOString().split('T')[0]}" required>
                 
                 <label style="margin-top: 10px; display: block;">Chọn khung giờ:</label>
                 <div id="time-slots" class="time-slots-grid"></div>
                 
-                <textarea id="note" placeholder="Mô tả tình trạng xe (ví dụ: Thay dầu, kiểm tra phanh...)"></textarea>
+                <textarea id="note" placeholder="Mô tả tình trạng xe..."></textarea>
                 
-                <button type="submit" class="btn-submit">XÁC NHẬN ĐẶT LỊCH</button>
+                <div class="button-group" style="margin-top: 20px;">
+                    <button type="button" class="btn-back" onclick="nextStep(2)">Quay lại</button>
+                    <button type="submit" class="btn-submit">XÁC NHẬN ĐẶT LỊCH</button>
+                </div>
             </div>
         `;
+
+        // Sự kiện Đặt hộ (TH3)
+        const checkOther = document.getElementById("bookForOthers");
+        if (checkOther) {
+            checkOther.addEventListener('change', (e) => {
+                const fields = ['firstName', 'lastName', 'phone'];
+                if (e.target.checked) {
+                    // Chuyển sang chế độ nhập tự do
+                    fields.forEach(id => {
+                        const el = document.getElementById(id);
+                        el.value = "";
+                        el.readOnly = false;
+                        el.style.backgroundColor = "#fff";
+                    });
+                } else {
+                    // Khôi phục dữ liệu đăng nhập và readonly
+                    document.getElementById("firstName").value = firstName;
+                    document.getElementById("lastName").value = lastName;
+                    document.getElementById("phone").value = userInfo.phoneNumber || "";
+                    fields.forEach(id => {
+                        const el = document.getElementById(id);
+                        el.readOnly = true;
+                        el.style.backgroundColor = "#e9ecef";
+                    });
+                }
+            });
+        }
     },
 
     renderTimeSlots: (container, slots) => {
         container.innerHTML = slots.map(slot => `
             <div class="time-slot-item">
-                <input type="radio" name="time-slot" id="slot-${slot.time}" value="${slot.time}">
-                <label for="slot-${slot.time}">${slot.time}</label>
+                <input type="radio" name="time-slot" id="slot-${slot.value}" value="${slot.value}" required>
+                <label for="slot-${slot.value}">${slot.label}</label>
             </div>
         `).join('');
     },

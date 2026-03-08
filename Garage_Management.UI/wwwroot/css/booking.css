@@ -255,3 +255,17 @@ select:focus, input:focus {
 .form-row input {
     flex: 1;
 }
+
+.btn-toggle {
+    padding: 10px 20px;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    cursor: pointer;
+}
+
+.btn-toggle.active {
+    background: #d9534f; /* Màu đỏ thương hiệu của bạn */
+    color: white;
+    border-color: #d9534f;
+}
+

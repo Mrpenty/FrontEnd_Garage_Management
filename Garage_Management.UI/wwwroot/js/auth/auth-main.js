@@ -33,15 +33,20 @@ authUi.elements.form.addEventListener('submit', async (e) => {
         if (userData.role === 'Customer') {
             authUi.renderMessage("Đăng nhập thành công! Đang chuyển hướng...", true);
 
+            const tokenPayload = parseJwt(userData.accessToken);
+            const customerId = tokenPayload.CustomerId;
+
             // Lưu toàn bộ thông tin User và Token   
             localStorage.setItem('accessToken', userData.accessToken);
             localStorage.setItem('refreshToken', userData.refreshToken);
             localStorage.setItem('userRole', userData.role);
+            localStorage.setItem('customerId', customerId);
+            
             localStorage.setItem('userInfo', JSON.stringify({
                 userId: userData.userId,
                 fullName: userData.fullName,
                 email: userData.email,
-                phoneNumber: userData.phoneNumber
+                phoneNumber: userData.phoneNumber,
             }));
 
             // Chuyển hướng đến Dashboard của Customer
@@ -59,6 +64,16 @@ authUi.elements.form.addEventListener('submit', async (e) => {
         authUi.renderMessage(result.message || "Đăng nhập thất bại", false);
     }
 });
+
+function parseJwt(token) {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+}
 
 // Lắng nghe sự kiện nút Gửi mã OTP
 authUi.elements.btnSendOtp.addEventListener('click', async () => {

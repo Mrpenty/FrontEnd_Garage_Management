@@ -3,10 +3,11 @@ import CONFIG from '../config.js';
 const VEHICLE_URL = `${CONFIG.API_BASE_URL}/Vehiclies`;
 const BRAND_URL = `${CONFIG.API_BASE_URL}/VehicleBrands`
 const MODEL_URL = `${CONFIG.API_BASE_URL}/VehicleModels`
-const APOINTMENT_URL = `${CONFIG.API_BASE_URL}/Appointment`;
+const APPOINTMENT_URL = `${CONFIG.API_BASE_URL}/Appointments`;
 const JOBCARD_URL = `${CONFIG.API_BASE_URL}/JobCards`;
 const SERVICE_URL = `${CONFIG.API_BASE_URL}/Services`;
 const CUSTOMER_URL = `${CONFIG.API_BASE_URL}/Customer`;
+const USER_URL = `${CONFIG.API_BASE_URL}/User`;
 
 const getHeaders = () => ({
     'Content-Type': 'application/json',
@@ -17,21 +18,72 @@ export const jobcardApi = {
     getAll: async (params = {}) => {
         // params có thể chứa: SearchTerm, Status, SortBy, PageIndex, PageSize...
         const queryString = new URLSearchParams(params).toString();
-        const response = await fetch(`${JOBCARD_URL}?${queryString}`, {
+        const response = await fetch(`${JOBCARD_URL}/active?${queryString}`, {
             headers: getHeaders()
         });
 
         if (!response.ok) {
             console.error(`Lỗi HTTP ${response.status} khi lấy danh sách JobCard.`);
-            return { success: false, items: [] };
+            return [];
         }
 
         return await response.json();
     },
+
+    getById: async (id) => {
+        const response = await fetch(`${JOBCARD_URL}/${id}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return { success: false };
+        const data = await response.json();
+        return { success: true, data: data };
+    },
+
+    // Lấy danh sách Supervisor
+    getSupervisors: async () => {
+        // Bạn có thể thêm param lọc theo Role nếu BE hỗ trợ, ví dụ: ?Role=Supervisor
+        const response = await fetch(`${USER_URL}/ListUser?Filter=Supervisor&PageSize=100`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return { success: false, data: [] };
+        return await response.json();
+    },
+
+    // Tạo JobCard mới
+    create: async (payload) => {
+        const response = await fetch(`${JOBCARD_URL}`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            return { success: false, message: errorData.message || "Lỗi Server" };
+        }
+
+        return await response.json();
+    },
+
+    // Thêm dịch vụ vào JobCard đã tồn tại
+    addService: async (jobCardId, serviceDto) => {
+        const response = await fetch(`${JOBCARD_URL}/${jobCardId}/services`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(serviceDto)
+        });
+        // Vì BE trả về NoContent (204) nên không cần .json() nếu thành công
+        return response.ok; 
+    },
 }
 
 export const serviceApi = {
-
+    getServices: async () => {
+        const res = await fetch(`${SERVICE_URL}?page=1&pageSize=10`, { 
+            headers: getHeaders() 
+        });
+        if (!res.ok) throw new Error("Không thể tải danh sách dịch vụ");
+        return await res.json();
+    },
 }
 
 export const vehicleApi = {
@@ -45,10 +97,21 @@ export const vehicleApi = {
         return await response.json();
     },
     // Lấy lại danh sách xe của khách
-    getByCustomer: async (customerId) => {
-        const response = await fetch(`${VEHICLE_URL}/by-customer/${customerId}`, {
+    // Lấy danh sách xe bằng cách Search (SĐT)
+    getBySearch: async (query, page = 1, pageSize = 10) => {
+        // Sử dụng URLSearchParams để encode query tránh lỗi ký tự đặc biệt
+        const params = new URLSearchParams({
+            Search: query,
+            page: page,
+            pageSize: pageSize
+        });
+        
+        const response = await fetch(`${VEHICLE_URL}?${params.toString()}`, {
+            method: 'GET',
             headers: getHeaders()
         });
+
+        if (!response.ok) return { success: false, message: "Lỗi tải danh sách xe" };
         return await response.json();
     },
     
@@ -110,3 +173,19 @@ export const customerApi = {
     return await response.json();
     }
 };
+
+export const appointmentApi = {
+    checkByPhone: async (phone) => {
+        // Query tham số: Phone để lọc, PageSize lớn để lấy hết nếu 1 SĐT có nhiều lịch
+        const url = `${APPOINTMENT_URL}?Search=${encodeURIComponent(phone)}&Page=1&PageSize=1`;
+        const res = await fetch(url, { 
+            method: 'GET',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            }
+        });
+        if (!res.ok) throw new Error("Lỗi khi tra cứu lịch hẹn");
+        return await res.json();
+    }
+}
