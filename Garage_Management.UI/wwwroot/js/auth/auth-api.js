@@ -122,4 +122,21 @@ export const customerApi = {
     },
 
     //API xem xe cá nhân
+
+    //API xem Appointment cá nhân
+    getAppointmentsByCustomer: async (customerId, page = 1, pageSize = 10) => {
+        const token = localStorage.getItem('accessToken');
+        const url = `${CONFIG.API_BASE_URL}/Appointments/by-customer/${customerId}?page=${page}&pageSize=${pageSize}`;
+        
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) throw new Error("Không thể tải lịch sử lịch hẹn");
+        return await res.json();
+    }
 }

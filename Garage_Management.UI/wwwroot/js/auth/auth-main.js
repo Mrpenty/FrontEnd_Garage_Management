@@ -45,12 +45,8 @@ authUi.elements.form.addEventListener('submit', async (e) => {
             localStorage.setItem('userInfo', JSON.stringify({
                 userId: userData.userId,
                 fullName: userData.fullName,
-<<<<<<< Updated upstream
-                email: userData.email
-=======
                 email: userData.email,
                 phoneNumber: userData.phoneNumber,
->>>>>>> Stashed changes
             }));
 
             // Chuyển hướng đến Dashboard của Customer
