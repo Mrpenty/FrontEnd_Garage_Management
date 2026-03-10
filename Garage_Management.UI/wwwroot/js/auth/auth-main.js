@@ -44,6 +44,7 @@ authUi.elements.form.addEventListener('submit', async (e) => {
             
             localStorage.setItem('userInfo', JSON.stringify({
                 userId: userData.userId,
+                customerId: customerId,
                 fullName: userData.fullName,
                 email: userData.email,
                 phoneNumber: userData.phoneNumber,

@@ -1,44 +1,39 @@
 import { authApi, customerApi } from './auth-api.js';
 import { authUi } from './auth-ui.js';
-import { searchUI } from '../appointment/search-ui.js'; // Import UI lịch hẹn
 import CONFIG from '../config.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Kiểm tra xem đang ở trang Profile hay trang Danh sách lịch hẹn
-    const isBookingPage = document.getElementById('user-bookings-list') !== null;
-
-    if (isBookingPage) {
-        // --- LOGIC TRANG DANH SÁCH LỊCH HẸN ---
-        await loadUserBookings();
-    } else {
-        // --- LOGIC TRANG PROFILE ---
-        console.log("Profile page loaded, fetching data...");
-        await loadUserProfile();
+    // 1. Kiểm tra nếu đang ở trang Profile
+    const btnViewBookings = document.getElementById('btn-view-bookings');
+    if (btnViewBookings) {
+        btnViewBookings.onclick = () => {
+            window.location.href = 'UserBookings.html';
+        };
+        loadUserProfile(); // Hàm hiển thị thông tin cá nhân
         setupProfileEvents();
+    }
+
+    // 2. Kiểm tra nếu đang ở trang Danh sách lịch hẹn
+    const bookingsContainer = document.getElementById('user-bookings-list');
+    if (bookingsContainer || path.includes('UserBookings.html')) {
+        // Gọi hàm tải dữ liệu ngay khi trang load
+        loadCustomerAppointments(bookingsContainer);
     }
 });
 
-// Hàm tải lịch hẹn (Dành cho trang UserBookings.html)
-async function loadUserBookings() {
-    const container = document.getElementById('user-bookings-list');
-    const urlParams = new URLSearchParams(window.location.search);
-    const customerId = urlParams.get('cid');
-
-    if (!customerId) {
-        container.innerHTML = `<div class="alert alert-warning">Không tìm thấy mã khách hàng.</div>`;
-        return;
-    }
-
+// Hàm chính để tải lịch hẹn
+async function loadCustomerAppointments(container) {
     try {
-        const response = await customerApi.getAppointmentsByCustomer(customerId);
-        // Map đúng cấu trúc dữ liệu Backend (PageData)
-        const bookings = response.data?.pageData || response.data || [];
-        
-        // Render bằng UI đã làm ở trang Search
-        searchUI.renderAppointmentList(bookings, container);
+        const res = await customerApi.getMyAppointments(1, 20);
+        if (res.success) {
+            const appointments = res.data.pageData;
+            authUi.renderUserBookings(container, appointments);
+        } else {
+            container.innerHTML = `<div class="alert alert-danger">${res.message}</div>`;
+        }
     } catch (error) {
-        console.error("Load Bookings Error:", error);
-        container.innerHTML = `<div class="alert alert-danger">Lỗi khi tải danh sách lịch hẹn.</div>`;
+        console.error("Lỗi tải lịch hẹn:", error);
+        container.innerHTML = `<div class="alert alert-danger">Không thể kết nối máy chủ.</div>`;
     }
 }
 
@@ -62,11 +57,14 @@ function setupProfileEvents() {
     const btnViewBookings = document.getElementById('btn-view-bookings');
     if (btnViewBookings) {
         btnViewBookings.addEventListener('click', () => {
-            const user = JSON.parse(localStorage.getItem('user')); 
-            if (user && user.customerId) {
-                window.location.href = `../Appointment/UserBookings.html?cid=${user.customerId}`;
+            const storageData = localStorage.getItem('userInfo'); 
+            const userInfo = storageData ? JSON.parse(storageData) : null;
+            if (userInfo && userInfo.customerId) {
+                // Chuyển hướng sang trang lịch hẹn
+                window.location.href = CONFIG.PAGES.MYAPPOINTMENT;
             } else {
-                alert("Không tìm thấy mã khách hàng trong hệ thống.");
+                alert("Không tìm thấy mã khách hàng. Vui lòng đăng nhập lại.");
+                console.error("Data in localStorage:", userInfo);
             }
         });
     }

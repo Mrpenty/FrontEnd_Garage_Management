@@ -270,11 +270,16 @@ export const jobcardUI = {
     renderServiceSelect: (selectElement, services) => {
         let html = '<option value="">-- Chọn dịch vụ --</option>';
         services.forEach(s => {
+            // Tính tổng thời gian từ các task nếu totalEstimateMinute bằng 0
+            const totalTime = s.totalEstimateMinute > 0 
+                ? s.totalEstimateMinute 
+                : (s.serviceTasks?.reduce((sum, task) => sum + (task.estimateMinute || 0), 0) || 0);
+
             html += `<option value="${s.serviceId}" 
                             data-price="${s.basePrice}" 
                             data-description="${s.description || ''}">
-                        ${s.serviceName} (${s.basePrice.toLocaleString()}đ)
-                     </option>`;
+                        ${s.serviceName} (${s.basePrice.toLocaleString()}đ) - ~${totalTime}phút
+                    </option>`;
         });
         selectElement.innerHTML = html;
     },
@@ -478,8 +483,7 @@ export const jobcardUI = {
         
         // Kiểm tra kỹ users có phải là mảng không
         if (Array.isArray(users) && users.length > 0) {
-            users.forEach(u => {
-                // BE của bạn có thể trả về 'id' hoặc 'userId'
+            users.forEach(u => {   
                 const id = u.userId || u.id;
                 const name = u.fullName || u.userName || "Không rõ tên";
                 html += `<option value="${id}">${name}</option>`;

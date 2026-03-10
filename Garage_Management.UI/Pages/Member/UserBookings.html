@@ -3,17 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <title>Lịch Hẹn Của Tôi - MGMS</title>
-    <link rel="stylesheet" href="../../wwwroot/css/search-appointment.css">
     <link rel="stylesheet" href="../../wwwroot/css/homepage.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+<!-- Để tạm sau này tách css sau -->
+<style>
+    .booking-card {
+        transition: transform 0.2s;
+        border-radius: 12px !important;
+    }
+    .booking-card:hover {
+        transform: translateY(-3px);
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    .bg-warning { background-color: #ffc107 !important; color: #000; }
+    .bg-success { background-color: #28a745 !important; color: #fff; }
+    .bg-info { background-color: #17a2b8 !important; color: #fff; }
+    .bg-secondary { background-color: #6c757d !important; color: #fff; }
+</style>
 <body>
     <header id="header-placeholder"></header>
 
     <main class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h3><i class="fa-solid fa-calendar-check text-danger"></i> Lịch hẹn của bạn</h3>
-            <a href="../Auth/Profile.html" class="btn-back" style="text-decoration: none; color: #666;">
+            <a href="Profile.html" class="btn-back" style="text-decoration: none; color: #666;">
                 <i class="fa-solid fa-arrow-left"></i> Quay lại hồ sơ
             </a>
         </div>
@@ -27,5 +44,6 @@
     </main>
 
     <script type="module" src="../../wwwroot/js/auth/profile-main.js"></script>
+    <script type="module" src="../../wwwroot/js/common.js"></script>
 </body>
 </html>

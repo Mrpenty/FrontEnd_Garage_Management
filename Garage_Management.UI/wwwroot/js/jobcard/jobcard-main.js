@@ -55,6 +55,8 @@ export async function initJobCardModule() {
     // 4. Tải dữ liệu ban đầu cho Dashboard
     loadDashboardStats(); // Hàm tải các số liệu "Xe đang làm", "Doanh thu"...
     loadJobCards(elements.jobCardBody);
+    loadSupervisor(elements.selectSupervisor); // Đổ dữ liệu vào select supervisor
+    loadServiceList(elements.selectService);
 }
 
 // --- CHI TIẾT CÁC HÀM LOGIC ---
@@ -69,6 +71,32 @@ async function loadJobCards(tbody) {
     } catch (err) {
         console.error("Lỗi tải danh sách JobCard:", err);
         tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color:red">Lỗi kết nối server</td></tr>`;
+    }
+}
+
+async function loadSupervisor(selectElement) {
+    try {
+        const res = await jobcardApi.getSupervisors();
+        // Cấu trúc BE: { success: true, data: { pageData: [...] } }
+        const supervisors = res.data?.pageData || [];
+        
+        // Gọi UI render
+        jobcardUI.renderSupervisorSelect(selectElement, supervisors);
+    } catch (err) {
+        console.error("Lỗi tải Supervisor:", err);
+    }
+}
+
+async function loadServiceList(selectElement) {
+    try {
+        const res = await serviceApi.getServices();
+        // Cấu trúc BE: { success: true, data: { pageData: [...] } }
+        const services = res.data?.pageData || [];
+        
+        // Gọi UI render
+        jobcardUI.renderServiceSelect(selectElement, services);
+    } catch (err) {
+        console.error("Lỗi tải dịch vụ:", err);
     }
 }
 

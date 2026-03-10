@@ -125,6 +125,47 @@ body {
     background: #f8fafc;
 }
 
+/* Bổ sung cho job-info */
+.job-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.job-info i {
+    color: #64748b;
+    width: 16px;
+}
+
+.customer-name {
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+.service-name {
+    font-size: 0.85rem;
+    color: #6366f1;
+    font-weight: 500;
+}
+
+.wb-status-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #e2e8f0;
+    text-transform: uppercase;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.status-ready {
+    color: #10b981;
+    font-weight: 600;
+    margin-top: 15px;
+}
+
 /* Tùy chỉnh Select Workbay trông sang trọng hơn */
 .select-wb-dropdown {
     padding: 8px 12px;
@@ -179,3 +220,8 @@ body {
     width: 100%; background: #6366f1; color: white; border: none; 
     padding: 10px; border-radius: 6px; margin-top: auto;
 }
+
+.workbay-card.maintenance { border-top: 5px solid #64748b; opacity: 0.7; background: #f1f5f9; }
+.workbay-card.oos { border-top: 5px solid #000; opacity: 0.5; }
+.wb-status-text { font-size: 0.8rem; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; display: block; }
+

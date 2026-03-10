@@ -17,7 +17,8 @@ const CONFIG = {
         DASHBOARD_MECHANIC: `${BASE_PATH}/Pages/Dashboard/MechanicDashboard.html`, 
         DASHBOARD_STOCKER: `${BASE_PATH}/Pages/Dashboard/StockerDashboard.html`, 
         DASHBOARD_ADMIN: `${BASE_PATH}/Pages/Dashboard/AdminDashboard.html`, 
-        HOMEPAGE: `${BASE_PATH}/Pages/Dashboard/Index.html`
+        HOMEPAGE: `${BASE_PATH}/Pages/Dashboard/Index.html`,
+        MYAPPOINTMENT: `${BASE_PATH}/Pages/Member/UserBookings.html`
     },
 
     TIMEOUT: 5000,

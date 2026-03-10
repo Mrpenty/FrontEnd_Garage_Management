@@ -65,12 +65,51 @@ export const authUi = {
     },
 
     renderMessage(message, isSuccess) {
-    const display = this.elements.msgDisplay;
-    if (display) {
-        display.innerText = message;
-        display.className = isSuccess ? 'msg-success' : 'msg-error';
-    } else {
-        if (!isSuccess) console.warn("Thông báo:", message);
+        const display = this.elements.msgDisplay;
+        if (display) {
+            display.innerText = message;
+            display.className = isSuccess ? 'msg-success' : 'msg-error';
+        } else {
+            if (!isSuccess) console.warn("Thông báo:", message);
+        }
+    },
+
+    renderUserBookings: (container, appointments) => {
+        if (!appointments || appointments.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fa-regular fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <p>Bạn chưa có lịch hẹn nào.</p>
+                    <a href="/" class="btn btn-danger">Đặt lịch ngay</a>
+                </div>`;
+            return;
+        }
+
+        const statusTexts = {
+            1: { text: "Chờ xác nhận", class: "bg-warning" },
+            2: { text: "Đã xác nhận", class: "bg-success" },
+            3: { text: "Đang xử lý", class: "bg-info" },
+            4: { text: "Đã hủy", class: "bg-secondary" }
+        };
+
+        container.innerHTML = appointments.map(apt => {
+            const status = statusTexts[apt.status] || { text: "Không xác định", class: "bg-dark" };
+            const date = new Date(apt.appointmentDateTime).toLocaleString('vi-VN');
+            const services = apt.services.map(s => s.serviceName).join(', ');
+
+            return `
+                <div class="booking-card mb-3 p-3 shadow-sm border-start border-4 border-danger" style="background:white; border-radius:8px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1 text-danger">Mã lịch hẹn: #APT-${apt.appointmentId}</h5>
+                            <p class="mb-1"><strong><i class="fa-regular fa-clock"></i> Thời gian:</strong> ${date}</p>
+                            <p class="mb-1"><strong><i class="fa-solid fa-wrench"></i> Dịch vụ:</strong> ${services}</p>
+                            <p class="mb-0 text-muted"><em><i class="fa-solid fa-comment"></i> Ghi chú: ${apt.description || 'Không có'}</em></p>
+                        </div>
+                        <span class="badge ${status.class}" style="padding: 8px 12px; border-radius: 20px;">${status.text}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
-}
 };

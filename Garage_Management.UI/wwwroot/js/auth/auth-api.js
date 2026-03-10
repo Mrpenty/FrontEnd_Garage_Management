@@ -2,6 +2,7 @@ import CONFIG from '../config.js';
 
 const AUTH_URL = `${CONFIG.API_BASE_URL}/Auth`;
 const USER_URL = `${CONFIG.API_BASE_URL}/User`;
+const APPOINTMENT_URL = `${CONFIG.API_BASE_URL}/Appointments`;
 
 export const authApi = {
     //API gửi thông tin đăng nhập
@@ -124,19 +125,15 @@ export const customerApi = {
     //API xem xe cá nhân
 
     //API xem Appointment cá nhân
-    getAppointmentsByCustomer: async (customerId, page = 1, pageSize = 10) => {
+    getMyAppointments: async (page = 1, pageSize = 10) => {
         const token = localStorage.getItem('accessToken');
-        const url = `${CONFIG.API_BASE_URL}/Appointments/by-customer/${customerId}?page=${page}&pageSize=${pageSize}`;
-        
-        const res = await fetch(url, {
+        const response = await fetch(`${APPOINTMENT_URL}/Customer/MyAppointment?page=${page}&pageSize=${pageSize}`, {
             method: 'GET',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
         });
-
-        if (!res.ok) throw new Error("Không thể tải lịch sử lịch hẹn");
-        return await res.json();
+        return await response.json();
     }
 }

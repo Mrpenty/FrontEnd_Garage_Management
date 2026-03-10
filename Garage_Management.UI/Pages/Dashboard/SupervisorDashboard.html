@@ -10,8 +10,13 @@
 
 <script type="module">
     import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
+     import CONFIG from '../../wwwroot/js/config.js';
     // Kiểm tra đúng role mới cho ở lại
-    authGuard.authorize('Supervisor'); 
+    authGuard.authorize('Supervisor');   
+    document.getElementById('btn-staff-logout').addEventListener('click', () => {
+        localStorage.clear();
+        window.location.href = CONFIG.PAGES.STAFF_LOGIN;
+    });
 </script>
 
 <body>
@@ -20,6 +25,9 @@
             <div class="header-left">
                 <h1 class="brand-title">SUPERVISOR DASHBOARD</h1>
                 <p class="user-welcome">Xin chào, <span id="display-name">Người dùng</span></p>
+                <button id="btn-staff-logout" class="btn-logout">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </button>
             </div>
             <div class="header-right">
                 <button id="btn-stats" class="btn-secondary"><i class="fas fa-chart-bar"></i> Thống kê</button>
@@ -30,6 +38,7 @@
         <section class="section-box">
             <div class="section-header-flex">
                 <h2 class="section-title">Job Card đang chờ kiểm tra tiếp theo</h2>
+                <br>
                 <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" id="job-search" placeholder="Tìm biển số, mã lệnh...">
