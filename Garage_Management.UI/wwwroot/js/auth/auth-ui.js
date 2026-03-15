@@ -21,6 +21,11 @@ export const authUi = {
             cpwMsg: document.getElementById('cpw-msg'),
             btnViewBookings: document.getElementById('btn-view-bookings'),
             carListBody: document.getElementById('car-list-body'),
+            btnOpenAddVehicle: document.getElementById('btn-add-vehicle'),
+            modalAddVehicle: document.getElementById('add-vehicle-modal'),
+            btnCloseVehicleModal: document.getElementById('close-vehicle-modal'),
+            formAddVehicle: document.getElementById('add-vehicle-form'),
+            modelSelect: document.getElementById('v-model'),
             historyListBody: document.getElementById('history-list-body')
         };
     },
@@ -111,5 +116,33 @@ export const authUi = {
                 </div>
             `;
         }).join('');
-    }
+    },
+
+    renderMyVehicles: (container, vehicles) => {
+        if (!vehicles || vehicles.length === 0) {
+            container.innerHTML = `
+                <tr>
+                    <td colspan="3" style="padding: 20px; text-align: center; color: #999;">
+                        Bạn chưa đăng ký xe nào trong hệ thống.
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        container.innerHTML = vehicles.map(v => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px; font-weight: bold; color: #d32f2f;">${v.licensePlate}</td>
+                <td style="padding: 12px;">${v.brandName} | ${v.modelName}</td>
+                <td style="padding: 12px;">${v.year || 'N/A'}</td>
+            </tr>
+        `).join('');
+    },
+
+    renderModelOptions(models) {
+        if (this.elements.modelSelect) {
+            this.elements.modelSelect.innerHTML = models.map(m => 
+                `<option value="${m.modelId}">${m.modelName}</option>`
+            ).join('');
+        }
+    },
 };

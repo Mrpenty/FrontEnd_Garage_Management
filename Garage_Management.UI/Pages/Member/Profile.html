@@ -55,7 +55,12 @@
             <div class="profile-main-content" style="flex: 1.5; display: flex; flex-direction: column; gap: 20px;">
                 
                 <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h3 style="margin-bottom: 15px; color: #333;"><i class="fa-solid fa-car"></i> Danh sách xe của bạn</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #333;"><i class="fa-solid fa-car"></i> Danh sách xe của bạn</h3>
+                        <button id="btn-add-vehicle" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
+                            <i class="fa-solid fa-plus"></i> Thêm xe mới
+                        </button>
+                    </div>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="border-bottom: 2px solid #eee; text-align: left;">
@@ -114,6 +119,36 @@
                 </div>
                 <div id="cpw-msg" style="margin-bottom: 15px; font-size: 14px;"></div>
                 <button type="submit" class="btn-submit" style="width: 100%; background: #d32f2f; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Cập nhật mật khẩu</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-vehicle-modal" class="modal" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
+        <div style="background: white; width: 450px; margin: 5% auto; padding: 25px; border-radius: 8px; position: relative;">
+            <span id="close-vehicle-modal" style="position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 24px;">&times;</span>
+            <h3 style="margin-bottom: 20px; color: #28a745;">Đăng ký xe mới</h3>
+            
+            <form id="add-vehicle-form">
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px;">Mẫu xe (Model)</label>
+                    <select id="v-model" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></select>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px;">Biển số xe</label>
+                    <input type="text" id="v-plate" placeholder="VD: 29A-12345" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display:block; margin-bottom:5px;">Năm sản xuất</label>
+                        <input type="number" id="v-year" value="2024" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display:block; margin-bottom:5px;">Số khung (VIN)</label>
+                        <input type="text" id="v-vin" placeholder="Tùy chọn" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                </div>
+                <div id="v-msg" style="margin-bottom: 15px; font-size: 14px;"></div>
+                <button type="submit" class="btn-submit" style="width: 100%; background: #28a745; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">Xác nhận thêm xe</button>
             </form>
         </div>
     </div>

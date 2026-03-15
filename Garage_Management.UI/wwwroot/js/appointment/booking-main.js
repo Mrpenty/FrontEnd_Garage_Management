@@ -44,6 +44,24 @@ function initEvents() {
     window.handleVehicleStep = handleVehicleStep;
     window.nextStep = nextStep;
     window.toggleVehicleSource = toggleVehicleSource;
+
+    window.toggleCustomInput = function(type) {
+        const select = document.getElementById(`vehicle${type}`);
+        const input = document.getElementById(`custom${type}`);
+        const isCustom = input.classList.contains('hidden');
+
+        if (isCustom) {
+            input.classList.remove('hidden');
+            select.classList.add('hidden');
+            if (type === 'Brand') {
+                // Nếu hãng xe nhập tay, thì loại xe cũng phải cho nhập tay
+                toggleCustomInput('Model');
+            }
+        } else {
+            input.classList.add('hidden');
+            select.classList.remove('hidden');
+        }
+    };
 }
 
 // --- Logic functions ---
@@ -171,14 +189,30 @@ function handleVehicleStep() {
     } else {
         // Lấy từ form chọn hãng/loại
         const brandSelect = document.getElementById("vehicleBrand");
+        const customBrandInput = document.getElementById("customBrand");
+        if (!customBrandInput.classList.contains('hidden') && customBrandInput.value.trim() !== "") {
+            bookingState.brandName = customBrandInput.value.trim();
+            bookingState.brandId = 0; // 0 để BE biết đây là hãng mới
+        } else if (brandSelect.value) {
+            bookingState.brandName = brandSelect.options[brandSelect.selectedIndex].text;
+            bookingState.brandId = parseInt(brandSelect.value);
+        } else {
+            return alert("Vui lòng chọn hoặc nhập hãng xe!");
+        }
+
         const modelSelect = document.getElementById("vehicleModel");
-        if (!brandSelect.value || !modelSelect.value) return alert("Vui lòng chọn xe!");
+        const customModelInput = document.getElementById("customModel");
+        if (!customModelInput.classList.contains('hidden') && customModelInput.value.trim() !== "") {
+            bookingState.modelName = customModelInput.value.trim();
+            bookingState.modelId = 0;
+        } else if (modelSelect.value) {
+            bookingState.modelName = modelSelect.options[modelSelect.selectedIndex].text;
+            bookingState.modelId = parseInt(modelSelect.value);
+        } else {
+            return alert("Vui lòng chọn hoặc nhập loại xe!");
+        }
 
         bookingState.vehicleId = 0; // Hoặc null tùy BE
-        bookingState.brandName = brandSelect.options[brandSelect.selectedIndex].text;
-        bookingState.modelName = modelSelect.options[modelSelect.selectedIndex].text;
-        bookingState.modelId = parseInt(modelSelect.value);
-        bookingState.brandId = parseInt(document.getElementById("vehicleBrand").value);
     }
     
     loadServices();
@@ -229,7 +263,7 @@ async function handleFormSubmit(e) {
         AppointmentDateTime: dateObj.toISOString(),
         ServiceIds: (bookingState.services || []).map(id => Number(id)),
         SparePartsIds: (bookingState.parts || []).map(id => Number(id)),
-        VehicleModelId: bookingState.modelId ? Number(bookingState.modelId) : 0,
+        VehicleModelId: bookingState.modelId ? Number(bookingState.modelId) : null,
         CustomVehicleBrand: bookingState.brandName,
         CustomVehicleModel: bookingState.modelName,
         LicensePlate: document.getElementById("licensePlate").value.trim(),

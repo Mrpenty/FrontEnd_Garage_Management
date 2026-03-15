@@ -3,6 +3,8 @@ import CONFIG from '../config.js';
 const AUTH_URL = `${CONFIG.API_BASE_URL}/Auth`;
 const USER_URL = `${CONFIG.API_BASE_URL}/User`;
 const APPOINTMENT_URL = `${CONFIG.API_BASE_URL}/Appointments`;
+const VEHICLE_URL = `${CONFIG.API_BASE_URL}/Vehiclies`;
+const MODEL_URL = `${CONFIG.API_BASE_URL}/VehicleModels`;
 
 export const authApi = {
     //API gửi thông tin đăng nhập
@@ -123,6 +125,18 @@ export const customerApi = {
     },
 
     //API xem xe cá nhân
+    async getMyVehicles(page = 1, pageSize = 10) {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${VEHICLE_URL}/Customer/MyVehicle?page=${page}&pageSize=${pageSize}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return await response.json();
+    },
+
 
     //API xem Appointment cá nhân
     getMyAppointments: async (page = 1, pageSize = 10) => {
@@ -133,6 +147,26 @@ export const customerApi = {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
+        });
+        return await response.json();
+    },
+
+    // Lấy danh sách Model xe để chọn
+    async getVehicleModels(page = 1, pageSize = 50) {
+        const response = await fetch(`${MODEL_URL}?page=${page}&pageSize=${pageSize}`);
+        return await response.json();
+    },
+
+    // API thêm xe mới
+    async addVehicle(vehicleData) {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${VEHICLE_URL}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(vehicleData)
         });
         return await response.json();
     }

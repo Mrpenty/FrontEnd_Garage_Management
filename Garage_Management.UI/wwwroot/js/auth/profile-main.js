@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = 'UserBookings.html';
         };
         loadUserProfile(); // Hàm hiển thị thông tin cá nhân
+        const carListContainer = document.getElementById('car-list-body');
+        if (carListContainer) {
+            loadCustomerVehicles(carListContainer);
+        }
         setupProfileEvents();
     }
 
@@ -19,8 +23,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Gọi hàm tải dữ liệu ngay khi trang load
         loadCustomerAppointments(bookingsContainer);
     }
+    
 });
 
+const ui = authUi.elements;
+ui.btnOpenAddVehicle?.addEventListener('click', async () => {
+        ui.modalAddVehicle.style.display = 'block';
+        // Load danh sách model nếu chưa có
+        if (ui.modelSelect.options.length === 0) {
+            const res = await customerApi.getVehicleModels(1, 100);
+            if (res.success) {
+                authUi.renderModelOptions(res.data.pageData);
+            }
+        }
+    });
+
+    // Đóng modal
+    ui.btnCloseVehicleModal?.addEventListener('click', () => {
+        ui.modalAddVehicle.style.display = 'none';
+    });
+
+    // Xử lý nộp form thêm xe
+    ui.formAddVehicle?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Lấy thông tin user hiện tại từ Profile (giả sử bạn lưu ở biến global hoặc lấy từ DOM)
+        const customerId = localStorage.getItem('customerId'); // Hoặc lấy từ data profile
+
+        const vehicleData = {
+            customerId: parseInt(customerId),
+            modelId: parseInt(document.getElementById('v-model').value),
+            licensePlate: document.getElementById('v-plate').value,
+            year: parseInt(document.getElementById('v-year').value),
+            vin: document.getElementById('v-vin').value,
+            createdBy: parseInt(customerId)
+        };
+
+        const res = await customerApi.addVehicle(vehicleData);
+        const msgArea = document.getElementById('v-msg');
+
+        if (res.success) {
+            msgArea.innerHTML = `<span style="color: green;">Thêm xe thành công!</span>`;
+            setTimeout(() => {
+                ui.modalAddVehicle.style.display = 'none';
+                location.reload(); // Load lại để thấy xe mới
+            }, 1500);
+        } else {
+            msgArea.innerHTML = `<span style="color: red;">${res.message}</span>`;
+        }
+    });
 // Hàm chính để tải lịch hẹn
 async function loadCustomerAppointments(container) {
     try {
@@ -34,6 +85,23 @@ async function loadCustomerAppointments(container) {
     } catch (error) {
         console.error("Lỗi tải lịch hẹn:", error);
         container.innerHTML = `<div class="alert alert-danger">Không thể kết nối máy chủ.</div>`;
+    }
+}
+
+async function loadCustomerVehicles(container) {
+    try {
+        const res = await customerApi.getMyVehicles(1, 10);
+        
+        if (res.success) {
+            // Lưu ý: Backend trả về PagedResult nên dữ liệu nằm trong res.data.items hoặc res.data.pageData
+            const vehicleList = res.data.items || res.data.pageData || [];
+            authUi.renderMyVehicles(container, vehicleList);
+        } else {
+            console.error("Lỗi lấy danh sách xe:", res.message);
+        }
+    } catch (error) {
+        console.error("Lỗi kết nối API xe:", error);
+        container.innerHTML = `<tr><td colspan="3" style="text-align:center; color:red;">Lỗi tải dữ liệu</td></tr>`;
     }
 }
 

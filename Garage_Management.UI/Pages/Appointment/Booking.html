@@ -41,15 +41,27 @@
                     <div id="new-vehicle-group">
                         <div class="form-group">
                             <label>Hãng xe</label>
-                            <select id="vehicleBrand">
-                                <option value="">-- Chọn hãng xe --</option>
-                            </select>
+                            <div class="input-group-custom">
+                                <select id="vehicleBrand">
+                                    <option value="">-- Chọn hãng xe --</option>
+                                </select>
+                                <input type="text" id="customBrand" class="hidden" placeholder="Nhập hãng xe khác...">
+                                <button type="button" class="btn-add-custom" onclick="toggleCustomInput('Brand')">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Loại xe</label>
-                            <select id="vehicleModel" disabled>
-                                <option value="">-- Chọn loại xe --</option>
-                            </select>
+                            <div class="input-group-custom">
+                                <select id="vehicleModel" disabled>
+                                    <option value="">-- Chọn loại xe --</option>
+                                </select>
+                                <input type="text" id="customModel" class="hidden" placeholder="Nhập loại xe khác...">
+                                <button type="button" class="btn-add-custom" onclick="toggleCustomInput('Model')">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
