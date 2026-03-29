@@ -5,6 +5,7 @@ const USER_URL = `${CONFIG.API_BASE_URL}/User`;
 const APPOINTMENT_URL = `${CONFIG.API_BASE_URL}/Appointments`;
 const VEHICLE_URL = `${CONFIG.API_BASE_URL}/Vehiclies`;
 const MODEL_URL = `${CONFIG.API_BASE_URL}/VehicleModels`;
+const JOBCARD_URL = `${CONFIG.API_BASE_URL}/JobCards`;
 
 export const authApi = {
     //API gửi thông tin đăng nhập
@@ -171,3 +172,89 @@ export const customerApi = {
         return await response.json();
     }
 }
+
+export const EstimateAPI = {
+    // Lấy báo giá theo JobCardId
+    getByJobCard: async (jcId) => {
+        const res = await fetch(`${CONFIG.API_BASE_URL}/RepairEstimates/job-cards/${jcId}`, { headers: { 'Content-Type': 'application/json' } });
+        return await res.json();
+    },
+
+    // 1. Cập nhật status cho từng Phụ tùng trong báo giá
+    updateSparePartStatus: async (estId, spId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/RepairEstimateSpareParts/${estId}/${spId}/status`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: status})
+        });
+    },
+
+    // 2. Cập nhật status cho từng Dịch vụ trong báo giá
+    updateServiceStatus: async (estId, svId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/RepairEstimateServices/${estId}/${svId}/status`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ status: status})
+        });
+    },
+
+    // 3. Cập nhật status của bản ghi RepairEstimate (Bảng tổng)
+    updateEstimateStatus: async (estId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/RepairEstimates/${estId}/status`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ status: status})
+        });
+    },
+
+    // 4. Đồng bộ phụ tùng sang JobCard thực tế
+    syncSpareParts: async (jcId, data) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/JobCardSparepart/${jcId}/spare-parts`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(data) // Gửi trực tiếp mảng Object
+        });
+    },
+
+    // 5. Cập nhật status JobCard (7: Đã duyệt, 10: Hủy)
+    updateJobCardStatus: async (jcId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/JobCards/${jcId}/status`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ status: status})
+        });
+    },
+
+    //Lấy danh dách JobCard của khách hàng
+    getMyJobCard: async (customerId) => {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${JOBCARD_URL}/customer/${customerId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return await response.json();
+    }
+};
