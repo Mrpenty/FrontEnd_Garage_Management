@@ -2,24 +2,8 @@ export const jobcardUI = {
     // Thêm vào trong export const jobcardUI = { ... }
     renderDashboardLayout: (container) => {
         container.innerHTML = `
-            <div class="top-widgets">
-                <div class="stats-card">
-                    <div class="stat-item"><span>Xe Đang Làm:</span><span class="stat-value red" id="stat-working">0</span></div>
-                    <div class="stat-item"><span>Xe Vào Hôm Nay:</span><span class="stat-value red" id="stat-today">0</span></div>
-                    <div class="stat-item"><span>Số lượng xe tháng này:</span><span class="stat-value red" id="stat-month">0</span></div>
-                    <div class="revenue-item">
-                        <span>Doanh Thu Tháng:</span>
-                        <div class="revenue-value red" id="stat-revenue">0đ</div>
-                    </div>
-                </div>
-                <div class="notice-card">
-                    <div class="notice-header">THÔNG BÁO</div>
-                    <div class="notice-body">Hệ thống hoạt động ổn định.</div>
-                </div>
-            </div>
-
             <div class="job-card-section">
-                <h2 class="table-title-main">DANH SÁCH JOB CARD</h2>
+                <h2 class="table-title-main">Danh sách phiếu sửa chữa</h2>
                 <div class="table-toolbar">
                     <div class="left-tools">
                         <div class="search-box">
@@ -41,7 +25,7 @@ export const jobcardUI = {
                                 <th>Loại xe</th>
                                 <th>Biển số xe</th>
                                 <th>Check-in</th>
-                                <th>Đặt lịch</th>
+                                <th>Phụ trách</th>
                                 <th>Tình trạng</th>
                                 <th class="text-center">Thao tác</th>
                             </tr>
@@ -173,12 +157,12 @@ export const jobcardUI = {
                             </div>
                             <div class="grid-2-cols">
                                 <div class="form-group">
-                                    <label>Email (Tùy chọn)</label>
-                                    <input type="email" id="newCustomerEmail" placeholder="Nhập email...">
+                                    <label>Email</label>
+                                    <input type="email" id="newCustomerEmail" required placeholder="Nhập email...">
                                 </div>
                                 <div class="form-group">
-                                    <label>Địa chỉ (Tùy chọn)</label>
-                                    <input type="text" id="newCustomerAddress" placeholder="Nhập địa chỉ...">
+                                    <label>Địa chỉ</label>
+                                    <input type="text" id="newCustomerAddress" required placeholder="Nhập địa chỉ...">
                                 </div>
                             </div>
                             
@@ -238,12 +222,18 @@ export const jobcardUI = {
         `;
     },
 
-    // Thêm hàm render cho Supervisor nếu chưa có
-    renderSupervisorSelect: (selectElement, staffs) => {
-        let html = '<option value="">-- Chọn Supervisor --</option>';
-        staffs.forEach(s => {
-            html += `<option value="${s.staffId}">${s.fullName}</option>`;
-        });
+    // Render danh sách Supervisor
+    renderSupervisorSelect: (selectElement, users) => {
+        let html = '<option value="">-- Chọn Supervisor đảm nhận --</option>';
+        if (Array.isArray(users) && users.length > 0) {
+            users.forEach(u => {   
+                const id = u.userId || u.staffId || u.id;
+                const name = u.fullName || u.userName || "Không rõ tên";
+                html += `<option value="${id}">${name}</option>`;
+            });
+        } else {
+            html = '<option value="">Không có nhân viên nào</option>';
+        }
         selectElement.innerHTML = html;
     },
 
@@ -284,27 +274,45 @@ export const jobcardUI = {
         selectElement.innerHTML = html;
     },
 
-    // Render danh sách dịch vụ đã chọn vào bảng
-    renderSelectedServices: (tableBodyElement, selectedArray, onRemoveCallback) => {
-        if (selectedArray.length === 0) {
-            tableBodyElement.innerHTML = `<tr><td colspan="3" style="text-align:center">Chưa có dịch vụ nào</td></tr>`;
+    // Render danh sách JobCard ra bảng chính
+    renderJobCardTable: (tbody, items) => {
+        if (!items || items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center">Không có dữ liệu JobCard</td></tr>`;
             return;
         }
-        tableBodyElement.innerHTML = selectedArray.map((s, index) => `
-            <tr>
-                <td><strong>${s.name}</strong></td>
-                <td style="font-size: 0.85rem; color: #666;">${s.description || ''}</td>
-                <td>
-                    <button type="button" class="btn-remove-service" data-index="${index}">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-
-        tableBodyElement.querySelectorAll('.btn-remove-service').forEach(btn => {
-            btn.onclick = () => onRemoveCallback(parseInt(btn.dataset.index));
-        });
+        tbody.innerHTML = items.map(item => {
+            // Lấy thông tin xe từ object con 'vehicle'
+            const vehicle = item.vehicle || {}; 
+            const supervisor = item.supervisor || {};
+            return `
+                <tr>
+                    <td>#${item.jobCardId}</td>
+                    <td>${item.customerName || 'N/A'}</td>
+                    <td>${vehicle.brandName || '-'}</td>
+                    <td>${vehicle.modelName || '-'}</td>
+                    <td><span class="plate-badge">${vehicle.licensePlate || 'N/A'}</span></td>
+                    <td>${item.startDate ? new Date(item.startDate).toLocaleString('vi-VN') : 'N/A'}</td>
+                    <td>
+                        <span class="supervisor-name">
+                            <i class="fa-solid fa-user-gear"></i> ${supervisor.fullName || 'Chưa phân công'}
+                        </span>
+                    </td>                    <td>
+                        <span class="status-badge status-${item.status}">
+                            ${item.status === 1 ? 'Chờ kiểm tra' : 'Hoàn thành'}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn-action view" data-id="${item.jobCardId}" title="Chi tiết">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <button class="btn-action print" data-id="${item.jobCardId}" 
+                                onclick="showPrintPreview(${item.jobCardId})" title="In phiếu">
+                            <i class="fa-solid fa-print"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     },
 
     // Render kết quả tìm kiếm khách hàng (Autocomplete)
@@ -385,30 +393,6 @@ export const jobcardUI = {
         };
     },
 
-    // Render danh sách JobCard ra bảng chính
-    renderJobCardTable: (tbody, items) => {
-        if (!items || items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center">Không có dữ liệu JobCard</td></tr>`;
-            return;
-        }
-        tbody.innerHTML = items.map(item => `
-            <tr>
-                <td>#${item.jobCardId}</td>
-                <td>${item.customerName || 'N/A'}</td>
-                <td>${item.brandName || '-'}</td>
-                <td>${item.modelName || '-'}</td>
-                <td><span class="plate-badge">${item.licensePlate}</span></td>
-                <td>${item.startDate ? new Date(item.startDate).toLocaleString('vi-VN') : 'N/A'}</td>
-                <td>${item.appointmentId ? '<i class="fa-solid fa-calendar-check text-success"></i>' : '-'}</td>
-                <td><span class="status-badge status-${item.status}">${item.status === 1 ? 'Đang chờ' : 'Hoàn thành'}</span></td>
-                <td class="text-center">
-                    <button class="btn-action view" data-id="${item.jobCardId}" title="Chi tiết"><i class="fa-solid fa-eye"></i></button>
-                    <button class="btn-action print" data-id="${item.jobCardId} onclick="showPrintPreview()" title="In phiếu"><i class="fa-solid fa-print"></i></button>
-                </td>
-            </tr>
-        `).join('');
-    },
-
     // Hiển thị thông báo kết quả tìm lịch hẹn
     renderAppointmentAlert: (container, appointment) => {
         container.style.display = 'block';
@@ -476,23 +460,6 @@ export const jobcardUI = {
         });
 
         tbody.appendChild(row);
-    },
-
-    renderSupervisorSelect: (selectElement, users) => {
-        let html = '<option value="">-- Chọn Supervisor đảm nhận --</option>';
-        
-        // Kiểm tra kỹ users có phải là mảng không
-        if (Array.isArray(users) && users.length > 0) {
-            users.forEach(u => {   
-                const id = u.userId || u.id;
-                const name = u.fullName || u.userName || "Không rõ tên";
-                html += `<option value="${id}">${name}</option>`;
-            });
-        } else {
-            html = '<option value="">Không có nhân viên nào (Kiểm tra lại BE)</option>';
-        }
-        
-        selectElement.innerHTML = html;
     },
 
     renderJobCardDetailModal: (data) => {

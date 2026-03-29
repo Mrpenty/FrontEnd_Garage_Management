@@ -175,17 +175,12 @@ export const customerApi = {
 };
 
 export const appointmentApi = {
-    checkByPhone: async (phone) => {
-        // Query tham số: Phone để lọc, PageSize lớn để lấy hết nếu 1 SĐT có nhiều lịch
-        const url = `${APPOINTMENT_URL}?Search=${encodeURIComponent(phone)}&Page=1&PageSize=1`;
+        getAll: async (params) => {
+        const query = new URLSearchParams(params).toString();
+        const url = `${APPOINTMENT_URL}?${query}`;
         const res = await fetch(url, { 
-            method: 'GET',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-            }
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
         });
-        if (!res.ok) throw new Error("Lỗi khi tra cứu lịch hẹn");
         return await res.json();
     }
 }

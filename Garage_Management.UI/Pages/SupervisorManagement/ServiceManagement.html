@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý dịch vụ - MGMS</title>
+    <link rel="stylesheet" href="../../wwwroot/css/supervisor-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="supervisor-container">
+        <header class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <h1 class="brand-title">SERVICE MANAGEMENT</h1>
+                    <p class="user-welcome">Xin chào, <span id="display-name">Người dùng</span></p>
+                </div>
+                <button id="btn-staff-logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+            </div>
+            <nav class="header-navigation">
+                <a href="../Dashboard/SupervisorDashboard.html" class="nav-btn"><i class="fas fa-tools"></i> Quản lý Workbay</a>
+                <a href="ServiceManagement.html" class="nav-btn active"><i class="fas fa-concierge-bell"></i> Quản lý dịch vụ</a>
+                <a href="VehicleManagement.html" class="nav-btn"><i class="fas fa-car-side"></i> Quản lý phương tiện</a>
+                <a href="inventory-management.html" class="nav-btn"><i class="fas fa-warehouse"></i> Xem kho phụ tùng</a>
+                <a href="statistics.html" class="nav-btn"><i class="fas fa-chart-bar"></i> Thống kê</a>
+            </nav>
+        </header>
+
+        <section class="section-box">
+            <div class="section-header-flex">
+                <h2 class="section-title">Danh mục dịch vụ kỹ thuật</h2>
+                <button class="btn-primary" onclick="showAddServiceModal()"><i class="fas fa-plus"></i> Thêm dịch vụ mới</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Tên dịch vụ</th>
+                            <th>Mô tả</th>
+                            <th>Tổng TG dự kiến</th>
+                            <th>Số Task</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="service-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div id="service-modal" class="modal">
+        <div class="modal-content">
+            <h3>Thêm dịch vụ kỹ thuật</h3>
+            <form id="service-form">
+                <div class="form-group">
+                    <label>Tên dịch vụ</label>
+                    <input type="text" name="serviceName" required placeholder="VD: Bảo dưỡng phanh">
+                </div>
+                <div class="form-group">
+                    <label>Mô tả quy trình</label>
+                    <textarea name="description" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModals()">Hủy</button>
+                    <button type="submit" class="btn-primary">Tạo dịch vụ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="task-modal" class="modal">
+        <div class="modal-content" style="width: 700px;">
+            <h3 id="task-modal-title">Danh sách các bước thực hiện (Tasks)</h3>
+            <div id="task-list-container" class="task-list-display">
+                </div>
+            <hr>
+            <h4>Thêm bước (Task) mới</h4>
+            <form id="task-form" class="task-form-inline">
+                <input type="hidden" id="editing-task-id" value="">
+                <input type="hidden" id="current-service-id">
+                <input type="text" id="taskName" placeholder="Tên bước (VD: Xả dầu)" required>
+                <input type="number" id="estimateMinute" placeholder="Phút" style="width: 80px;" required>
+                <input type="number" id="taskOrder" placeholder="Thứ tự" style="width: 80px;" required>
+                <input type="text" id="taskNote" placeholder="Ghi chú kỹ thuật">
+                <button type="submit" class="btn-primary">Thêm Task</button>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModals()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../../wwwroot/js/service/service-main.js"></script>
+</body>
+</html>

@@ -1,11 +1,12 @@
 export const homepageUI = {
-    renderServices: (container, services, formatCurrencyFn) => {
+    renderServices: (container, services, formatCurrencyFn, paginationInfo = {}) => {
+        const { currentPage = 1, totalPages = 1, onPageChange } = paginationInfo;
         if (!services || services.length === 0) {
             container.innerHTML = `<p class="no-service">Không có dịch vụ...</p>`;
             return;
         }
 
-        container.innerHTML = services.map(service => `
+        let servicesHtml = services.map(service => `
             <div class="service-card" data-id="${service.serviceId}">
                 <div class="service-icon-wrapper">
                     <i class="fas fa-tools"></i>
@@ -24,6 +25,13 @@ export const homepageUI = {
             </div>
         `).join('');
 
+        container.innerHTML = `
+            <div class="services-grid-content">
+                ${servicesHtml}
+            </div>
+            <div id="pagination-container" class="services-pagination-container"></div>
+        `;
+
         // Gán sự kiện click cho từng card
         container.querySelectorAll('.service-card').forEach(card => {
             card.onclick = () => {
@@ -32,6 +40,11 @@ export const homepageUI = {
                 homepageUI.showServiceDetail(service);
             };
         });
+
+        const paginationContainer = container.querySelector('.services-pagination-container');
+        if (onPageChange) {
+            homepageUI.renderPagination(paginationContainer, currentPage, totalPages, onPageChange);
+        }
     },
 
     showServiceDetail: (service) => {
@@ -84,7 +97,7 @@ export const homepageUI = {
                     <i class="fas fa-chevron-left"></i>
                  </button>`;
 
-        // Các số trang
+        // Thuật toán hiển thị số trang (có thể tối ưu thêm nếu nhiều trang)
         for (let i = 1; i <= totalPages; i++) {
             html += `<button class="btn-page ${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
         }
@@ -97,11 +110,10 @@ export const homepageUI = {
         html += `</div>`;
         container.innerHTML = html;
 
-        // Gán sự kiện
-        container.querySelectorAll('.btn-page').forEach(btn => {
+        container.querySelectorAll('.btn-page:not([disabled])').forEach(btn => {
             btn.onclick = () => {
                 const targetPage = parseInt(btn.dataset.page);
-                if (targetPage !== page) onPageChange(targetPage);
+                onPageChange(targetPage);
             };
         });
     }

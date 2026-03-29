@@ -20,22 +20,18 @@ export async function initJobCardModule() {
         btnCreateJobCard: document.getElementById('btn-create-jobcard'),
         btnOpenAddVehicle: document.getElementById('btnOpenAddVehicle'),
         btnOpenAddCustomer: document.getElementById('btnOpenAddCustomer'),
-        
         selectVehicle: document.getElementById('selectVehicle'),
         selectService: document.getElementById('selectService'),
         btnAddService: document.getElementById('btnAddService'),
-        servicesBody: document.getElementById('selectedServicesBody'),
-        
+        servicesBody: document.getElementById('selectedServicesBody'),  
         searchCustomerInput: document.getElementById('searchCustomerInput'),
         selectedCustomerId: document.getElementById('selectedCustomerId'),
         customerSearchResults: document.getElementById('customerSearchResults'),
-        
         brandSelect: document.getElementById('newVehicleBrand'),
         modelSelect: document.getElementById('newVehicleModel'),
         createVehicleForm: document.getElementById('createVehicleForm'),
         createJobCardForm: document.getElementById('createJobCardForm'),
         createCustomerForm: document.getElementById('createCustomerForm'),
-
         jobCardBody: document.getElementById('job-card-body'),
         btnCheckAppointment: document.getElementById('btnCheckAppointment'),
         checkPhoneInput: document.getElementById('checkPhone'),
@@ -64,7 +60,7 @@ export async function initJobCardModule() {
 async function loadJobCards(tbody) {
     try {
         const res = await jobcardApi.getAll({ PageIndex: 1, PageSize: 20 });
-        const items = Array.isArray(res) ? res : (res.data?.pageData || []);
+        const items = res.pageData || (res.data?.pageData) || (Array.isArray(res) ? res : []);
         console.log("Dữ liệu nhận được:", items);
         jobcardUI.renderJobCardTable(tbody, items);
         initTableActions(tbody);
@@ -98,17 +94,6 @@ async function loadServiceList(selectElement) {
     } catch (err) {
         console.error("Lỗi tải dịch vụ:", err);
     }
-}
-
-async function getBusyAppointmentIds() {
-    // Lấy danh sách JobCard hiện có để xem những lịch nào đã được dùng
-    const res = await jobcardApi.getAll({ PageIndex: 1, PageSize: 1000 }); 
-    const jobcards = Array.isArray(res) ? res : (res.data?.pageData || []);
-    
-    // Trả về một mảng chứa tất cả AppointmentId đã có JobCard
-    return jobcards
-        .filter(jc => jc.appointmentId != null)
-        .map(jc => jc.appointmentId);
 }
 
 // Hàm xử lý khi bấm nút View/Detail
@@ -274,38 +259,99 @@ function renderServiceTable(elements) {
     });
 }
 
+async function getBusyAppointmentIds() {
+    try {
+        const res = await jobcardApi.getAll({ PageIndex: 1, PageSize: 1000 });
+        const jobcards = res.pageData || res.data?.pageData || (Array.isArray(res) ? res : []);
+
+        return new Set(
+            jobcards
+                .filter(jc => jc.appointmentId != null)
+                .map(jc => jc.appointmentId)
+        );
+    } catch (err) {
+        console.error("getBusyAppointmentIds error:", err);
+        return new Set();
+    }
+}
+
 function initAppointmentCheck(elements) {
     elements.btnCheckAppointment?.addEventListener('click', async () => {
         const phone = elements.checkPhoneInput.value.trim();
         if (!phone) return alert("Vui lòng nhập số điện thoại!");
 
         try {
-            elements.appointmentResult.innerHTML = "<em>Đang tìm kiếm...</em>";
+            elements.appointmentResult.innerHTML = "<em>Đang tìm kiếm mã...</em>";
             elements.appointmentResult.style.display = "block";
 
-            // Chạy song song: Tìm lịch hẹn và tìm danh sách JobCard đã tạo
+           // 1. Gọi API lấy danh sách theo SĐT
             const [aptRes, busyAptIds] = await Promise.all([
-                appointmentApi.checkByPhone(phone),
+                appointmentApi.getAll({
+                Search: phone, 
+                Page: 1,  
+                PageSize: 20,
+                Status: "InProgress" 
+            }),
                 getBusyAppointmentIds()
             ]);
+
+            let list = aptRes.pageData || (aptRes.data?.pageData) || (Array.isArray(aptRes) ? aptRes : []);
+
+            if (!list || list.length === 0) {
+                elements.appointmentResult.innerHTML = `<div class="info-alert error">Không tìm thấy lịch hẹn.</div>`;
+                return;
+            }
+
+             // 2. Filter: loại Completed + đã có JobCard
+            list = list.filter(apt => {
+                const isCompleted = apt.status === "Completed";
+                const isBusy = busyAptIds.has(apt.appointmentId)
+                return !isCompleted && !isBusy;
+            });
+
+            if (list.length === 0) {
+                elements.appointmentResult.innerHTML = `<div class="info-alert warning">Không có lịch hẹn hợp lệ.</div>`;
+                return;
+            }
             
-            if (aptRes.success && aptRes.data?.pageData?.length > 0) {
-                const availableApts = aptRes.data.pageData.filter(
-                    apt => !busyAptIds.includes(apt.appointmentId)
-                );
-                
-                if (availableApts.length > 0) {
-                    jobcardUI.renderAppointmentList(elements.appointmentResult, availableApts, (selectedApt) => {
-                        applyAppointmentData(selectedApt, elements);
-                    });
-                } else {
-                    elements.appointmentResult.innerHTML = `<div class="info-alert warning">Không còn lịch hẹn trống cho số điện thoại này. Tất cả đã được tạo JobCard.</div>`;
+            // 3. Sort: gần ngày hiện tại nhất (ưu tiên future)
+            const now = Date.now();
+
+            list.sort((a, b) => {
+                const timeA = new Date(a.appointmentDate).getTime();
+                const timeB = new Date(b.appointmentDate).getTime();
+
+                const isFutureA = timeA >= now;
+                const isFutureB = timeB >= now;
+
+                // Ưu tiên future
+                if (isFutureA !== isFutureB) {
+                    return isFutureA ? -1 : 1;
                 }
-            } else {
-                elements.appointmentResult.innerHTML = `<div class="info-alert warning">Không tìm thấy lịch hẹn nào.</div>`;
+
+                // Cùng future hoặc cùng past → so khoảng cách
+                return Math.abs(timeA - now) - Math.abs(timeB - now);
+            });
+
+            // 4. Lấy best appointment
+            const bestAppointment = list[0];
+            
+             // 5. Render list (top 5 cho dễ nhìn)
+            jobcardUI.renderAppointmentList(
+                elements.appointmentResult,
+                list.slice(0, 5),
+                (selectedApt) => {
+                    applyAppointmentData(selectedApt, elements);
+                    addResetButton(elements);
+                }
+            );
+
+            // 6. Auto highlight / select best
+            if (bestAppointment) {
+                applyAppointmentData(bestAppointment, elements);
             }
         } catch (err) {
-            elements.appointmentResult.innerHTML = `<div class="info-alert error">Lỗi: ${err.message}</div>`;
+            elements.appointmentResult.innerHTML = `<div class="info-alert error">Lỗi hệ thống khi tìm mã.</div>`;
         }
     });
 }
@@ -354,7 +400,7 @@ function initCustomerLogic(elements) {
         e.preventDefault();
         const fullName = document.getElementById('newCustomerName').value.trim();
         const nameParts = fullName.split(' ');
-        const firstName = nameParts.length > 1 ? nameParts.pop() : fullInputName;
+        const firstName = nameParts.length > 1 ? nameParts.pop() : fullName;
         const lastName = nameParts.join(' ') || "";
         // 1. Thu thập dữ liệu từ form
         const customerData = {
@@ -378,7 +424,7 @@ function initCustomerLogic(elements) {
                 
                 // 3. Cập nhật UI: Đóng modal và điền thông tin vào ô tìm kiếm chính
                 elements.modalAddCustomer.style.display = 'none';
-                elements.searchCustomerInput.value = `${customerData.fullName} - ${customerData.phone}`;
+                elements.searchCustomerInput.value = `${fullName} - ${customerData.phoneNumber}`;
                 
                 // Giả sử API trả về ID của khách hàng mới tạo trong res.data hoặc res.customerId
                 const newCustomerId = res.data?.customerId || res.customerId;
@@ -415,7 +461,8 @@ function initJobCardSubmit(elements) {
         if (!supervisorId) return alert("Vui lòng chỉ định Supervisor (Bắt buộc)!");
 
         const payloadJobCard = {
-            AppointmentId: currentAppointmentId ? parseInt(currentAppointmentId) : null,
+            // AppointmentId: currentAppointmentId ? parseInt(currentAppointmentId) : null,
+            AppointmentId: null,
             CustomerId: parseInt(elements.selectedCustomerId.value),
             VehicleId: parseInt(elements.selectVehicle.value),
             Note: elements.jobCardNote.value,
@@ -453,7 +500,12 @@ function initJobCardSubmit(elements) {
                 alert("Lỗi từ hệ thống: " + (res.message || "Không nhận được ID từ máy chủ"));            }
         } catch (error) {
             console.error("Lỗi Submit:", error);
-            alert("Đã xảy ra lỗi khi kết nối máy chủ.");
+
+            const message =
+                error.response?.data?.message ||
+                error.response?.data ||
+                "Đã xảy ra lỗi khi kết nối máy chủ.";
+            alert(message);
         }
     });
 }

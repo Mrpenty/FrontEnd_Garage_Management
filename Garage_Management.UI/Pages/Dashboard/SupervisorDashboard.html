@@ -22,17 +22,33 @@
 <body>
     <div class="supervisor-container">
         <header class="header">
-            <div class="header-left">
-                <h1 class="brand-title">SUPERVISOR DASHBOARD</h1>
-                <p class="user-welcome">Xin chào, <span id="display-name">Người dùng</span></p>
+            <div class="header-top">
+                <div class="header-left">
+                    <h1 class="brand-title">SUPERVISOR DASHBOARD</h1>
+                    <p class="user-welcome">Xin chào, <span id="display-name">Người dùng</span></p>
+                </div>
                 <button id="btn-staff-logout" class="btn-logout">
                     <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
                 </button>
             </div>
-            <div class="header-right">
-                <button id="btn-stats" class="btn-secondary"><i class="fas fa-chart-bar"></i> Thống kê</button>
-                <button id="btn-view-inventory" class="btn-primary"><i class="fas fa-warehouse"></i> Xem kho phụ tùng</button>
-            </div>
+
+            <nav class="header-navigation">
+                <a href="SupervisorDashboard.html" class="nav-btn active">
+                    <i class="fas fa-tools"></i> Quản lý Workbay
+                </a>
+                <a href="../SupervisorManagement/ServiceManagement.html" class="nav-btn">
+                    <i class="fas fa-concierge-bell"></i> Quản lý dịch vụ
+                </a>
+                <a href="../SupervisorManagement/VehicleManagement.html" class="nav-btn">
+                    <i class="fas fa-car-side"></i> Quản lý phương tiện
+                </a>
+                <a href="inventory-management.html" class="nav-btn">
+                    <i class="fas fa-warehouse"></i> Xem kho phụ tùng
+                </a>
+                <a href="statistics.html" class="nav-btn">
+                    <i class="fas fa-chart-bar"></i> Thống kê
+                </a>
+            </nav>
         </header>
 
         <section class="section-box">
@@ -89,6 +105,60 @@
         </section>
     </div>
 
+    <div id="queue-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Hàng đợi Workbay</h2>
+                <span class="close-modal" onclick="window.closeQueueModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <table class="queue-table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Mã Lệnh</th>
+                            <th>Biển số</th>
+                            <th>Trạng thái</th>
+                            <th>Giờ vào</th>
+                        </tr>
+                    </thead>
+                    <tbody id="queue-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="job-detail-modal" class="modal">
+        <div class="modal-content" style="width: 500px;">
+            <div class="modal-header">
+                <h2 id="jd-title">Chi tiết lệnh sửa chữa</h2>
+                <span class="close-modal" onclick="window.closeJobDetailModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                 <div id="jd-info-basic"></div>
+                 <div id="jd-services-list"></div>
+                 <div id="jd-estimate-report"></div>
+            </div>
+            <div id="jd-action-zone"></div> </div>
+        </div>
+    </div>
     <script type="module" src="../../wwwroot/js/workbay/workbay-main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Tự động sáng đèn nút menu dựa trên URL
+            const currentPath = window.location.pathname.split("/").pop();
+            const navButtons = document.querySelectorAll('.nav-btn');
+            
+            navButtons.forEach(btn => {
+                const btnHref = btn.getAttribute('href');
+                if (currentPath === btnHref || (currentPath === '' && btnHref === 'SupervisorDashboard.html')) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+        });
+    </script>
 </body>
 </html>

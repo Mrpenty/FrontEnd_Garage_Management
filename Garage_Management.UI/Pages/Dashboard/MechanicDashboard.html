@@ -1,5 +1,105 @@
-<script type="module">
-    import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
-    // Kiểm tra đúng role mới cho ở lại
-    authGuard.authorize('Mechanic'); 
-</script>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý công việc | Mechanic Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../wwwroot/css/mechanic-dashboard.css">
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <i class="fa-solid fa-gears"></i> <span>MSMG</span>
+        </div>
+        <div class="nav-item active">
+            <i class="fa-solid fa-table-cells-large"></i> DashBoard
+        </div>
+        <div class="nav-item">
+            <i class="fa-solid fa-clock-rotate-left"></i> Lịch sử sửa chữa
+        </div>
+        <div class="nav-item">
+            <i class="fa-solid fa-wrench"></i> Yêu cầu phụ tùng
+        </div>
+        
+        <div class="sidebar-footer">
+            <div id="btn-staff-logout" class="nav-item">
+                <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <header class="header-section">
+            <h1 class="header-title">Quản lý công việc</h1>
+            <div class="user-info">
+                <span id="mechanic-name">Thợ: Cập nhật sau</span>
+                <div class="status-dot"></div>
+            </div>
+        </header>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(230, 57, 70, 0.1); color: var(--primary-red);">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Danh sách chờ</h3>
+                    <div class="number">3</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(243, 156, 18, 0.1); color: #f39c12;">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Xe đang sửa</h3>
+                    <div class="number">1</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(40, 167, 69, 0.1); color: #28a745;">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Hoàn thành</h3>
+                    <div class="number">5</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">           
+            <div class="column-box waiting-list" id="next-job-container">
+                <div class="column-header">
+                    <i class="fa-solid fa-forward-step"></i> Công việc tiếp theo
+                </div>
+                <div id="next-job-content">
+                    <div class="loading-placeholder">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <p>Đang tải dữ liệu...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column-box repairing-list">
+                <div class="column-header repairing-header">
+                    <i class="fa-solid fa-spinner fa-spin-slow"></i> Xe đang xử lý
+                </div>
+                <div id="repairing-content-area"></div> 
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../../wwwroot/js/inspection/jobcard-inspection-main.js"></script>
+    <script>
+        import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
+        import CONFIG from '../../wwwroot/js/config.js';
+        authGuard.authorize('Mechanic'); 
+        document.getElementById('btn-staff-logout').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = CONFIG.PAGES.STAFF_LOGIN;
+        });
+    </script>
+</body>
+</html>

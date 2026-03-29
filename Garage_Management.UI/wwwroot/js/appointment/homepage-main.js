@@ -2,7 +2,7 @@ import { BookingAPI } from '../appointment/booking-api.js';
 import { homepageUI } from './homepage-ui.js';
 
 let currentPage = 1;
-const pageSize = 6; // Hiện 6 dịch vụ mỗi trang cho đẹp grid
+const pageSize = 4;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadHomepageServices(currentPage);
@@ -10,14 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function loadHomepageServices(page) {
     const serviceGrid = document.querySelector(".service-grid");
-    // Tạo hoặc lấy container phân trang
-    let paginationContainer = document.getElementById("pagination-container");
-    if (!paginationContainer) {
-        paginationContainer = document.createElement("div");
-        paginationContainer.id = "pagination-container";
-        serviceGrid.parentNode.appendChild(paginationContainer);
-    }
-
     serviceGrid.innerHTML = `<div class="loading-spinner">Đang tải dữ liệu...</div>`;
 
     try {
@@ -27,13 +19,16 @@ async function loadHomepageServices(page) {
         const totalItems = result.data?.total || 0;
         const totalPages = Math.ceil(totalItems / pageSize);
 
-        homepageUI.renderServices(serviceGrid, services, formatCurrency);
-        homepageUI.renderPagination(paginationContainer, page, totalPages, (newPage) => {
+        homepageUI.renderServices(serviceGrid, services, formatCurrency, {
+        currentPage: page,
+        totalPages: totalPages,
+        onPageChange: (newPage) => {
             currentPage = newPage;
             loadHomepageServices(newPage);
-            // Cuộn lên đầu phần service khi đổi trang
-            document.querySelector('.services-section').scrollIntoView({ behavior: 'smooth' });
-        });
+            const section = document.querySelector('.services-section');
+            if (section) section.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
 
     } catch (error) {
         console.error("Homepage Error:", error);
