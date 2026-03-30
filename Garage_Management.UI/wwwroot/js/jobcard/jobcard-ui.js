@@ -462,6 +462,39 @@ export const jobcardUI = {
         tbody.appendChild(row);
     },
 
+    // Render danh sách service đã chọn (dùng bởi jobcard-main.js)
+    renderSelectedServices: (tbody, services, onRemove) => {
+        if (!tbody) return;
+
+        if (!Array.isArray(services) || services.length === 0) {
+            tbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="3" class="text-center text-muted">Chua co dich vu nao duoc chon</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = services.map((service, index) => `
+            <tr data-id="${service.id}">
+                <td><strong>${service.name || ''}</strong></td>
+                <td class="col-desc">${service.description || ''}</td>
+                <td class="col-action text-right">
+                    <button type="button" class="btn-remove-service" data-index="${index}" style="color:red; border:none; background:none; cursor:pointer">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        tbody.querySelectorAll('.btn-remove-service').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.dataset.index);
+                if (Number.isFinite(idx)) onRemove(idx);
+            });
+        });
+    },
+
     renderJobCardDetailModal: (data) => {
         // Hàm phụ để chuyển đổi Status số sang chữ
         const getStatusLabel = (s) => {

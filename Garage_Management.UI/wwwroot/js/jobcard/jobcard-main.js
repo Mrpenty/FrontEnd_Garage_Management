@@ -460,14 +460,26 @@ function initJobCardSubmit(elements) {
         if (!vehicleId) return alert("Vui lòng chọn xe!");
         if (!supervisorId) return alert("Vui lòng chỉ định Supervisor (Bắt buộc)!");
 
+        const customerIdNum = Number(elements.selectedCustomerId.value);
+        const vehicleIdNum = Number(elements.selectVehicle.value);
+        const supervisorIdNum = Number(elements.selectSupervisor.value);
+        const appointmentIdNum = Number(currentAppointmentId);
+
+        if (!Number.isFinite(customerIdNum) || customerIdNum <= 0) return alert("CustomerId không hợp lệ!");
+        if (!Number.isFinite(vehicleIdNum) || vehicleIdNum <= 0) return alert("VehicleId không hợp lệ!");
+        if (!Number.isFinite(supervisorIdNum) || supervisorIdNum <= 0) return alert("SupervisorId không hợp lệ!");
+
         const payloadJobCard = {
-            // AppointmentId: currentAppointmentId ? parseInt(currentAppointmentId) : null,
-            AppointmentId: null,
-            CustomerId: parseInt(elements.selectedCustomerId.value),
-            VehicleId: parseInt(elements.selectVehicle.value),
+            CustomerId: customerIdNum,
+            VehicleId: vehicleIdNum,
             Note: elements.jobCardNote.value,
-            SupervisorId: parseInt(elements.selectSupervisor.value) || null
+            SupervisorId: supervisorIdNum
         };
+
+        // Chỉ gửi AppointmentId khi có giá trị hợp lệ để tránh null gây lỗi BE.
+        if (Number.isFinite(appointmentIdNum) && appointmentIdNum > 0) {
+            payloadJobCard.AppointmentId = appointmentIdNum;
+        }
 
         try {
             const res = await jobcardApi.create(payloadJobCard);

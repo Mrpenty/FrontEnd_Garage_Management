@@ -198,7 +198,7 @@ async function refreshData() {
             // Kiểm tra res hoặc res.success tùy thuộc API trả về
             if (res) {
                 alert("Đã điều phối xe vào Workbay thành công!");
-                await refreshData(employeeId); // Tải lại dữ liệu mà không cần reload trang
+                await refreshData(); // Tải lại dữ liệu mà không cần reload trang
             }
         } catch (error) {
             alert("Lỗi khi gán Workbay: " + error.message);
