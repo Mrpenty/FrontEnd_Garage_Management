@@ -96,7 +96,7 @@ async function refreshData() {
             const grid = document.getElementById('workbay-grid');
             const statusTextMap = {
                 2: 'Chờ giao Mechanic', 3: 'Chờ kiểm tra', 4: 'Đang kiểm tra',
-                5: 'Chờ Supervisor duyệt', 6: 'Chờ Khách duyệt', 7: 'Đang sửa chữa'
+                5: 'Chờ Supervisor duyệt', 6: 'Chờ Khách duyệt', 7: 'Đang sửa chữa', 12: "Phát sinh lỗi"
             };
 
             grid.innerHTML = workbays.map(wb => {
@@ -104,7 +104,7 @@ async function refreshData() {
                 const cards = Array.isArray(wb.jobCards) ? wb.jobCards : [];
                 
                 if (cards.length > 0) {
-                    const highPriority = cards.filter(j => [4, 5, 6, 7].includes(j.status));
+                    const highPriority = cards.filter(j => [4, 5, 6, 7, 12].includes(j.status));
                     if (highPriority.length > 0) {
                         displayJob = highPriority.sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0];
                     } else {
@@ -333,71 +333,110 @@ window.viewJobDetail = async (jobCardId) => {
                     ${mechanicsHtml}
                 </div>
             </div>
-            
+            <h9>Thanh tiến độ:</h9>
             <div class="progress-container" style="height:10px; background:#e2e8f0; border-radius:5px; overflow:hidden; margin-bottom:15px;">
                 <div class="progress-bar" style="width: ${progress}%; height:100%; background:#4f46e5;"></div>
             </div>
         `;
 
-        // 2. Render danh sách dịch vụ ban đầu (Yêu cầu của khách)
+        // 2. Render danh sách Dịch vụ (Gộp cả ban đầu và phát sinh)
         if (job.services && job.services.length > 0) {
-            servicesBox.innerHTML = '<h4 style="margin-bottom:10px; border-left:4px solid #4f46e5; padding-left:10px;">Dịch vụ yêu cầu</h4>' + 
-            job.services.map(s => `
-                <div class="task-item-row" style="display:flex; justify-content:space-between; background:#f1f5f9; margin-bottom:5px; padding:10px; border-radius:6px;">
-                    <span>${s.description || s.serviceId}</span>
-                    <span style="font-weight:bold">${(s.price || 0).toLocaleString()}đ</span>
-                </div>
-            `).join('');
-        }
-
-        // 3. Render BÁO CÁO KIỂM TRA (Repair Estimate) từ API mới
-        if (estimateRes.success && estimateRes.data && estimateRes.data.length > 0) {
-            const est = estimateRes.data[0]; // Lấy báo cáo mới nhất
-            const initialServicesTotal = job.services ? job.services.reduce((sum, s) => sum + (s.price || 0), 0) : 0;
-            const finalGrandTotal = est.grandTotal;
-            estimateBox.innerHTML = `
-                <div style="margin-top:20px; padding:15px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                    <h4 style="margin:0 0 10px 0; color:#b45309;"><i class="fas fa-clipboard-check"></i> BÁO CÁO KIỂM TRA TỪ KỸ THUẬT</h4>
-                    <div style="font-size:0.9rem; margin-bottom:10px;"><em>" ${est.note || 'Không có ghi chú thêm'} "</em></div>
-                    
-                    <table style="width:100%; font-size:0.85rem; border-collapse: collapse;">
-                        <tr style="border-bottom:1px solid #eee; background: #f8fafc;">
-                            <th style="text-align:left; padding:8px;">Hạng mục phát sinh</th>
-                            <th style="text-align:right; padding:8px;">Thành tiền</th>
-                        </tr>
-                        ${est.spareParts.map(p => `
-                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding:8px;">${p.sparePartName || 'Phụ tùng'} (x${p.quantity})</td>
-                                <td style="text-align:right; padding:8px;">${p.totalAmount.toLocaleString()}đ</td>
-                            </tr>
-                        `).join('')}
-                        <tr style="color: #64748b;">
-                            <td style="padding:8px;">+ Dịch vụ yêu cầu ban đầu</td>
-                            <td style="text-align:right; padding:8px;">${initialServicesTotal.toLocaleString()}đ</td>
-                        </tr>
-                    </table>
-                    
-                    <div style="margin-top:10px; padding-top:10px; border-top:2px solid #e2e8f0; display:flex; justify-content:space-between; align-items: center;">
-                        <span style="font-weight:bold; color: #1e293b;">TỔNG CHI PHÍ DỰ KIẾN:</span>
-                        <span style="color:#ef4444; font-size:1.3rem; font-weight: 800;">${finalGrandTotal.toLocaleString()}đ</span>
+            servicesBox.innerHTML = '<h4 style="margin-bottom:10px; border-left:4px solid #4f46e5; padding-left:10px;">Yêu cầu ban đầu của Khách</h4>' + 
+            job.services.map(s => {
+                // Highlight nếu là dịch vụ phát sinh (ví dụ dựa trên status của dịch vụ đó là 5)
+                const isExtraService = s.status === 5; 
+                return `
+                    <div class="task-item-row" style="display:flex; justify-content:space-between; background:${isExtraService ? '#fff1f2' : '#f1f5f9'}; margin-bottom:5px; padding:10px; border-radius:6px; border-left: ${isExtraService ? '4px solid #be123c' : 'none'}">
+                        <span>${isExtraService ? '<i class="fas fa-plus-circle" style="color:#be123c"></i> ' : ''}${s.description || s.serviceName || s.serviceId}</span>
                     </div>
-                </div>
-            `;
-        } else {
-            estimateBox.innerHTML = `
-                <div style="margin-top:15px; text-align:center; padding:15px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; color:#64748b;">
-                    <i class="fas fa-info-circle"></i> Chưa có báo cáo kiểm tra chi tiết từ Mechanic.
-                </div>
-            `;
+                `;
+            }).join('');
         }
 
-        // 4. Logic hiển thị khu vực Action (Giao thợ / Duyệt)
+        // 3. Render BÁO CÁO & TÍNH TỔNG TẤT CẢ
+        if (estimateRes.success && estimateRes.data && estimateRes.data.length > 0) {
+            const estimates = estimateRes.data;
+            
+            // Sắp xếp: Cũ nhất (ban đầu) xuống dưới, Mới nhất (phát sinh) lên trên
+            const initialEst = estimates[estimates.length - 1];
+            const extraEsts = estimates.slice(0, -1);
+            
+            // TÍNH TỔNG CUỐI CÙNG: Cộng dồn grandTotal của tất cả các phiếu
+            const totalAllEstimates = estimates.reduce((sum, est) => sum + est.grandTotal, 0);
+
+            let estimateHtml = '';
+
+            // Render các phiếu phát sinh lỗi (Màu đỏ)
+            if (extraEsts.length > 0) {
+                extraEsts.forEach((est, idx) => {
+                    estimateHtml += renderEstimateUI(est, `PHÁT SINH LỖI #${extraEsts.length - idx}`, "#be123c", []);
+                });
+            }
+
+            // Render phiếu kiểm tra ban đầu (Màu cam)
+            // Lưu ý: Dịch vụ ban đầu chỉ hiện ở phiếu này để tránh trùng lặp
+            estimateHtml += renderEstimateUI(initialEst, "KIỂM TRA TỔNG QUÁT BAN ĐẦU", "#b45309", job.services.filter(s => s.status !== 5));
+
+            // THÊM DÒNG TỔNG CỘNG CUỐI CÙNG CHO TOÀN BỘ JOB
+            estimateHtml += `
+                <div style="margin-top:20px; padding:15px; background:#1e293b; color:#fff; border-radius:8px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <div style="font-weight:bold; font-size:1rem;">TỔNG THANH TOÁN DỰ KIẾN:</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#fbbf24;">${totalAllEstimates.toLocaleString()}đ</div>
+                </div>
+            `;
+
+            estimateBox.innerHTML = estimateHtml;
+        } else {
+            estimateBox.innerHTML = `<div style="margin-top:15px; text-align:center; padding:15px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; color:#64748b;">Chưa có báo cáo kiểm tra.</div>`;
+        }
+
+        // 4. Logic Action Zone
         handleActionZone(job, actionZone);
 
     } catch (error) {
         infoBox.innerHTML = `<div class="error-msg" style="color:red; text-align:center">Lỗi: ${error.message}</div>`;
     }
 };
+
+// Hàm helper để render UI cho từng phiếu (Tránh lặp code)
+function renderEstimateUI(est, title, color, servicesToShow = []) {
+    const servicePrice = servicesToShow.reduce((sum, s) => sum + (s.price || 0), 0);
+    const estServices = est.services || [];
+    const estParts = est.spareParts || [];
+    return `
+        <div style="margin-top:15px; padding:15px; background:#fff; border:2px solid ${color}; border-radius:8px; position:relative;">
+            <div style="position:absolute; top:-12px; left:15px; background:${color}; color:#fff; padding:2px 10px; border-radius:10px; font-size:0.75rem; font-weight:bold;">
+                ${title}
+            </div>
+            <div style="font-size:0.85rem; color:#64748b; margin-bottom:10px; margin-top:5px;">
+                <i class="far fa-comment-dots"></i> <em>"${est.note || 'Không có ghi chú'}"</em>
+            </div>
+            <table style="width:100%; font-size:0.85rem; border-collapse: collapse;">
+                 ${estServices.map(s => `
+                    <tr style="border-bottom:1px solid #f1f5f9; color: #4338ca;">
+                        <td style="padding:5px 0;"><i class="fas fa-wrench" style="font-size:0.7rem"></i> ${s.serviceName || 'Dịch vụ'}</td>
+                        <td style="text-align:right; font-weight:bold;">${(s.totalAmount || 0).toLocaleString()}đ</td>
+                    </tr>
+                `).join('')}
+                ${est.spareParts.map(p => `
+                    <tr style="border-bottom:1px solid #f1f5f9;">
+                        <td style="padding:5px 0;">${p.sparePartName} (x${p.quantity})</td>
+                        <td style="text-align:right; font-weight:500;">${p.totalAmount.toLocaleString()}đ</td>
+                    </tr>
+                `).join('')}
+                ${servicesToShow.length > 0 ? `
+                    <tr style="border-bottom:1px solid #f1f5f9; color:#6366f1;">
+                        <td style="padding:5px 0;">+ Tiền công dịch vụ</td>
+                        <td style="text-align:right; font-weight:500;">${servicePrice.toLocaleString()}đ</td>
+                    </tr>
+                ` : ''}
+            </table>
+            <div style="text-align:right; font-weight:bold; margin-top:10px; color:${color}; border-top:1px dashed #e2e8f0; padding-top:8px;">
+                Cộng phiếu: ${est.grandTotal.toLocaleString()}đ
+            </div>
+        </div>
+    `;
+}
 
 // Hàm tách riêng để xử lý nút bấm cho đỡ rối
 async function handleActionZone(job, actionZone) {
@@ -431,7 +470,21 @@ async function handleActionZone(job, actionZone) {
                 </button>
             </div>
         `;
-    } else {
+    } else if  (job.status === 12) {
+        actionZone.style.display = "block";
+        actionZone.innerHTML = `
+            <div style="text-align:center; padding:12px; border: 2px solid #be123c; background: #fff1f2; border-radius:8px;">
+                <p style="margin-bottom:10px; font-weight:bold; color:#9f1239;">
+                    <i class="fas fa-tools"></i> PHÁT SINH LỖI MỚI KHI ĐANG SỬA
+                </p>
+                <button class="btn-primary" onclick="window.approveExtraJob(${job.jobCardId})" 
+                        style="width:100%; background:#be123c; height:50px; font-size:1.1rem; border:none;">
+                    <i class="fas fa-paper-plane"></i> DUYỆT & GỬI BÁO GIÁ PHÁT SINH
+                </button>
+            </div>
+        `;
+    }
+    else {
         actionZone.style.display = "none";
     }
 }
@@ -470,6 +523,7 @@ window.doAssignMechanic = async (jobCardId) => {
     }
 };
 
+//Hàm xử lý duyệt báo cáo kiểm tra
 window.approveJob = async (jobCardId) => {
     const isConfirm = confirm(`Bạn đã kiểm tra kỹ báo cáo của Mechanic cho lệnh #JC-${jobCardId}?\n\nHành động này sẽ gửi báo giá tới khách hàng.`);
     
@@ -496,3 +550,21 @@ window.approveJob = async (jobCardId) => {
         btn.innerHTML = originalBtnHtml;
     }
 }
+
+//Hàm xử lý duyệt phát sinh
+window.approveExtraJob = async (jobCardId) => {
+    if (!confirm("Xác nhận duyệt các hạng mục PHÁT SINH và gửi thông báo cho khách hàng?")) return;
+
+    try {
+        // Giả sử quy trình vẫn là đẩy về 6 (Chờ khách duyệt) 
+        // Nhưng Backend sẽ biết đây là duyệt cho phần phát sinh dựa vào status hiện tại là 12
+        const res = await workbayApi.updateJobCardStatus(jobCardId, 6); 
+        if (res) {
+            alert("Đã gửi báo giá phát sinh cho khách thành công!");
+            window.closeJobDetailModal();
+            await refreshData();
+        }
+    } catch (error) {
+        alert("Lỗi: " + error.message);
+    }
+};

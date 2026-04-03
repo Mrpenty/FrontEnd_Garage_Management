@@ -226,3 +226,17 @@ input:focus, select:focus { border-color: var(--primary-red); }
     to { transform: rotate(360deg); }
 }
 .fa-spin-slow { animation: spin-slow 3s linear infinite; }
+
+/* Style cho danh sách trong popup */
+#fault-services-list, #fault-parts-list {
+    background: #fdfdfd;
+}
+
+#fault-services-list li, #fault-parts-list li {
+    font-size: 0.8rem;
+    border-bottom: 1px solid #eee;
+}
+
+.swal2-html-container {
+    overflow-x: hidden !important; /* Tránh scroll ngang không cần thiết */
+}

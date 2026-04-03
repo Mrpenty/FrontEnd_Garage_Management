@@ -1,9 +1,11 @@
 import { jobCardApi } from './jobcard-inspection-api.js';
+import { repairUI} from '../repairation/jobcard-repairation-ui.js';
 
 export const jobCardUI = {
     // Render Job ở cột trái (Hàng đợi/Tiếp theo)   
     renderNextJob: (job) => {
         const container = document.getElementById('next-job-content');
+        console.log(">>> Dữ liệu Job hiện tại:", job);
         if (!job) {
             container.innerHTML = `<div class="no-job" style="padding:20px; text-align:center;">Không có JobCard chờ</div>`;
             return;
@@ -49,23 +51,34 @@ export const jobCardUI = {
         }
 
         const { jobCardStatus, mechanicAssignmenStatus } = job;
-
-        // TRƯỜNG HỢP 1: LẬP BÁO GIÁ (Màn hình chọn linh kiện/dịch vụ)
-        if (jobCardStatus === 4 && mechanicAssignmenStatus === 2) {
-            const inventories = await jobCardApi.getInventories();
-            container.innerHTML = header + jobCardUI.templateEstimate(job, inventories);
-        } 
-        // TRƯỜNG HỢP 2: CHỜ SUPERVISOR
-        else if (jobCardStatus === 5 && mechanicAssignmenStatus === 2) {
-            container.innerHTML = header + jobCardUI.templateStatusMsg(job, "Đang chờ Supervisor duyệt yêu cầu", "bg-warning");
-        }
-        // TRƯỜNG HỢP 3: CHỜ KHÁCH HÀNG
-        else if (jobCardStatus === 6 && mechanicAssignmenStatus === 2) {
-            container.innerHTML = header + jobCardUI.templateStatusMsg(job, "Đang chờ Khách hàng duyệt yêu cầu", "bg-info");
-        }
-        // TRƯỜNG HỢP 4: THỰC HIỆN SỬA CHỮA (Màn hình Checklist cũ)
-        else if (jobCardStatus === 7 && mechanicAssignmenStatus === 2) {
-            container.innerHTML = header + jobCardUI.templateRepairExecution(job);
+            try {
+                // TRƯỜNG HỢP 1: LẬP BÁO GIÁ (Màn hình chọn linh kiện/dịch vụ)
+                if (jobCardStatus === 4 && mechanicAssignmenStatus === 2) {
+                    const inventories = await jobCardApi.getInventories();
+                    container.innerHTML = header + jobCardUI.templateEstimate(job, inventories);
+                } 
+                // TRƯỜNG HỢP 2: CHỜ SUPERVISOR
+                else if (jobCardStatus === 5 && mechanicAssignmenStatus === 2) {
+                    container.innerHTML = header + jobCardUI.templateStatusMsg(job, "Đang chờ Supervisor duyệt yêu cầu", "bg-warning");
+                }
+                // TRƯỜNG HỢP 3: CHỜ KHÁCH HÀNG
+                else if (jobCardStatus === 6 && mechanicAssignmenStatus === 2) {
+                    container.innerHTML = header + jobCardUI.templateStatusMsg(job, "Đang chờ Khách hàng duyệt yêu cầu", "bg-info");
+                }
+                // TRƯỜNG HỢP 4: THỰC HIỆN SỬA CHỮA (Màn hình Checklist cũ)
+                else if (jobCardStatus === 7 && mechanicAssignmenStatus === 2 || jobCardStatus === 12 && mechanicAssignmenStatus === 2) {
+                    // KIỂM TRA repairUI CÓ TỒN TẠI KHÔNG
+                    if (typeof repairUI === 'undefined') {
+                        console.error("CRITICAL: repairUI chưa được import hoặc bị undefined!");
+                        container.innerHTML = header + `<div class="alert alert-danger">Lỗi hệ thống: repairUI undefined</div>`;
+                        return;
+                    }
+                    container.innerHTML = header + repairUI.templateRepairExecution(job);
+                }
+            } catch (err) {
+            // NẾU CÓ LỖI NÓ SẼ HIỆN Ở ĐÂY
+            console.error("LỖI THỰC THI RENDER:", err);
+            container.innerHTML = header + `<div class="alert alert-danger">Lỗi: ${err.message}</div>`;
         }
     },
 
@@ -133,54 +146,6 @@ export const jobCardUI = {
             <p style="font-size: 1.1rem; font-weight: bold; color: #555;">${msg}</p>
             <button class="btn-secondary" onclick="location.reload()">Cập nhật trạng thái</button>
         </div>`,
-
-    // Template cho màn hình thực hiện (Trường hợp 4 - code cũ của bạn)
-    templateRepairExecution: (job) => {
-        let servicesHtml = '';
-        job.services.forEach(service => {
-            servicesHtml += `
-                <div class="service-block" style="margin-bottom: 15px;">
-                    <div style="font-weight: bold; color: #e63946; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px;">
-                        <i class="fa-solid fa-wrench"></i> ${service.serviceName} 
-                        <span style="float:right; font-size: 0.8rem; color: #888;">${service.totalEstimateMinute}p</span>
-                    </div>
-                    <ul style="list-style: none; padding-left: 5px;">
-                        ${service.serviceTasks.map(task => `
-                            <li style="font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center;">
-                                <input type="checkbox" ${task.serviceTaskStatusName === 'Completed' ? 'checked' : ''} style="margin-right: 10px;">
-                                <span style="color: #444;">${task.taskName}</span>
-                                <small style="margin-left: auto; color: #999;">${task.estimateMinute}p</small>
-                            </li>
-                        `).join('')}
-                    </ul>
-                </div>
-            `;
-        });
-
-        return `
-            <div class="repair-detail-card" style="max-height: 80vh; overflow-y: auto;">
-                <div class="detail-header">
-                    <div>
-                        <div class="detail-title">${job.licensePlate} - ${job.vehicleModel}</div>
-                        <p style="font-size: 0.9rem; color: #666;">Khách: ${job.customerFullName} | TP: ${job.customerPhone}</p>
-                    </div>
-                </div>
-                
-                <hr style="margin: 15px 0;">
-                
-                <div class="task-list-container">
-                    ${servicesHtml}
-                </div>
-
-                <div class="section-label">Ghi chú từ thợ:</div>
-                <textarea id="mechanic-note" style="width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 10px; font-size: 0.9rem;" placeholder="Nhập tình trạng xe thực tế..."></textarea>
-
-                <button class="btn-finish" style="margin-top: 20px;" onclick="window.handleCompleteJob(${job.jobCardId})">
-                    <div><i class="fa-regular fa-circle-check"></i> HOÀN THÀNH TẤT CẢ</div>
-                    <span>Dự kiến xong: ${job.jobCardEndDate ? new Date(job.jobCardEndDate).toLocaleTimeString() : 'Đang tính toán...'}</span>
-                </button>
-            </div>`;
-    },
 
     updateStats: (counts) => {
         const stats = document.querySelectorAll('.stat-card .number');

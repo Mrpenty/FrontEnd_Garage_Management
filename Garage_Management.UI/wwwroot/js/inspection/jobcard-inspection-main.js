@@ -1,5 +1,6 @@
 import { jobCardApi } from './jobcard-inspection-api.js';
 import { jobCardUI } from './jobcard-inspection-ui.js';
+import '../repairation/jobcard-repairation-main.js';
 
 let selectedParts = [];
 const MechanicStatus = { 
@@ -97,13 +98,6 @@ window.handleStartJob = async (id) => {
     }
 };
 
-window.handleCompleteJob = async (id) => {
-    if(confirm("Xác nhận hoàn thành?")) {
-        const ok = await jobCardApi.updateStatus(id, 8); // Giả định 8 là hoàn thành sửa chữa
-        if(ok) location.reload();
-    }
-};
-
 window.addPartRow = () => {
     const select = document.getElementById('select-sparepart');
     const qty = parseInt(document.getElementById('input-qty').value);
@@ -132,13 +126,19 @@ window.handleSubmitEstimate = async (jobCardId) => {
         quantity: 1 // Mặc định mỗi dịch vụ là 1, bạn có thể thêm input số lượng nếu cần
     }));
 
-    // 2. Kiểm tra nếu không có gì để báo giá
-    if (selectedParts.length === 0 && services.length === 0 && !note.trim()) {
-        alert("Vui lòng nhập ghi chú hoặc chọn linh kiện/dịch vụ.");
+    // Kiểm tra mảng linh kiện
+    if (selectedParts.length === 0) {
+        alert("BẮT BUỘC: Vui lòng kiểm tra và thêm ít nhất một linh kiện/vật tư thay thế (hoặc vật tư tiêu hao) để tạo báo giá.");
         return;
     }
 
-    if (!confirm("Xác nhận gửi báo giá cho Supervisor duyệt?")) return;
+    // Kiểm tra ghi chú (Tránh việc thợ gửi note trống)
+    if (!note.trim() || note.trim().length < 10) {
+        alert("Vui lòng nhập ghi chú kiểm tra chi tiết (tối thiểu 10 ký tự) để Supervisor dễ dàng duyệt.");
+        return;
+    }
+
+    if (!confirm("Xác nhận gửi báo giá? Sau khi gửi, bạn sẽ chờ Supervisor duyệt để bắt đầu sửa chữa.")) return;
 
     // 3. Tạo Object Request đúng định dạng JSON bạn yêu cầu
     const request = {

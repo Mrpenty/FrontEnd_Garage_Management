@@ -232,6 +232,19 @@ export const EstimateAPI = {
         });
     },
 
+    // Thêm hàm POST cho Dịch vụ
+    syncJobCardServiceSingle: async (payload) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/JobCardServices`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(payload) 
+        });
+    },
+
     // 5. Cập nhật status JobCard (7: Đã duyệt, 10: Hủy)
     updateJobCardStatus: async (jcId, status) => {
         const token = localStorage.getItem('accessToken');
@@ -256,5 +269,18 @@ export const EstimateAPI = {
             }
         });
         return await response.json();
+    },
+
+    // Cập nhật status cho JobCardService thực tế
+    updateJobCardServiceStatus: async (jcId, serviceId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/JobCardServices/service/${serviceId}/status?jobCardId=${jcId}`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ status: status }) // Truyền status vào body
+        });
     }
 };

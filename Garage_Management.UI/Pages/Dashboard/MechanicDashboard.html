@@ -6,6 +6,7 @@
     <title>Quản lý công việc | Mechanic Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../wwwroot/css/mechanic-dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
@@ -92,7 +93,8 @@
     </div>
 
     <script type="module" src="../../wwwroot/js/inspection/jobcard-inspection-main.js"></script>
-    <script>
+    <script type="module" src="../../wwwroot/js/repairation/jobcard-repairation-main.js"></script>
+    <script type ="module">
         import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
         import CONFIG from '../../wwwroot/js/config.js';
         authGuard.authorize('Mechanic'); 

@@ -190,64 +190,110 @@ async function handleCustomerApproval(estimate, selectedSparePartIds, selectedSe
     const estId = estimate.repairEstimateId;
 
     try {
-        // --- BƯỚC 1: Cập nhật status cho TẤT CẢ phụ tùng ---
+        // --- BƯỚC 1 & 2: Cập nhật status trên tờ Báo giá (RepairEstimate) ---
         const spPromises = estimate.spareParts.map(sp => {
             const isApproved = selectedSparePartIds.includes(sp.sparePartId);
             return EstimateAPI.updateSparePartStatus(estId, sp.sparePartId, isApproved ? 2 : 3);
         });
-
-        // --- BƯỚC 2: Cập nhật status cho TẤT CẢ dịch vụ ---
         const svPromises = estimate.services.map(sv => {
             const isApproved = selectedServiceIds.includes(sv.serviceId);
             return EstimateAPI.updateServiceStatus(estId, sv.serviceId, isApproved ? 2 : 3);
         });
-
-        // Đợi tất cả các dòng được cập nhật xong
         await Promise.all([...spPromises, ...svPromises]);
 
-        // --- BƯỚC 3: Tính toán trạng thái cuối cùng ---
+        // --- BƯỚC 3 & 4: Cập nhật trạng thái tổng của phiếu Báo giá ---
         const hasAnyApproval = selectedSparePartIds.length > 0 || selectedServiceIds.length > 0;
-        const finalStatus = hasAnyApproval ? 7 : 10; 
-        const estimateStatus = hasAnyApproval ? 2 : 3; // 2: Duyệt, 3: Từ chối
-
-        // --- BƯỚC 4: Cập nhật status Báo giá ---
+        const estimateStatus = hasAnyApproval ? 2 : 3; 
         await EstimateAPI.updateEstimateStatus(estId, estimateStatus);
 
-        // --- BƯỚC 5: Nếu có duyệt, thực hiện Sync Phụ tùng ---
-        if (hasAnyApproval) {
-            const approvedParts = estimate.spareParts.filter(sp => 
-                selectedSparePartIds.includes(sp.sparePartId)
-            );
-            const payload = {
-                spareParts: approvedParts.map(sp => ({
-                    sparePartId: sp.sparePartId, // Lấy ID thực tế (ví dụ: 8, 9)
-                    quantity: sp.quantity,       // Lấy số lượng thực tế (ví dụ: 2, 1)
-                    isUnderWarranty: false,      // Hoặc logic bảo hành của bạn
-                    note: "Khách đã duyệt từ báo giá #" + estimate.repairEstimateId
-                }))
-            };
-        
-            console.log("Payload gửi lên Backend:", payload);
+        // Lấy dữ liệu JobCard hiện tại
+        const customerId = localStorage.getItem('customerId');
+        const jcList = await EstimateAPI.getMyJobCard(customerId);
+        const currentJC = jcList.find(j => j.jobCardId === jcId);
 
-            const syncRes = await EstimateAPI.syncSpareParts(jcId, payload);
-    
-            if (!syncRes.ok) {
-                const errorData = await syncRes.json();
-                console.error("Backend từ chối dữ liệu:", errorData.message);
-                alert("Lỗi đồng bộ phụ tùng: " + errorData.message);
-                return false; // Dừng lại nếu sync thất bại
+        if (!currentJC) throw new Error("Không tìm thấy JobCard.");
+
+        // Kiểm tra TH2 (Bổ sung lỗi)
+        const hasOnHoldService = currentJC.services && currentJC.services.some(s => s.status === 5);
+
+        // --- BƯỚC 5: ĐỒNG BỘ DỮ LIỆU ---
+        
+        // 5.1. Xử lý các mục ĐƯỢC DUYỆT MỚI (Nếu có)
+        if (hasAnyApproval) {
+            // Sync Phụ tùng
+            const approvedParts = estimate.spareParts.filter(sp => selectedSparePartIds.includes(sp.sparePartId));
+            if (approvedParts.length > 0) {
+                const payload = {
+                    spareParts: approvedParts.map(sp => ({
+                        sparePartId: sp.sparePartId,
+                        quantity: sp.quantity,
+                        isUnderWarranty: false,
+                        note: "Duyệt từ báo giá #" + estId
+                    }))
+                };
+                await EstimateAPI.syncSpareParts(jcId, payload);
+            }
+
+            // Sync Dịch vụ mới
+            const approvedServices = estimate.services.filter(sv => selectedServiceIds.includes(sv.serviceId));
+            if (hasOnHoldService) {
+                // TH2: POST thêm dịch vụ mới vào
+                const addPromises = approvedServices.map(sv => {
+                    return EstimateAPI.syncJobCardServiceSingle({
+                        jobCardId: jcId,
+                        serviceId: sv.serviceId,
+                        description: "Duyệt bổ sung",
+                        price: sv.unitPrice || 0,
+                        status: 2,
+                        sourceInspectionItemId: 0
+                    });
+                });
+                await Promise.all(addPromises);
+            } else {
+                // TH1: Duyệt lần đầu (Chỉ chạy khi ko có OnHold) - PATCH cái có sẵn
+                const patchPromises = estimate.services.map(sv => {
+                    const isApproved = selectedServiceIds.includes(sv.serviceId);
+                    return EstimateAPI.updateJobCardServiceStatus(jcId, sv.serviceId, isApproved ? 2 : 4);
+                });
+                await Promise.all(patchPromises);
+            }
+        } else {
+            // NẾU KHÔNG DUYỆT GÌ (hasAnyApproval = false)
+            if (!hasOnHoldService) {
+                // Và là TH1 (Duyệt lần đầu) -> Phải PATCH sạch về Cancelled (4)
+                const cancelPromises = estimate.services.map(sv => 
+                    EstimateAPI.updateJobCardServiceStatus(jcId, sv.serviceId, 4)
+                );
+                await Promise.all(cancelPromises);
             }
         }
 
-        // --- BƯỚC 6: Cập nhật Status JobCard chốt hạ ---
-        await EstimateAPI.updateJobCardStatus(jcId, finalStatus);
+        // 5.2. KHÔI PHỤC DỊCH VỤ CŨ (Quan trọng nhất để tránh Status 10)
+        // Chạy vô điều kiện nếu là TH2, dù khách có duyệt thêm cái mới hay không
+        if (hasOnHoldService) {
+            const onHoldServices = currentJC.services.filter(s => s.status === 5);
+            const recoverPromises = onHoldServices.map(s => 
+                EstimateAPI.updateJobCardServiceStatus(jcId, s.serviceId, 2)
+            );
+            await Promise.all(recoverPromises);
+        }
 
-        alert(hasAnyApproval ? "Duyệt báo giá thành công! Garage sẽ bắt đầu sửa chữa." : "Đã từ chối toàn bộ báo giá.");
+        // --- BƯỚC 6: CHỐT TRẠNG THÁI JOBCARD ---
+        let finalJobCardStatus;
+        if (hasOnHoldService) {
+            finalJobCardStatus = 7; // Luôn là InProgress vì còn việc cũ đang làm
+        } else {
+            finalJobCardStatus = hasAnyApproval ? 7 : 10; // Duyệt lần đầu: Ko duyệt = Hủy
+        }
+
+        await EstimateAPI.updateJobCardStatus(jcId, finalJobCardStatus);
+
+        alert(hasAnyApproval ? "Duyệt báo giá thành công!" : (hasOnHoldService ? "Đã từ chối các lỗi phát sinh, thợ tiếp tục công việc cũ." : "Đã từ chối báo giá."));
         return true;
 
     } catch (error) {
-        console.error("Lỗi nghiêm trọng trong luồng duyệt:", error);
-        alert("Có lỗi xảy ra. Vui lòng thử lại sau.");
+        console.error("Lỗi:", error);
+        alert("Có lỗi xảy ra: " + error.message);
         return false;
     }
 }
@@ -277,7 +323,13 @@ async function loadCustomerJobCards(container) {
                 if (jc.status === 6) {
                     const estimateRes = await EstimateAPI.getByJobCard(jc.jobCardId);
                     if (estimateRes.success && estimateRes.data.length > 0) {
-                        authUi.renderEstimateView(jcDiv, estimateRes.data[0]);
+                        // Chỉ lấy các phiếu báo giá đang chờ duyệt (status = 1)
+                        const pendingEstimates = estimateRes.data.filter(est => est.status === 1);
+                        pendingEstimates.forEach(est => {
+                        const estDiv = document.createElement('div');
+                        authUi.renderEstimateView(estDiv, est);
+                        jcDiv.appendChild(estDiv);
+                    });
                     } else {
                         jcDiv.innerHTML = renderBasicJobCardInfo(jc, "Đang chờ garage lập báo giá...");
                     }
@@ -298,10 +350,18 @@ async function loadCustomerJobCards(container) {
 // Hàm phụ để hiển thị các JobCard không phải trạng thái chờ duyệt
 function renderBasicJobCardInfo(jc, customMsg = "") {
     const statusText = {
-        2: "Đang kiểm tra xe",
-        6: "Chờ khách duyệt báo giá",
+        1: "Tiếp nhận xe thành công",
+        2: "Đang chờ giao thợ",
+        3: "Đang chờ thợ kiểm tra",
+        4: "Đang kiểm tra",
+        5: "Đang xem xét vấn đề",
+        6: "Đã có kết quả kiểm tra xe, chờ duyệt",
         7: "Đang sửa chữa",
-        10: "Đã hủy"
+        8: "Đã sửa xong",
+        9: "Thanh toán thành công",
+        10: "Đã hủy",
+        11: "Không tìm thấy lỗi",
+        12: "Đang xem xét vấn đề mới",
     };
     return `
         <div style="display:flex; justify-content:space-between; align-items:center;">
