@@ -61,7 +61,7 @@ export const BookingAPI = {
 
     // Lấy danh sách dịch vụ
     getServices: async () => {
-        const res = await fetch(`${SERVICE_URL}?page=1&pageSize=10`, { 
+        const res = await fetch(`${SERVICE_URL}`, { 
             headers: getHeaders() 
         });
         if (!res.ok) throw new Error("Không thể tải danh sách dịch vụ");
@@ -69,8 +69,8 @@ export const BookingAPI = {
     },
 
     // Lấy danh sách phụ tùng theo hãng xe
-    getInventoryByBrand: async (brandId) => {
-        const res = await fetch(`${INVENTORY_URL}/by-brand/${brandId}`, { 
+    getInventory: async () => {
+        const res = await fetch(`${INVENTORY_URL}`, { 
             headers: getHeaders() 
         });
         if (!res.ok) throw new Error("Không thể tải danh sách phụ tùng");

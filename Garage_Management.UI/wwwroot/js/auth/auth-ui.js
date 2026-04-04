@@ -94,13 +94,22 @@ export const authUi = {
             1: { text: "Chờ xác nhận", class: "bg-warning" },
             2: { text: "Đã xác nhận", class: "bg-success" },
             3: { text: "Đang xử lý", class: "bg-info" },
-            4: { text: "Đã hủy", class: "bg-secondary" }
+            4: { text: "Quá hạn", class: "bg-secondary" },
+            5: { text: "Đã hủy", class: "bg-secondary" },
+            6: { text: "Đã sửa xong xe", class: "bg-success" },
         };
 
         container.innerHTML = appointments.map(apt => {
             const status = statusTexts[apt.status] || { text: "Không xác định", class: "bg-dark" };
             const date = new Date(apt.appointmentDateTime).toLocaleString('vi-VN');
             const services = apt.services.map(s => s.serviceName).join(', ');
+
+            const cancelBtn = apt.status === 1 
+            ? `<button class="btn btn-outline-secondary btn-sm mt-2" 
+                       onclick="handleCancelAppointment(${apt.appointmentId})">
+                <i class="fa-solid fa-xmark"></i> Hủy lịch
+               </button>` 
+            : '';
 
             return `
                 <div class="booking-card mb-3 p-3 shadow-sm border-start border-4 border-danger" style="background:white; border-radius:8px;">
@@ -110,6 +119,7 @@ export const authUi = {
                             <p class="mb-1"><strong><i class="fa-regular fa-clock"></i> Thời gian:</strong> ${date}</p>
                             <p class="mb-1"><strong><i class="fa-solid fa-wrench"></i> Dịch vụ:</strong> ${services}</p>
                             <p class="mb-0 text-muted"><em><i class="fa-solid fa-comment"></i> Ghi chú: ${apt.description || 'Không có'}</em></p>
+                            ${cancelBtn}
                         </div>
                         <span class="badge ${status.class}" style="padding: 8px 12px; border-radius: 20px;">${status.text}</span>
                     </div>
@@ -265,6 +275,22 @@ export const authUi = {
                 }
             };
         }
-    }
+    },
+
+    // Thêm hàm này vào trong authUi
+    renderCpwMessage(message, isSuccess) {
+        const display = this.elements.cpwMsg; // Lấy từ id="cpw-msg" đã khai báo ở elements
+        if (display) {
+            display.innerText = message;
+            // Thay đổi màu sắc dựa trên trạng thái thành công hay thất bại
+            display.style.color = isSuccess ? 'green' : 'red';
+            display.style.fontSize = '14px';
+            display.style.marginTop = '10px';
+            display.style.display = 'block';
+        } else {
+            // Fallback nếu không tìm thấy element trong DOM
+            if (message) alert(message);
+        }
+    },
 };
 

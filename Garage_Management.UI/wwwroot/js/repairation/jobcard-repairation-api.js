@@ -105,7 +105,7 @@ export const repairApi = {
         const response = await fetch(`${JOBCARD_URL}/release-workbay`, {
             method: 'POST',
             headers: repairApi.getAuthHeader(),
-            body: JSON.stringify({ workBayId: id })
+            body: JSON.stringify({ workBayId: parseInt(id) })
         });
         return response.ok;
     }

@@ -235,6 +235,14 @@ export const appointmentUI = {
                 } else {
                     actionButtons = `<small class="text-muted">Chưa đến giờ</small>`;
                 }
+            } else if (item.status === 3) {
+                actionButtons = `<small class="text-muted">Đang sửa chữa</small>`;
+            } else if (item.status === 4) {
+                actionButtons = `<small class="text-muted">Vắng mặt</small>`;
+            } else if (item.status === 5) {
+                actionButtons = `<small class="text-muted">Đã hủy</small>`;
+            } else if (item.status === 6) {
+                actionButtons = `<small class="text-muted">Đã hoàn thành</small>`;
             }
 
             return `
@@ -260,8 +268,7 @@ function getStatusText(status) {
         3: "Đang thực hiện",
         4: "Vắng mặt (No-show)",
         5: "Đã hủy",
-        6: "Đã tạo JobCard",
-        7: "Hoàn thành"
+        6: "Đã hoàn thành",
     };
     return statuses[status] || "Không xác định";
 }

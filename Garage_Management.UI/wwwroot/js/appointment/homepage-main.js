@@ -1,6 +1,7 @@
 import { BookingAPI } from '../appointment/booking-api.js';
 import { homepageUI } from './homepage-ui.js';
 
+let allServices = [];
 let currentPage = 1;
 const pageSize = 4;
 
@@ -13,27 +14,36 @@ async function loadHomepageServices(page) {
     serviceGrid.innerHTML = `<div class="loading-spinner">Đang tải dữ liệu...</div>`;
 
     try {
-        const result = await BookingAPI.getServices(page, pageSize);
-        
-        const services = result.data?.pageData || [];
-        const totalItems = result.data?.total || 0;
-        const totalPages = Math.ceil(totalItems / pageSize);
-
-        homepageUI.renderServices(serviceGrid, services, formatCurrency, {
-        currentPage: page,
-        totalPages: totalPages,
-        onPageChange: (newPage) => {
-            currentPage = newPage;
-            loadHomepageServices(newPage);
-            const section = document.querySelector('.services-section');
-            if (section) section.scrollIntoView({ behavior: 'smooth' });
-        }
-    });
+        const result = await BookingAPI.getServices();
+        allServices = result.data?.pageData || result.data || [];
+        renderCurrentPage();
 
     } catch (error) {
         console.error("Homepage Error:", error);
         serviceGrid.innerHTML = `<p class="error-message">Lỗi kết nối tới máy chủ</p>`;
     }
+}
+
+// Hàm render dựa trên dữ liệu đã có trong allServices
+function renderCurrentPage() {
+    const serviceGrid = document.querySelector(".service-grid");
+    
+    // Tính toán cắt mảng cho trang hiện tại (Client-side Pagination)
+    const startIndex = (currentPage - 1) * pageSize;
+    const pagedServices = allServices.slice(startIndex, startIndex + pageSize);
+    const totalPages = Math.ceil(allServices.length / pageSize);
+
+    homepageUI.renderServices(serviceGrid, pagedServices, formatCurrency, {
+        currentPage: currentPage,
+        totalPages: totalPages,
+        onPageChange: (newPage) => {
+            currentPage = newPage;
+            renderCurrentPage(); // Chỉ cần render lại, không gọi API nữa
+            
+            const section = document.querySelector('.services-section');
+            if (section) section.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
 }
 
 function formatCurrency(value) {

@@ -105,6 +105,14 @@ select:focus, input:focus {
 }
 
 /* SERVICE GRID */
+#service-list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; 
+    gap: 20px !important;
+    padding: 10px 0;
+    align-items: stretch;
+}
+
 .service-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -113,44 +121,64 @@ select:focus, input:focus {
 }
 
 .service-card {
-    border: 1px solid #eee;
-    border-radius: var(--border-radius);
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important; /* Đẩy nội dung lên đầu card */
+    text-align: left !important;        /* Ép chữ căn trái */
     padding: 20px;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    gap: 15px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
     background: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: auto !important;
+    min-height: 120px !important;
+    border-top: 3px solid #d32f2f;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 .service-card:hover {
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    border-color: var(--primary-color);
+    border-color: #e74c3c;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .service-card input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    accent-color: var(--primary-color);
+    margin: 5px 15px 0 0 !important;
+    width: 20px !important;
+    height: 20px !important;
+    flex-shrink: 0; /* Không cho checkbox bị bóp méo */
+}
+
+/* Phần thông tin dịch vụ */
+.service-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .service-info h4 {
-    margin: 0 0 5px 0;
-    font-size: 17px;
+    margin: 0 0 10px 0 !important;
+    font-size: 18px;
+    font-weight: bold;
+    color: #2c3e50;
 }
 
 .service-desc {
-    font-size: 13px;
-    color: #777;
-    margin-bottom: 10px;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 15px !important;
+    line-height: 1.5;
+    flex-grow: 1; /* Đẩy phần meta xuống đáy card */
 }
 
 .service-meta {
     display: flex;
     justify-content: space-between;
-    font-weight: bold;
-    font-size: 14px;
-    color: var(--secondary-color);
+    align-items: center;
+    margin-top: auto; /* Luôn nằm ở dưới cùng */
+    padding-top: 10px;
+    border-top: 1px solid #eee;
 }
 
 .no-data-msg {
@@ -296,4 +324,25 @@ select:focus, input:focus {
 
 .hidden {
     display: none !important;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.page-btn {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.page-btn.active {
+    background: #d32f2f;
+    color: #fff;
+    border-color: #d32f2f;
 }

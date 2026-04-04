@@ -123,7 +123,7 @@
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display:block; margin-bottom:5px;">Biển số xe</label>
-                    <input type="text" id="v-plate" placeholder="VD: 29A-12345" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="text" id="v-plate" placeholder="VD: 29A-12345" maxlength="11" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                     <div style="flex: 1;">
@@ -138,6 +138,16 @@
                 <div id="v-msg" style="margin-bottom: 15px; font-size: 14px;"></div>
                 <button type="submit" class="btn-submit" style="width: 100%; background: #28a745; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">Xác nhận thêm xe</button>
             </form>
+        </div>
+    </div>
+
+    <div id="modalProgress" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+        <div style="background:white; margin:5% auto; padding:20px; width:90%; max-width:600px; border-radius:8px; max-height:85vh; overflow-y:auto; position:relative;">
+            <span onclick="document.getElementById('modalProgress').style.display='none'" 
+                style="position:absolute; right:15px; top:10px; font-size:24px; cursor:pointer;">&times;</span>
+            <h3 id="progressTitle" style="color:#d32f2f; border-bottom:2px solid #eee; padding-bottom:10px;">Tiến độ sửa chữa</h3>
+            <div id="progressContent">
+                </div>
         </div>
     </div>
 

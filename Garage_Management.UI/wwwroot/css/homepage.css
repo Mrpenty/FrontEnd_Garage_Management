@@ -311,8 +311,8 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    height: 100%; /* Giúp các card cao bằng nhau */
-    min-height: 320px;
+    height: auto; /* Giúp các card cao bằng nhau */
+    min-height: 120px;
 }
 
 .services-pagination-container {

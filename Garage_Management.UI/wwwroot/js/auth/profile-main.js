@@ -55,27 +55,55 @@ ui.btnOpenAddVehicle?.addEventListener('click', async () => {
         
         // Lấy thông tin user hiện tại từ Profile (giả sử bạn lưu ở biến global hoặc lấy từ DOM)
         const customerId = localStorage.getItem('customerId'); // Hoặc lấy từ data profile
+        const plateInput = document.getElementById('v-plate');
+        const modelSelect = document.getElementById('v-model');
+        const yearInput = document.getElementById('v-year');
+        const vinInput = document.getElementById('v-vin');
+        
+        const rawPlate = plateInput.value || "";
+        const cleanPlate = rawPlate.replace(/\s+/g, '').toUpperCase();
+
+        if (!cleanPlate) {
+            msgArea.innerHTML = `<span style="color: red;">Vui lòng nhập biển số xe!</span>`;
+            return;
+        }
+
+        if (cleanPlate.length > 11) {
+            msgArea.innerHTML = `<span style="color: red;">Biển số xe không được vượt quá 11 ký tự!</span>`;
+            plateInput.focus();
+            return;
+        }
+
+        const plateRegex = /^[0-9]{2}[A-Z0-9]{1,2}[- ]?[0-9]{4,5}(\.[0-9]{1,2})?$/;
+        if (!plateRegex.test(cleanPlate)) {
+            return alert("Biển số xe không hợp lệ! (VD: 30A12345 hoặc 29F1-12345)");
+        }
 
         const vehicleData = {
-            customerId: parseInt(customerId),
-            modelId: parseInt(document.getElementById('v-model').value),
-            licensePlate: document.getElementById('v-plate').value,
-            year: parseInt(document.getElementById('v-year').value),
-            vin: document.getElementById('v-vin').value,
-            createdBy: parseInt(customerId)
+        customerId: parseInt(customerId),
+        modelId: parseInt(modelSelect.value),
+        licensePlate: cleanPlate, // Gửi bản đã sạch khoảng trắng
+        year: parseInt(yearInput.value),
+        vin: vinInput.value.trim(), // VIN cũng nên trim khoảng trắng đầu cuối
+        createdBy: parseInt(customerId)
         };
 
         const res = await customerApi.addVehicle(vehicleData);
         const msgArea = document.getElementById('v-msg');
 
-        if (res.success) {
-            msgArea.innerHTML = `<span style="color: green;">Thêm xe thành công!</span>`;
-            setTimeout(() => {
-                ui.modalAddVehicle.style.display = 'none';
-                location.reload(); // Load lại để thấy xe mới
-            }, 1500);
-        } else {
-            msgArea.innerHTML = `<span style="color: red;">${res.message}</span>`;
+        try {
+            const res = await customerApi.addVehicle(vehicleData);
+            if (res.success) {
+                msgArea.innerHTML = `<span style="color: green;">Thêm xe thành công!</span>`;
+                setTimeout(() => {
+                    ui.modalAddVehicle.style.display = 'none';
+                    location.reload(); 
+                }, 1500);
+            } else {
+                msgArea.innerHTML = `<span style="color: red;">${res.message}</span>`;
+            }
+        } catch (error) {
+            msgArea.innerHTML = `<span style="color: red;">Lỗi kết nối máy chủ</span>`;
         }
     });
 // Hàm chính để tải lịch hẹn
@@ -91,6 +119,26 @@ async function loadCustomerAppointments(container) {
     } catch (error) {
         console.error("Lỗi tải lịch hẹn:", error);
         container.innerHTML = `<div class="alert alert-danger">Không thể kết nối máy chủ.</div>`;
+    }
+}
+
+async function handleCancelAppointment(appointmentId) {
+    if (!confirm("Bạn có chắc chắn muốn hủy lịch hẹn này không?")) return;
+
+    try {
+        // Gọi API Patch để cập nhật status sang 5
+        // Lưu ý: Tên hàm updateAppointmentStatus tùy thuộc vào khai báo trong auth-api.js của bạn
+        const res = await customerApi.updateAppointmentStatus(appointmentId, 5);
+
+        if (res.success) {
+            alert("Đã hủy lịch hẹn thành công.");
+            location.reload(); // Load lại trang để cập nhật danh sách
+        } else {
+            alert("Lỗi: " + (res.message || "Không thể hủy lịch hẹn"));
+        }
+    } catch (error) {
+        console.error("Lỗi khi hủy lịch hẹn:", error);
+        alert("Đã có lỗi xảy ra khi kết nối máy chủ.");
     }
 }
 
@@ -363,12 +411,22 @@ function renderBasicJobCardInfo(jc, customMsg = "") {
         11: "Không tìm thấy lỗi",
         12: "Đang xem xét vấn đề mới",
     };
+
+    const showProgressBtn = jc.status === 7 || jc.status === 8;
+
     return `
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
                 <strong style="color:#333;">Mã phiếu: #JC${jc.jobCardId}</strong>
                 <p style="margin:5px 0; font-size:13px; color:#666;">Ngày tạo: ${new Date(jc.startDate).toLocaleDateString('vi-VN')}</p>
-                <p style="margin:0; font-size:14px;">Trạng thái: <span class="badge" style="background:#e3f2fd; color:#1976d2; padding:2px 8px; border-radius:10px;">${statusText[jc.status] || 'Đang xử lý'}</span></p>
+                <p style="margin:0; font-size:14px;">
+                    Trạng thái: <span class="badge" style="background:#e3f2fd; color:#1976d2; padding:2px 8px; border-radius:10px;">${statusText[jc.status] || 'Đang xử lý'}</span>
+                </p>
+                ${showProgressBtn ? `
+                    <button class="btn-progress" onclick="handleViewProgress(${jc.jobCardId})" 
+                            style="margin-top:10px; background:#1976d2; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px;">
+                        <i class="fa-solid fa-chart-line"></i> Xem tiến độ chi tiết
+                    </button>` : ''}
             </div>
             <div style="text-align:right; color:#d32f2f; font-style:italic; font-size:13px;">
                 ${customMsg}
@@ -377,4 +435,62 @@ function renderBasicJobCardInfo(jc, customMsg = "") {
     `;
 }
 
+// Hàm gọi API và hiển thị Popup
+async function handleViewProgress(jobCardId) {
+    const modal = document.getElementById('modalProgress');
+    const content = document.getElementById('progressContent');
+    
+    modal.style.display = 'block';
+    content.innerHTML = '<p style="text-align:center;">Đang tải dữ liệu tiến độ...</p>';
+
+    try {
+        
+        const result = await EstimateAPI.viewProgress(jobCardId);
+
+        if (result.success) {
+            const data = result.data;
+            content.innerHTML = `
+                <div style="background:#f8f9fa; padding:10px; border-radius:6px; margin-bottom:15px;">
+                    <p style="margin:5px 0;"><strong>Xe:</strong> ${data.vehicleBrand} ${data.vehicleModel} (${data.vehicleLicensePlate})</p>
+                    <p style="margin:5px 0;"><strong>Thợ chính:</strong> ${data.assignedMechanic || 'Chưa phân công'}</p>
+                    <p style="margin:5px 0;"><strong>Dự kiến xong:</strong> <span style="color:#d32f2f;">${data.estimatedCompletionTime}</span></p>
+                    <div style="margin-top:10px; background:#eee; height:15px; border-radius:10px; overflow:hidden;">
+                        <div style="width:${data.progressPercentage}%; background:#28a745; height:100%; transition:0.5s;"></div>
+                    </div>
+                    <p style="text-align:right; font-size:12px; margin-top:5px;">Hoàn thành: ${data.progressPercentage}%</p>
+                </div>
+
+                <div class="progress-steps">
+                    ${data.services.map(sv => `
+                        <div style="margin-bottom:20px; border-left:3px solid #1976d2; padding-left:15px;">
+                            <h5 style="margin:0; color:#1976d2;">${sv.serviceName} 
+                                <small style="float:right;">${sv.serviceStatusName}</small>
+                            </h5>
+                            <p style="font-size:12px; color:#666; margin:5px 0;">${sv.description}</p>
+                            
+                            <div style="margin-top:10px;">
+                                ${sv.tasks.map(task => `
+                                    <div style="display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px dashed #eee;">
+                                        <span>
+                                            ${task.status === 3 ? '✅' : '⏳'} ${task.taskName}
+                                        </span>
+                                        <span style="color:#888;">${task.serviceTaskStatusName}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            content.innerHTML = `<p style="color:red;">${result.message}</p>`;
+        }
+    } catch (error) {
+        content.innerHTML = '<p style="color:red;">Lỗi kết nối máy chủ.</p>';
+    }
+}
+
+// Đưa ra global để button có thể gọi
+window.handleViewProgress = handleViewProgress;
 window.handleCustomerApproval = handleCustomerApproval;
+window.handleCancelAppointment = handleCancelAppointment;

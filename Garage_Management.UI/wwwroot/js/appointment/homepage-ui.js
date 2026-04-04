@@ -29,7 +29,7 @@ export const homepageUI = {
             <div class="services-grid-content">
                 ${servicesHtml}
             </div>
-            <div id="pagination-container" class="services-pagination-container"></div>
+            <div id="services-pagination" class="services-pagination-container"></div>
         `;
 
         // Gán sự kiện click cho từng card
@@ -41,8 +41,8 @@ export const homepageUI = {
             };
         });
 
-        const paginationContainer = container.querySelector('.services-pagination-container');
-        if (onPageChange) {
+        const paginationContainer = container.querySelector('#services-pagination');
+        if (paginationContainer) {
             homepageUI.renderPagination(paginationContainer, currentPage, totalPages, onPageChange);
         }
     },
@@ -85,36 +85,29 @@ export const homepageUI = {
     },
 
     renderPagination: (container, page, totalPages, onPageChange) => {
-        if (totalPages <= 1) {
-            container.innerHTML = '';
-            return;
-        }
+        if (totalPages <= 1) return;
 
-        let html = `<div class="pagination-wrapper">`;
-        
-        // Nút lùi
-        html += `<button class="btn-page" ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">
-                    <i class="fas fa-chevron-left"></i>
-                 </button>`;
+        let html = `<div class="pagination-wrapper">
+            <button class="btn-page prev" ${page === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
 
-        // Thuật toán hiển thị số trang (có thể tối ưu thêm nếu nhiều trang)
         for (let i = 1; i <= totalPages; i++) {
-            html += `<button class="btn-page ${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            html += `<button class="btn-page num ${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
         }
 
-        // Nút tới
-        html += `<button class="btn-page" ${page === totalPages ? 'disabled' : ''} data-page="${page + 1}">
-                    <i class="fas fa-chevron-right"></i>
-                 </button>`;
+        html += `<button class="btn-page next" ${page === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>
+        </div>`;
 
-        html += `</div>`;
         container.innerHTML = html;
 
-        container.querySelectorAll('.btn-page:not([disabled])').forEach(btn => {
-            btn.onclick = () => {
-                const targetPage = parseInt(btn.dataset.page);
-                onPageChange(targetPage);
-            };
+        // Sự kiện số trang
+        container.querySelectorAll('.num').forEach(btn => {
+            btn.onclick = () => onPageChange(parseInt(btn.dataset.page));
         });
-    }
+
+        // Sự kiện lùi/tới
+        const prevBtn = container.querySelector('.prev');
+        const nextBtn = container.querySelector('.next');
+        if (prevBtn && page > 1) prevBtn.onclick = () => onPageChange(page - 1);
+        if (nextBtn && page < totalPages) nextBtn.onclick = () => onPageChange(page + 1);
+    },
 };

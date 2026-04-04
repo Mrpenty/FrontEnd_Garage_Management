@@ -152,6 +152,20 @@ export const customerApi = {
         return await response.json();
     },
 
+    updateAppointmentStatus: async (id, status) => {
+         const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${APPOINTMENT_URL}/${id}/status`, {
+            method: 'PATCH',
+            headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+            body: JSON.stringify({ status: status })
+        });
+        if (!response.ok) throw new Error("Không thể cập nhật trạng thái lịch hẹn");
+        return await response.json();
+    },
+
     // Lấy danh sách Model xe để chọn
     async getVehicleModels(page = 1, pageSize = 50) {
         const response = await fetch(`${MODEL_URL}?page=${page}&pageSize=${pageSize}`);
@@ -282,5 +296,17 @@ export const EstimateAPI = {
             },
             body: JSON.stringify({ status: status }) // Truyền status vào body
         });
+    },
+
+    viewProgress: async (jobCardId) => {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${JOBCARD_URL}/${jobCardId}/progress-viewdetail`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return await response.json();
     }
 };

@@ -34,7 +34,11 @@ async function refreshData() {
 
             // Chuẩn bị dữ liệu Dropdown: Tất cả Workbay + Số lượng Job hiện có trong mỗi Workbay
             const wbOptions = allWorkbays.map(wb => {
-                const count = wb.jobCards ? wb.jobCards.length : 0;
+                const cards = wb.jobCards || [];
+                const activeJobsInWb = cards.filter(job => 
+                    [1, 2, 3, 4, 5, 6, 7, 12].includes(job.status)
+                );
+                const count = activeJobsInWb.length;
                 return `<option value="${wb.id}">${wb.name} (${count} xe đang chờ)</option>`;
             }).join('');
 
@@ -101,7 +105,8 @@ async function refreshData() {
 
             grid.innerHTML = workbays.map(wb => {
                 let displayJob = null;
-                const cards = Array.isArray(wb.jobCards) ? wb.jobCards : [];
+                const allCards = Array.isArray(wb.jobCards) ? wb.jobCards : [];
+                const cards = allCards.filter(j => [1, 2, 3, 4, 5, 6, 7, 12].includes(j.status));
                 
                 if (cards.length > 0) {
                     const highPriority = cards.filter(j => [4, 5, 6, 7, 12].includes(j.status));

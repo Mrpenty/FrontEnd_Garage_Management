@@ -26,6 +26,10 @@ let bookingState = {
     parts: []
 };
 let allModels = [];
+let allServices = []; 
+let allParts = [];
+let currentServicePage = 1;
+let currentPartPage = 1;
 
 // --- Initialization ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -95,7 +99,7 @@ async function loadInitialData() {
         try {
             const res = await BookingAPI.getUserVehicles();
            if (res.success && res.data) {
-                const vehicleList = res.data.items || [];
+                const vehicleList = res.data.items || res.data.pageData || (Array.isArray(res.data) ? res.data : []);
                 bookingUI.renderMyVehicles(vehicleList);
             }
         } catch (err) { console.error("Lỗi tải xe user:", err); }
@@ -146,11 +150,37 @@ async function loadServices() {
     container.innerHTML = "<p>Đang tải dịch vụ...</p>";
     try {
         const res = await BookingAPI.getServices();
-        const services = res.data?.pageData || [];
-        bookingUI.renderServiceList(container, services, formatCurrency);
+        allServices = res.data?.pageData || res.data?.items || (Array.isArray(res.data) ? res.data : []);
+        
+        currentServicePage = 1; // Reset về trang 1
+        renderCurrentServicePage();
     } catch (err) {
         container.innerHTML = `<p class="error-msg">Lỗi: ${err.message}</p>`;
     }
+}
+
+// Hàm phụ để render trang hiện tại
+function renderCurrentServicePage() {
+    const container = document.getElementById("service-list");
+    bookingUI.renderServiceList(container, allServices, formatCurrency, currentServicePage, 6);
+    
+    // Giữ trạng thái checkbox đã chọn từ bookingState.services
+    bookingState.services.forEach(id => {
+        const chk = document.getElementById(`svc-${id}`);
+        if (chk) chk.checked = true;
+    });
+
+    // Lắng nghe sự thay đổi của checkbox để cập nhật bookingState ngay lập tức
+    container.querySelectorAll('input[name="service-item"]').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+            const id = parseInt(e.target.value);
+            if (e.target.checked) {
+                if (!bookingState.services.includes(id)) bookingState.services.push(id);
+            } else {
+                bookingState.services = bookingState.services.filter(sid => sid !== id);
+            }
+        });
+    });
 }
 
 async function loadInventories() {
@@ -159,12 +189,11 @@ async function loadInventories() {
     
     try {
         // Sử dụng brandId đã lưu ở State từ Bước 0
-        const res = await BookingAPI.getInventoryByBrand(bookingState.brandId);
+        const res = await BookingAPI.getInventory();
         
-        // Lưu ý: Kiểm tra cấu trúc data trả về của ApiResponse<List<InventoryResponse>>
-        const parts = res.data || []; 
-        
-        bookingUI.renderPartList(container, parts, formatCurrency);
+        allParts = res.data?.pageData || res.data?.items || (Array.isArray(res.data) ? res.data : []);
+        currentPartPage = 1;
+        bookingUI.renderPartList(container, allParts, formatCurrency, currentPartPage, 6);
     } catch (err) {
         console.error("Load parts error:", err);
         container.innerHTML = `<p class="error-msg">Không thể tải danh sách phụ kiện.</p>`;
@@ -249,9 +278,21 @@ async function handleFormSubmit(e) {
     const date = document.getElementById("appointmentDate").value;
     const timeSlot = document.querySelector('input[name="time-slot"]:checked')?.value;
     const isLogged = !!getCustomerId();
-
+    const rawLicensePlate = document.getElementById("licensePlate").value.trim();
+    const cleanLicensePlate = rawLicensePlate.replace(/\s+/g, '');
     if (!date || !timeSlot) {
         alert("Vui lòng chọn đầy đủ ngày và giờ hẹn!");
+        return;
+    }
+
+    if (cleanLicensePlate.length > 11) {
+        alert("Biển số xe không được quá 11 ký tự!");
+        document.getElementById("licensePlate").focus();
+        return;
+    }
+
+    if (cleanLicensePlate.length < 4) { // Validate tối thiểu nếu cần
+        alert("Biển số xe không hợp lệ!");
         return;
     }
 
@@ -266,7 +307,7 @@ async function handleFormSubmit(e) {
         VehicleModelId: bookingState.modelId ? Number(bookingState.modelId) : null,
         CustomVehicleBrand: bookingState.brandName,
         CustomVehicleModel: bookingState.modelName,
-        LicensePlate: document.getElementById("licensePlate").value.trim(),
+        LicensePlate: cleanLicensePlate,
         Description: document.getElementById("note").value.trim(),
         Status: 1
     };
@@ -280,6 +321,10 @@ async function handleFormSubmit(e) {
         payload.FirstName = null;
         payload.LastName = null;
         payload.Phone = null;
+        payload.LicensePlate = null;
+        payload.VehicleModelId = null;
+        payload.CustomVehicleBrand = null;
+        payload.CustomVehicleModel = null;
     } 
     else if (isLogged && isBookForOthers) {
         // TH3: Đăng nhập nhưng đặt hộ bạn bè
@@ -321,3 +366,38 @@ function getCustomerId() {
 function formatCurrency(amount) {
     return (amount || 0).toLocaleString('vi-VN') + " VNĐ";
 }
+
+// Hàm chuyển trang cho Dịch vụ
+window.changeServicePage = function(page) {
+    currentServicePage = page;
+    const container = document.getElementById("service-list");
+    bookingUI.renderServiceList(container, allServices, formatCurrency, currentServicePage, 6);
+    // Cuộn nhẹ lên đầu danh sách
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+// Hàm chuyển trang cho Phụ tùng
+window.changePartPage = function(page) {
+    currentPartPage = page;
+    const container = document.getElementById("part-list"); // hoặc ID container phụ tùng của bạn
+    bookingUI.renderPartList(container, allParts, formatCurrency, currentPartPage, 6);
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+window.renderCurrentServicePage = renderCurrentServicePage;
+
+window.handlePartClick = (cardEl, partId) => {
+    const chk = cardEl.querySelector('input');
+    chk.checked = !chk.checked;
+    
+    // Cập nhật vào bookingState
+    if (!bookingState.parts) bookingState.parts = [];
+    
+    if (chk.checked) {
+        if (!bookingState.parts.includes(partId)) {
+            bookingState.parts.push(partId);
+        }
+    } else {
+        bookingState.parts = bookingState.parts.filter(id => id !== partId);
+    }
+};

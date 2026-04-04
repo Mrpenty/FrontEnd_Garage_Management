@@ -40,51 +40,88 @@ export const bookingUI = {
         selectElement.disabled = false;
     },
 
-    // Render danh sách dịch vụ (Service Card)
-    renderServiceList: (containerElement, services, formatCurrencyFn) => {
-        containerElement.innerHTML = services.map(s => `
-            <div class="service-card" onclick="document.getElementById('svc-${s.serviceId}').click()">
+    renderServiceList: (containerElement, services, formatCurrencyFn, currentPage = 1, pageSize = 6) => {
+        // Tính toán dữ liệu cho trang hiện tại
+        const startIndex = (currentPage - 1) * pageSize;
+        const pagedServices = services.slice(startIndex, startIndex + pageSize);
+
+        // Render danh sách Card
+        containerElement.innerHTML = pagedServices.map(s => `
+            <div class="service-card" onclick="const chk = this.querySelector('input'); chk.checked = !chk.checked; chk.dispatchEvent(new Event('change', {bubbles: true}));">
                 <input type="checkbox" name="service-item" value="${s.serviceId}" id="svc-${s.serviceId}" 
                     onclick="event.stopPropagation()" />
                 <div class="service-info">
                     <h4>${s.serviceName}</h4>
-                    <p class="service-desc">${s.description || 'Không có mô tả'}</p>
+                    <p class="service-desc">${s.description || 'Không có mô tả cho dịch vụ này.'}</p>
                     <div class="service-meta">
-                        <span class="price text-danger">${formatCurrencyFn(s.basePrice)}</span>
-                        <span class="duration"><i class="far fa-clock"></i> ${s.totalEstimateMinute} phút</span>
+                        <span class="price">${formatCurrencyFn(s.basePrice)}</span>
+                        <span class="duration">
+                            <i class="far fa-clock"></i> ${s.totalEstimateMinute} phút
+                        </span>
                     </div>
                 </div>
             </div>
         `).join("");
+
+        // Render nút phân trang nếu cần
+        const totalPages = Math.ceil(services.length / pageSize);
+        if (totalPages > 1) {
+            const paginationHtml = `
+                <div class="pagination-container" style="grid-column: 1 / -1;">
+                    ${Array.from({ length: totalPages }, (_, i) => `
+                        <button class="page-btn ${i + 1 === currentPage ? 'active' : ''}" 
+                                onclick="window.changeServicePage(${i + 1})">${i + 1}</button>
+                    `).join('')}
+                </div>
+            `;
+            containerElement.innerHTML += paginationHtml;
+        }
     },
 
-    // Render danh sách các phụ tùng theo Brands đã chọn
-    renderPartList: (container, parts, formatCurrencyFn) => {
-        if (!parts || parts.length === 0) {
+    // Render danh sách các phụ tùng
+    renderPartList: (container, parts, formatCurrencyFn, currentPage = 1, pageSize = 6) => {
+        const list = Array.isArray(parts) ? parts : (parts?.pageData || parts?.items || []);
+        if (!list || list.length === 0) {
             container.innerHTML = `
                 <div class="no-data-msg">
                     <p>Hãng xe này hiện chưa có phụ kiện gợi ý sẵn. Bạn có thể bỏ qua bước này.</p>
                 </div>`;
             return;
         }
-
+        const startIndex = (currentPage - 1) * pageSize;
+        const pagedParts = list.slice(startIndex, startIndex + pageSize);
+        // 3. Render danh sách (Đã có biến 'list' nên sẽ không còn lỗi ReferenceError)
         container.innerHTML = `
-            <div class="service-grid">
-                ${parts.map(p => `
-                    <div class="service-card" onclick="document.getElementById('part-${p.inventoryId}').click()">
-                        <input type="checkbox" name="part-item" value="${p.inventoryId}" id="part-${p.inventoryId}" 
-                               onclick="event.stopPropagation()" />
+            <div id="part-list-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; width: 100%;">
+                ${pagedParts.map(p => `
+                    <div class="service-card" onclick="handlePartClick(this, ${p.sparePartId})">
+                        <input type="checkbox" name="part-item" value="${p.sparePartId}" id="part-${p.sparePartId}" 
+                            ${(window.bookingState?.parts || []).includes(p.sparePartId) ? 'checked' : ''}
+                            onclick="event.stopPropagation()" />
                         <div class="service-info">
-                            <h4>${p.inventoryName}</h4>
-                            <p class="service-desc">${p.description || 'Phụ tùng chính hãng'}</p>
+                            <h4>${p.partName}</h4>
+                            <p class="service-desc">Mã: ${p.partCode} | ĐVT: ${p.unit}</p>
                             <div class="service-meta">
-                                <span class="price text-danger">${formatCurrencyFn(p.price)}</span>
-                                <span class="stock">Kho: ${p.quantity}</span>
+                                <span class="price" style="color: #d32f2f; font-weight: bold;">${formatCurrencyFn(p.sellingPrice)}</span>
+                                <span class="stock" style="font-size: 12px; color: ${p.quantity > 0 ? '#27ae60' : '#e74c3c'}">
+                                    <i class="fas fa-warehouse"></i> Kho: ${p.quantity}
+                                </span>
                             </div>
                         </div>
                     </div>
                 `).join('')}
             </div>`;
+
+            const totalPages = Math.ceil(list.length / pageSize);
+            if (totalPages > 1) {
+                container.innerHTML += `
+                    <div class="pagination-container" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px; width: 100%;">
+                        ${Array.from({ length: totalPages }, (_, i) => `
+                            <button class="page-btn ${i + 1 === currentPage ? 'active' : ''}" 
+                                    onclick="window.changePartPage(${i + 1})">${i + 1}</button>
+                        `).join('')}
+                    </div>`;
+            }
     },
 
     //Render Booking form
@@ -114,7 +151,7 @@ export const bookingUI = {
                 </div>
                 <input type="text" id="phone" placeholder="Số điện thoại *" value="${userInfo.phoneNumber || ''}" ${isLogged ? 'readonly' : ''} required>
                 
-                <input type="text" id="licensePlate" placeholder="Biển số xe *" value="${licensePlateValue}" required>
+                <input type="text" id="licensePlate" placeholder="Biển số xe *" value="${licensePlateValue}" maxlength="11" required>
 
                 <label style="margin-top: 10px; display: block;">Chọn ngày hẹn:</label>
                 <input type="date" id="appointmentDate" min="${new Date().toISOString().split('T')[0]}" required>

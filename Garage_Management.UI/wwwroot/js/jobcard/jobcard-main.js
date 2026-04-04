@@ -214,23 +214,52 @@ function initVehicleLogic(elements) {
 
     elements.createVehicleForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // --- BẮT ĐẦU VALIDATE ---
+        const brandId = elements.brandSelect.value;
+        const modelId = elements.modelSelect.value;
+        const licensePlate = document.getElementById('newVehiclePlate').value.trim().toUpperCase();
+        const year = parseInt(document.getElementById('newVehicleYear').value);
+        const currentYear = new Date().getFullYear();
+
+        // 1. Kiểm tra chọn Hãng và Dòng xe
+        if (!brandId || !modelId) {
+            return alert("Vui lòng chọn đầy đủ Hãng xe và Dòng xe!");
+        }
+
+        // 2. Kiểm tra biển số (VD: 30A-12345 hoặc 29-F1 123.45)
+        // Regex này chấp nhận các định dạng biển số phổ biến
+        const plateRegex = /^[0-9]{2}[A-Z0-9]{1,2}[- ]?[0-9]{4,5}(\.[0-9]{1,2})?$/;
+        if (!plateRegex.test(licensePlate)) {
+            return alert("Biển số xe không hợp lệ! (VD: 30A12345 hoặc 29F1-12345)");
+        }
+
+        // 3. Kiểm tra năm sản xuất
+        if (isNaN(year) || year < 1980 || year > currentYear + 1) {
+            return alert(`Năm sản xuất phải từ 1980 đến ${currentYear + 1}`);
+        }
+
         const payload = {
             customerId: parseInt(elements.selectedCustomerId.value),
-            brandId: parseInt(elements.brandSelect.value),
-            modelId: parseInt(elements.modelSelect.value),
-            licensePlate: document.getElementById('newVehiclePlate').value.trim().toUpperCase(),
+            brandId: parseInt(brandId),
+            modelId: parseInt(modelId),
+            licensePlate: licensePlate,
             vin: document.getElementById('newVehicleVin')?.value.trim() || "N/A",
-            year: parseInt(document.getElementById('newVehicleYear').value) || new Date().getFullYear()
+            year: year
         };
 
         const res = await vehicleApi.create(payload);
         if (res.success) {
             alert("Thêm xe thành công!");
             elements.modalAddVehicle.style.display = 'none';
-            // Cập nhật lại dropdown xe
+            elements.createVehicleForm.reset();
+            
+            // Reload dropdown xe
             const vRes = await vehicleApi.getByCustomer(payload.customerId);
             jobcardUI.renderVehicleSelect(elements.selectVehicle, vRes.data.pageData || vRes.data);
             elements.selectVehicle.value = res.data.vehicleId;
+        } else {
+        alert("Lỗi: " + (res.message || "Biển số xe này đã tồn tại trên hệ thống!"));
         }
     });
 }
@@ -289,8 +318,8 @@ function initAppointmentCheck(elements) {
                 appointmentApi.getAll({
                 Search: phone, 
                 Page: 1,  
-                PageSize: 20,
-                Status: "InProgress" 
+                PageSize: 20,   
+                Status: "Confirmed" 
             }),
                 getBusyAppointmentIds()
             ]);
@@ -332,24 +361,29 @@ function initAppointmentCheck(elements) {
                 // Cùng future hoặc cùng past → so khoảng cách
                 return Math.abs(timeA - now) - Math.abs(timeB - now);
             });
-
-            // 4. Lấy best appointment
-            const bestAppointment = list[0];
             
-             // 5. Render list (top 5 cho dễ nhìn)
+            // GỌI RENDER VÀ TRUYỀN CALLBACK
             jobcardUI.renderAppointmentList(
                 elements.appointmentResult,
                 list.slice(0, 5),
                 (selectedApt) => {
+                    // PHẦN NÀY CHỈ CHẠY KHI BẤM NÚT "ÁP DỤNG" TRÊN UI
+                    console.log("Đã chọn lịch hẹn:", selectedApt);
+                    
+                    // 1. Điền dữ liệu vào form
                     applyAppointmentData(selectedApt, elements);
-                    addResetButton(elements);
+                    
+                    // 2. Thêm nút reset nếu cần
+                    if (typeof addResetButton === "function") {
+                        addResetButton(elements);
+                    }
                 }
             );
 
             // 6. Auto highlight / select best
-            if (bestAppointment) {
-                applyAppointmentData(bestAppointment, elements);
-            }
+            // if (bestAppointment) {
+            //     applyAppointmentData(bestAppointment, elements);
+            // }
         } catch (err) {
             elements.appointmentResult.innerHTML = `<div class="info-alert error">Lỗi hệ thống khi tìm mã.</div>`;
         }
@@ -368,7 +402,7 @@ async function applyAppointmentData(apt, elements) {
 
     // Điền thông tin xe
     if (apt.vehicle) {
-        // Giả sử selectVehicle là một select box, bạn cần trigger thay đổi
+        elements.selectVehicle.innerHTML = '<option value="">-- Chọn xe --</option>';
         // Hoặc thêm option vào select và select nó
         const option = new Option(`${apt.vehicle.licensePlate} - ${apt.vehicle.modelName}`, apt.vehicle.vehicleId);
         elements.selectVehicle.add(option);
@@ -398,50 +432,59 @@ function initCustomerLogic(elements) {
 
     customerForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // --- BẮT ĐẦU VALIDATE ---
         const fullName = document.getElementById('newCustomerName').value.trim();
+        const phone = document.getElementById('newCustomerPhone').value.trim();
+        const email = document.getElementById('newCustomerEmail').value.trim();
+        
+        // 1. Kiểm tra họ tên (Phải có ít nhất 2 từ)
+        if (fullName.split(' ').length < 2) {
+            return alert("Vui lòng nhập đầy đủ Họ và Tên (VD: Nguyễn Văn A)");
+        }
+
+        // 2. Kiểm tra số điện thoại (Định dạng Việt Nam: 10 số, bắt đầu bằng 0)
+        const phoneRegex = /^(0[3|5|7|8|9])([0-9]{8})$/;
+        if (!phoneRegex.test(phone)) {
+            return alert("Số điện thoại không hợp lệ! (Phải có 10 số và bắt đầu bằng 03, 05, 07, 08 hoặc 09)");
+        }
+
+        // 3. Kiểm tra Email (Nếu có nhập thì phải đúng định dạng)
+        if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+            return alert("Email không đúng định dạng!");
+        }
+        // --- KẾT THÚC VALIDATE ---
+
         const nameParts = fullName.split(' ');
-        const firstName = nameParts.length > 1 ? nameParts.pop() : fullName;
-        const lastName = nameParts.join(' ') || "";
-        // 1. Thu thập dữ liệu từ form
+        const firstName = nameParts.pop();
+        const lastName = nameParts.join(' ');
+
         const customerData = {
-            firstName: firstName,
-            lastName: lastName,
-            phoneNumber: document.getElementById('newCustomerPhone').value.trim(),
-            email: document.getElementById('newCustomerEmail').value.trim() || null,
+            firstName, lastName,
+            phoneNumber: phone,
+            email: email || null,
             address: document.getElementById('newCustomerAddress').value.trim() || null
         };
 
         try {
-            // Vô hiệu hóa nút để tránh double-click
             btnSubmit.disabled = true;
             btnSubmit.innerText = "Đang lưu...";
 
-            // 2. Gửi API
             const res = await customerApi.createByReceptionist(customerData);
-
             if (res.success) {
                 alert("Thêm khách hàng thành công!");
-                
-                // 3. Cập nhật UI: Đóng modal và điền thông tin vào ô tìm kiếm chính
                 elements.modalAddCustomer.style.display = 'none';
-                elements.searchCustomerInput.value = `${fullName} - ${customerData.phoneNumber}`;
-                
-                // Giả sử API trả về ID của khách hàng mới tạo trong res.data hoặc res.customerId
-                const newCustomerId = res.data?.customerId || res.customerId;
-                elements.selectedCustomerId.value = newCustomerId;
-
-                // Reset form
+                elements.searchCustomerInput.value = `${fullName} - ${phone}`;
+                elements.selectedCustomerId.value = res.data?.customerId || res.customerId;
                 customerForm.reset();
-
-                // Kích hoạt lại các nút chọn xe
                 elements.selectVehicle.disabled = false;
                 elements.btnOpenAddVehicle.disabled = false;
             } else {
-                alert("Lỗi: " + (res.message || "Không thể tạo khách hàng"));
+                alert("Lỗi: " + (res.message || "Số điện thoại này có thể đã tồn tại!"));
             }
         } catch (err) {
-            console.error("Lỗi khi thêm khách:", err);
-            alert("Đã xảy ra lỗi hệ thống, vui lòng thử lại sau.");
+            console.error(err);
+            alert("Lỗi kết nối server.");
         } finally {
             btnSubmit.disabled = false;
             btnSubmit.innerText = "Lưu Khách Hàng";
@@ -497,7 +540,27 @@ function initJobCardSubmit(elements) {
                 const results = await Promise.all(servicePromises);
 
                 if (results.every(r => r === true)) {
-                    alert("Tạo JobCard và thêm dịch vụ thành công!");
+                    if (currentAppointmentId) {
+                        try {
+                            const updateAptPayload = {
+                                customerId: customerIdNum,
+                                vehicleId: vehicleIdNum,
+                                status: 3, // Chuyển sang trạng thái đã tiếp nhận (hoặc 3 tùy BE)
+                                updatedBy: 1, // Thay bằng ID user đang đăng nhập nếu có
+                                // Các trường dưới đây nên giữ nguyên từ object apt cũ hoặc truyền từ form
+                                description: elements.jobCardNote.value 
+                            };
+                            await Promise.all([
+                                appointmentApi.update(currentAppointmentId, updateAptPayload),
+                                appointmentApi.updateStatus(currentAppointmentId, 3) 
+                            ]);
+                            console.log(`Đã chuyển trạng thái lịch hẹn ${currentAppointmentId} sang 3`);
+                        } catch (statusErr) {
+                            console.error("Lỗi cập nhật trạng thái lịch hẹn:", statusErr);
+                            // Không alert lỗi này để tránh làm gián đoạn trải nghiệm vì JobCard đã tạo xong
+                        }
+                    }
+                    alert("Tạo JobCard và thêm dịch vụ thành công!");                 
                     // --- Reset giao diện ---
                     elements.modalJobCard.style.display = 'none';
                     elements.createJobCardForm.reset();
@@ -522,59 +585,117 @@ function initJobCardSubmit(elements) {
     });
 }
 
-// Gán các hàm vào window để HTML onclick có thể gọi được
-window.showPrintPreview = () => {
-    const customer = document.getElementById('searchCustomerInput').value || "---";
-    const phone = document.getElementById('checkPhone').value || "---";
-    const vehicle = document.getElementById('selectVehicle').options[document.getElementById('selectVehicle').selectedIndex]?.text || "---";
-    const note = document.getElementById('jobCardNote').value || "Không có ghi chú";
-    
-    let servicesHtml = '';
-    document.querySelectorAll('#selectedServicesBody tr:not(.empty-row)').forEach((tr, index) => {
-        servicesHtml += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${tr.cells[0].innerText}</td>
-                <td>${tr.cells[1].innerText}</td>
-            </tr>`;
-    });
+// Hàm này dùng để In khi xem chi tiết một JobCard cũ
+window.showPrintPreviewFromData = async (input) => {
+    let data;
+    if (typeof input === 'string') {
+        data = JSON.parse(input);
+    } else if (typeof input === 'number') {
+        const res = await jobcardApi.getById(input);
+        data = res.success ? res.data : res;
+    }
+
+    if (!data || !data.jobCardId) return alert("Không có dữ liệu!");
 
     const paper = document.getElementById('printablePaper');
-    paper.innerHTML = `
-        <div class="print-header">
-            <div class="print-logo">GARAGE PRO</div>
-            <div>Mã số: <strong>JC-${Date.now().toString().slice(-6)}</strong></div>
-        </div>
-        <div class="print-title">
-            <h2>Phiếu Tiếp Nhận Sửa Chữa</h2>
-            <p>Ngày: ${new Date().toLocaleDateString('vi-VN')}</p>
-        </div>
-        <div class="print-info-grid">
-            <div><strong>Khách hàng:</strong> ${customer}</div>
-            <div><strong>Điện thoại:</strong> ${phone}</div>
-            <div><strong>Phương tiện:</strong> ${vehicle}</div>
-        </div>
-        <table class="print-table">
-            <thead>
+    
+    // Tính toán dữ liệu dịch vụ và tổng tiền
+    let servicesHtml = '';
+    let totalAmount = 0;
+
+    if (data.services && data.services.length > 0) {
+        data.services.forEach((srv, index) => {
+            totalAmount += srv.price || 0;
+            servicesHtml += `
                 <tr>
-                    <th>STT</th>
-                    <th>Dịch vụ</th>
-                    <th>Mô tả</th>
+                    <td style="text-align:center">${index + 1}</td>
+                    <td>
+                        <strong>${srv.serviceName || 'Dịch vụ #' + srv.serviceId}</strong><br>
+                        <small style="color: #666;">${srv.description || ''}</small>
+                    </td>
+                    <td style="text-align:right">${(srv.price || 0).toLocaleString('vi-VN')} đ</td>
+                </tr>`;
+        });
+    }
+
+    paper.innerHTML = `
+        <div style="font-family: 'Times New Roman', serif; color: #000; line-height: 1.4;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 5px;">
+                <div>
+                    <h3 style="margin:0">GARAGE PRO SERVICE</h3>
+                    <p style="margin:0; font-size: 12px;">Đ/C: Số 123 Đường Định Công, Hà Nội</p>
+                </div>
+                <div style="text-align: right">
+                    <strong>Mã phiếu: JC-${data.jobCardId}</strong><br>
+                    <small>Ngày: ${new Date(data.startDate).toLocaleDateString('vi-VN')}</small>
+                </div>
+            </div>
+
+            <h2 style="text-align: center; text-transform: uppercase; margin: 20px 0;">Phiếu Tiếp Nhận & Sửa Chữa</h2>
+
+            <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
+                <tr>
+                    <td width="15%"><strong>Khách hàng:</strong></td>
+                    <td width="35%">${data.customerName || 'Mã KH: ' + data.customerId}</td>
+                    <td width="15%"><strong>Biển số:</strong></td>
+                    <td width="35%"><strong>${data.licensePlate || 'Xe ID: ' + data.vehicleId}</strong></td>
                 </tr>
-            </thead>
-            <tbody>
-                ${servicesHtml || '<tr><td colspan="3" style="text-align:center">Chưa chọn dịch vụ</td></tr>'}
-            </tbody>
-        </table>
-        <p><strong>Ghi chú:</strong> ${note}</p>
+                <tr>
+                    <td><strong>Cố vấn:</strong></td>
+                    <td>${data.supervisorName || 'ID: ' + data.supervisorId}</td>
+                    <td><strong>Trạng thái:</strong></td>
+                    <td>${data.status === 8 ? 'Chờ thanh toán' : 'Đang xử lý'}</td>
+                </tr>
+                <tr>
+                    <td><strong>Ghi chú:</strong></td>
+                    <td colspan="3">${data.note || 'Không có'}</td>
+                </tr>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: #eee;">
+                        <th style="border: 1px solid #000; padding: 5px;">STT</th>
+                        <th style="border: 1px solid #000; padding: 5px;">Nội dung công việc</th>
+                        <th style="border: 1px solid #000; padding: 5px;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${servicesHtml || '<tr><td colspan="3" style="text-align:center">Chưa có dịch vụ</td></tr>'}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: right;"><strong>TỔNG CỘNG:</strong></td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: right; font-weight: bold;">
+                            ${totalAmount.toLocaleString('vi-VN')} đ
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; text-align: center;">
+                <div>
+                    <strong>KHÁCH HÀNG</strong><br><br><br><br>
+                    <span>(Ký và ghi rõ họ tên)</span>
+                </div>
+                <div>
+                    <strong>CỐ VẤN DỊCH VỤ</strong><br><br><br><br>
+                    <span>${data.mechanics?.[0]?.mechanicName || 'Người tiếp nhận'}</span>
+                </div>
+            </div>
+        </div>
     `;
 
-    document.getElementById('printPreviewModal').classList.add('show');
+    document.getElementById('printPreviewModal').style.display = 'block';
 };
 
+// Sửa lại hàm đóng Modal để dùng style.display
 window.closePrintModal = () => {
-    document.getElementById('printPreviewModal').classList.remove('show');
+    const modal = document.getElementById('printPreviewModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
 };
+
 
 window.executePrint = () => {
     window.print();

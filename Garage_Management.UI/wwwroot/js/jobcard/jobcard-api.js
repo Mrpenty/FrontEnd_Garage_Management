@@ -182,5 +182,24 @@ export const appointmentApi = {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
         });
         return await res.json();
+    },
+
+    update: async (id, data) => {
+        const response = await fetch(`${APPOINTMENT_URL}/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        return response.ok;
+    },
+
+    updateStatus: async (id, status) => {
+        const response = await fetch(`${APPOINTMENT_URL}/${id}/status`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ status: status })
+        });
+        if (!response.ok) throw new Error("Không thể cập nhật trạng thái lịch hẹn");
+        return await response.json();
     }
 }

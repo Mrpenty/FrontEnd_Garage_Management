@@ -276,14 +276,41 @@ export const jobcardUI = {
 
     // Render danh sách JobCard ra bảng chính
     renderJobCardTable: (tbody, items) => {
-        if (!items || items.length === 0) {
+        const getStatusInfo = (status) => {
+            switch (status) {
+                case 1: return { label: 'Vừa tạo', class: 'status-created' };
+                case 2: return { label: 'Chờ tiếp nhận', class: 'status-waiting' };
+                case 3: return { label: 'Chờ kiểm tra', class: 'status-waiting-insp' };
+                case 4: return { label: 'Đang kiểm tra', class: 'status-inspection' };
+                case 5: return { label: 'Chờ Supervisor duyệt', class: 'status-waiting-sv' };
+                case 6: return { label: 'Chờ khách duyệt', class: 'status-waiting-cust' };
+                case 7: return { label: 'Đang sửa chữa', class: 'status-inprogress' };
+                case 8: return { label: 'Chờ nhận xe', class: 'status-waiting-pickup' };
+                case 9: return { label: 'Hoàn thành', class: 'status-completed' };
+                case 10: return { label: 'Đã hủy', class: 'status-rejected' };
+                case 11: return { label: 'Không phát hiện lỗi', class: 'status-noissue' };
+                case 12: return { label: 'Phát sinh lỗi mới', class: 'status-newfault' };
+                default: return { label: 'Không xác định', class: 'status-unknown' };
+            }
+        };
+
+        // Kiểm tra nếu items là object chứa pageData thì lấy pageData
+        const dataList = Array.isArray(items) ? items : (items?.pageData || []);
+
+        if (dataList.length === 0) {
             tbody.innerHTML = `<tr><td colspan="9" class="text-center">Không có dữ liệu JobCard</td></tr>`;
             return;
         }
-        tbody.innerHTML = items.map(item => {
-            // Lấy thông tin xe từ object con 'vehicle'
+
+        tbody.innerHTML = dataList.map(item => {
             const vehicle = item.vehicle || {}; 
-            const supervisor = item.supervisor || {};
+            const statusInfo = getStatusInfo(item.status);
+            
+            // Xử lý hiển thị thợ máy (vì mechanics là mảng)
+            const mechanicName = (item.mechanics && item.mechanics.length > 0) 
+                ? item.mechanics[0].fullName 
+                : 'Chưa phân công';
+
             return `
                 <tr>
                     <td>#${item.jobCardId}</td>
@@ -294,19 +321,20 @@ export const jobcardUI = {
                     <td>${item.startDate ? new Date(item.startDate).toLocaleString('vi-VN') : 'N/A'}</td>
                     <td>
                         <span class="supervisor-name">
-                            <i class="fa-solid fa-user-gear"></i> ${supervisor.fullName || 'Chưa phân công'}
+                            <i class="fa-solid fa-user-gear"></i> ${mechanicName}
                         </span>
-                    </td>                    <td>
-                        <span class="status-badge status-${item.status}">
-                            ${item.status === 1 ? 'Chờ kiểm tra' : 'Hoàn thành'}
+                    </td>                   
+                    <td>
+                        <span class="status-badge ${statusInfo.class}">
+                            ${statusInfo.label}
                         </span>
                     </td>
                     <td class="text-center">
                         <button class="btn-action view" data-id="${item.jobCardId}" title="Chi tiết">
                             <i class="fa-solid fa-eye"></i>
                         </button>
-                        <button class="btn-action print" data-id="${item.jobCardId}" 
-                                onclick="showPrintPreview(${item.jobCardId})" title="In phiếu">
+                        <button class="btn-action print" 
+                            onclick="showPrintPreviewFromData(${item.jobCardId})" title="In phiếu">
                             <i class="fa-solid fa-print"></i>
                         </button>
                     </td>
@@ -314,6 +342,8 @@ export const jobcardUI = {
             `;
         }).join('');
     },
+
+    
 
     // Render kết quả tìm kiếm khách hàng (Autocomplete)
     renderCustomerSearchResults: (ulElement, customers, onSelectCallback) => {
@@ -364,32 +394,66 @@ export const jobcardUI = {
 
     //Kết quả trả về lịch hẹn
     renderAppointmentList: (container, appointments, onSelectCallback) => {
+        let localSelectedApt = null; // Biến tạm lưu lịch đang được highlight
+
         let html = `
-            <div class="apt-list-box" style="padding: 10px; border: 1px solid #ccc;">
-                <p><strong>Tìm thấy ${appointments.length} lịch hẹn:</strong></p>
-                <div class="apt-items" style="max-height: 200px; overflow-y: auto;">
+            <div class="apt-wrapper">
+                <div class="apt-header">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Tìm thấy <strong>${appointments.length}</strong> lịch hẹn phù hợp</span>
+                </div>
+                <div class="apt-scroll-area">
                     ${appointments.map((apt, index) => `
-                        <div style="padding: 8px; border-bottom: 1px solid #eee; cursor: pointer;">
-                            <input type="radio" name="aptSelect" id="apt_${index}" value="${index}">
-                            <label for="apt_${index}" style="cursor: pointer;">
-                                <strong>${new Date(apt.appointmentDateTime).toLocaleString('vi-VN')}</strong><br>
-                                <small>Xe: ${apt.vehicle?.licensePlate || 'Chưa có xe'} | Dịch vụ: ${apt.services?.length || 0} mục</small>
-                            </label>
+                        <div class="apt-card" data-index="${index}">
+                            <div class="apt-card-icon"><i class="fas fa-clock"></i></div>
+                            <div class="apt-card-content">
+                                <div class="apt-time">${new Date(apt.appointmentDateTime).toLocaleString('vi-VN')}</div>
+                                <div class="apt-details">
+                                    <span class="apt-plate"><i class="fas fa-car"></i> ${apt.vehicle?.licensePlate || 'Chưa có xe'}</span>
+                                    <span class="apt-service-count"><i class="fas fa-tools"></i> ${apt.services?.length || 0} dịch vụ</span>
+                                </div>
+                                ${apt.description ? `<div class="apt-note">"${apt.description}"</div>` : ''}
+                            </div>
+                            <div class="apt-check-mark"><i class="fas fa-check-circle"></i></div>
                         </div>
                     `).join('')}
                 </div>
-                <button type="button" id="btnConfirmApt" class="btn-primary" style="margin-top: 10px;">Áp dụng lịch hẹn</button>
+                <div class="apt-footer">
+                    <button type="button" id="btnConfirmApt" class="btn-apply-apt" disabled>
+                        <i class="fas fa-magic"></i> Áp dụng lịch hẹn này
+                    </button>
+                </div>
             </div>
         `;
 
         container.innerHTML = html;
 
-        container.querySelector('#btnConfirmApt').onclick = () => {
-            const selected = container.querySelector('input[name="aptSelect"]:checked');
-            if (!selected) return alert("Vui lòng chọn một lịch!");
-            
-            const apt = appointments[selected.value];
-            onSelectCallback(apt);
+        const cards = container.querySelectorAll('.apt-card');
+        const confirmBtn = container.querySelector('#btnConfirmApt');
+
+        cards.forEach(card => {
+            card.onclick = () => {
+                cards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                
+                const index = card.dataset.index;
+                localSelectedApt = appointments[index]; // Gán vào biến tạm
+                
+                confirmBtn.disabled = false;
+                confirmBtn.classList.add('ready');
+            };
+        });
+
+        confirmBtn.onclick = () => {
+            if (localSelectedApt) {
+                // GỬI DỮ LIỆU NGƯỢC LẠI CHO LOGIC QUA CALLBACK
+                onSelectCallback(localSelectedApt); 
+                
+                // UI Phản hồi: Đổi thông báo hoặc ẩn danh sách
+                container.innerHTML = `<div class="info-alert success">
+                    <i class="fas fa-check"></i> Đã áp dụng lịch hẹn lúc ${new Date(localSelectedApt.appointmentDateTime).toLocaleString('vi-VN')}
+                </div>`;
+            }
         };
     },
 
@@ -496,68 +560,94 @@ export const jobcardUI = {
     },
 
     renderJobCardDetailModal: (data) => {
-        // Hàm phụ để chuyển đổi Status số sang chữ
-        const getStatusLabel = (s) => {
-            const map = { 1: 'Chờ sửa chữa', 2: 'Đang làm', 3: 'Hoàn thành', 0: 'Đã hủy' };
-            return map[s] || 'Không xác định';
-        };
+    const getStatusInfo = (status) => {
+        switch (status) {
+            case 1: return { label: 'Vừa tạo', class: 'status-created' };
+            case 2: return { label: 'Chờ tiếp nhận', class: 'status-waiting' };
+            case 3: return { label: 'Chờ kiểm tra', class: 'status-waiting-insp' };
+            case 4: return { label: 'Đang kiểm tra', class: 'status-inspection' };
+            case 5: return { label: 'Chờ Supervisor duyệt', class: 'status-waiting-sv' };
+            case 6: return { label: 'Chờ khách duyệt', class: 'status-waiting-cust' };
+            case 7: return { label: 'Đang sửa chữa', class: 'status-inprogress' };
+            case 8: return { label: 'Chờ nhận xe', class: 'status-waiting-pickup' };
+            case 9: return { label: 'Hoàn thành', class: 'status-completed' };
+            case 10: return { label: 'Đã hủy', class: 'status-rejected' };
+            case 11: return { label: 'Không phát hiện lỗi', class: 'status-noissue' };
+            case 12: return { label: 'Phát sinh lỗi mới', class: 'status-newfault' };
+            default: return { label: 'Không xác định', class: 'status-unknown' };
+        }
+    };
+    const statusInfo = getStatusInfo(data.status);
 
-        return `
-            <div class="modal-content detail-modal">
-                <div class="modal-header">
-                    <h3><i class="fa-solid fa-file-invoice"></i> CHI TIẾT JOB CARD #${data.jobCardId}</h3>
-                    <span class="close-modal">&times;</span>
+    // Render danh sách thợ máy
+    const mechanicsHtml = data.mechanics?.map(m => `
+        <span class="badge-mechanic"><i class="fa fa-wrench"></i> ${m.mechanicName}</span>
+    `).join('') || 'Chưa phân công';
+
+    // Render danh sách dịch vụ kèm Task
+    const servicesHtml = data.services?.map(srv => `
+        <div class="service-item-detail">
+            <div class="service-header">
+                <strong>${srv.serviceName || 'Dịch vụ #' + srv.serviceId}</strong>
+                <span class="price">${(srv.price || 0).toLocaleString()} đ</span>
+            </div>
+            <ul class="task-list">
+                ${srv.serviceTasks?.map(t => `
+                    <li class="${t.status === 3 ? 'done' : ''}">
+                        <i class="fa-regular ${t.status === 3 ? 'fa-check-circle' : 'fa-circle'}"></i> 
+                        ${t.taskName}
+                    </li>
+                `).join('')}
+            </ul>
+        </div>
+    `).join('') || '<p>Chưa có dịch vụ</p>';
+
+    const dataString = JSON.stringify(data).replace(/"/g, '&quot;');
+
+    return `
+    <div class="modal-content detail-modal" style="max-width: 900px;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-file-invoice"></i> CHI TIẾT JOB CARD #${data.jobCardId}</h3>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="detail-top-grid">
+                <div class="info-card">
+                    <label>Khách hàng</label>
+                    <p>${data.customerName || 'ID: ' + data.customerId}</p>
                 </div>
-                <div class="modal-body">
-                    <div class="detail-grid">
-                        <div class="info-group">
-                            <label>Khách hàng ID:</label> <span>${data.customerId}</span>
-                        </div>
-                        <div class="info-group">
-                            <label>Biển số xe:</label> <span class="badge-plate">${data.licensePlate || 'N/A'}</span>
-                        </div>
-                        <div class="info-group">
-                            <label>Ngày bắt đầu:</label> <span>${new Date(data.startDate).toLocaleString('vi-VN')}</span>
-                        </div>
-                        <div class="info-group">
-                            <label>Trạng thái:</label> <span class="status-${data.status}">${getStatusLabel(data.status)}</span>
-                        </div>
-                        <div class="info-group full-width">
-                            <label>Ghi chú:</label> <p>${data.note || '<i>Không có ghi chú</i>'}</p>
-                        </div>
-                        <div class="info-group">
-                            <label>Supervisor ID:</label> <span>${data.supervisorId}</span>
-                        </div>
-                        <div class="info-group">
-                            <label>Người tạo (ID):</label> <span>${data.createdByEmployeeId}</span>
-                        </div>
-                    </div>
+                <div class="info-card">
+                    <label>Biển số xe</label>
+                    <p class="plate-text">${data.licensePlate || 'ID: ' + data.vehicleId}</p>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn-primary print-jobcard" data-id="${data.jobCardId}" onclick="showPrintPreview()>
-                        <i class="fa-solid fa-print"></i> In phiếu
-                    </button>
+                <div class="info-card">
+                    <label>Kỹ thuật viên</label>
+                    <p>${mechanicsHtml}</p>
+                </div>
+                <div class="info-card">
+                    <label>Trạng thái</label>
+                    <p><span class="status-badge-detail ${statusInfo.class}">${statusInfo.label}</span></p>
                 </div>
             </div>
-            <div id="printPreviewModal" class="modal">
-                <div class="modal-content" style="max-width: 800px;">
-                    <div class="modal-header">
-                        <h3><i class="fa-solid fa-eye"></i> Xem trước bản in</h3>
-                        <span class="close-modal" onclick="closePrintModal()">&times;</span>
-                    </div>
-                    <div class="modal-body" style="background: #525659; padding: 30px; display: flex; justify-content: center;">
-                        <div id="printablePaper" class="a5-paper">
-                            </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn-cancel" onclick="closePrintModal()">Đóng</button>
-                        <button class="btn-primary" onclick="executePrint()">
-                            <i class="fa-solid fa-print"></i> In ngay
-                        </button>
-                    </div>
+
+            <div class="detail-main-content">
+                <h4><i class="fa-solid fa-gears"></i> Nội dung thực hiện</h4>
+                <div class="services-container-detail">
+                    ${servicesHtml}
+                </div>
+                
+                <div class="note-section">
+                    <label>Ghi chú khách hàng:</label>
+                    <p>${data.note || '<i>Không có ghi chú</i>'}</p>
                 </div>
             </div>
-        `;
-    },
-    
+        </div>
+        <div class="modal-footer">
+            <button class="btn-primary" onclick="showPrintPreviewFromData('${dataString}')">
+                <i class="fa-solid fa-print"></i> In phiếu tiếp nhận
+            </button>
+        </div>
+    </div>
+    `;
+    }
 };

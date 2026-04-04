@@ -250,7 +250,10 @@ export const repairExecution = {
             await repairApi.updateMechanicStatus(jobCardId, 3);
 
             // D. Giải phóng WorkBay (Đưa xe ra khỏi vị trí sửa chữa)
-            await repairApi.releaseWorkbay({ id: detailResult.workbayId });
+            if (detailResult.workbayId) {
+                const released = await repairApi.releaseWorkbay(detailResult.workbayId);
+                if (!released) console.warn("Cảnh báo: Không thể giải phóng khoang tự động.");
+            }
 
             await Swal.fire('Thành công', 'Đã hoàn thành sửa chữa và bàn giao lệnh!', 'success');
             location.reload();

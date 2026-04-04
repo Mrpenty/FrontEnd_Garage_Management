@@ -46,6 +46,21 @@
 
         <main class="main-content" id="main-display">
         </main>
+
+        <div id="printPreviewModal" class="modal" style="z-index: 9999; display: none;">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h3>Xem trước bản in</h3>
+                    <span class="close-modal" onclick="closePrintModal()">&times;</span>
+                </div>
+                <div class="modal-body" style="background: #525659; padding: 30px; display: flex; justify-content: center;">
+                    <div id="printablePaper" class="a5-paper"></div> </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" onclick="closePrintModal()">Đóng</button>
+                    <button class="btn-primary" onclick="executePrint()">In ngay</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
