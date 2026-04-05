@@ -112,7 +112,7 @@ export const repairExecution = {
                     <div class="row">
                         <div class="col-md-6 border-end">
                             <label class="fw-bold text-danger"><i class="fa-solid fa-wrench"></i> Dịch vụ phát sinh</label>
-                            <select id="fault-service-select" class="form-select form-select-sm mb-2">
+                            <select id="fault-service-select" class="form-select form-select-sm mb-2 select-search">
                                 ${allServices.map(s => `<option value="${s.serviceId}">${s.serviceName}</option>`).join('')}
                             </select>
                             <button class="btn btn-primary btn-sm w-100 mb-2" onclick="window.addFaultItem('service')">+ Thêm Dịch Vụ</button>
@@ -120,7 +120,7 @@ export const repairExecution = {
                         </div>
                         <div class="col-md-6">
                             <label class="fw-bold text-primary"><i class="fa-solid fa-box"></i> Linh kiện/Phụ tùng</label>
-                            <select id="fault-part-select" class="form-select form-select-sm mb-2">
+                            <select id="fault-part-select" class="form-select form-select-sm mb-2 select-search">
                                 ${allParts.map(p => `<option value="${p.sparePartId}">${p.partName} (Kho: ${p.quantity})</option>`).join('')}
                             </select>
                             <button class="btn btn-primary btn-sm w-100 mb-2" onclick="window.addFaultItem('part')">+ Thêm Linh Kiện</button>
@@ -138,6 +138,14 @@ export const repairExecution = {
                 confirmButtonText: '<i class="fa-solid fa-paper-plane"></i> Gửi báo cáo',
                 cancelButtonText: 'Đóng',
                 confirmButtonColor: '#d33',
+                didOpen: () => {
+                    $('.select-search').select2({
+                        dropdownParent: $('.swal2-container'), // Quan trọng: Để dropdown hiện đè lên Modal
+                        width: '100%',
+                        allowClear: true,
+                        placeholder: 'Tìm kiếm nhanh...'
+                    });
+                },
                 preConfirm: () => {
                     const note = document.getElementById('fault-note').value;
                     if (!note.trim()) {

@@ -28,7 +28,7 @@ export const repairApi = {
     },
 
     getInventories: async () => {
-        const response = await fetch(`${CONFIG.API_BASE_URL}/Inventories`, {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/Inventories?pageSize=1000`, {
             headers: repairApi.getAuthHeader()
         });
         const result = await response.json();
@@ -85,7 +85,7 @@ export const repairApi = {
 
     // Lấy danh sách dịch vụ để thợ chọn trong popup
     getServices: async () => {
-        const response = await fetch(`${CONFIG.API_BASE_URL}/Services`, {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/Services?pageSize=1000`, {
             headers: repairApi.getAuthHeader()
         });
         const result = await response.json();

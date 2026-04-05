@@ -28,7 +28,7 @@ export const jobCardApi = {
     },
 
     getInventories: async () => {
-        const response = await fetch(`${CONFIG.API_BASE_URL}/Inventories`, {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/Inventories?pageSize=1000`, {
             headers: jobCardApi.getAuthHeader()
         });
         const result = await response.json();

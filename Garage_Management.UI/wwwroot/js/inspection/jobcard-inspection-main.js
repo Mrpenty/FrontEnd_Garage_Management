@@ -14,6 +14,7 @@ const JobCardStatus = {
     Created: 1,
     WaitingInspection: 3,
     Inspection: 4, 
+    WaitingApproval: 5,
     InProgress: 7, 
     Completed: 9 
 };
@@ -34,6 +35,14 @@ async function initDashboard() {
         );
         // Hiển thị job đầu tiên đang làm (nếu có)
         jobCardUI.renderRepairingJob(repairingJobs[0]);
+
+        if ($('#select-sparepart').length > 0) {
+            $('#select-sparepart').select2({
+                placeholder: "Tìm mã hoặc tên linh kiện...",
+                width: '100%',
+                allowClear: true
+            });
+        }
 
         // 3. Thống kê (Sử dụng đúng Enum MechanicAssignmentStatus)
         jobCardUI.updateStats({
@@ -99,15 +108,31 @@ window.handleStartJob = async (id) => {
 };
 
 window.addPartRow = () => {
-    const select = document.getElementById('select-sparepart');
-    const qty = parseInt(document.getElementById('input-qty').value);
-    const partId = parseInt(select.value);
-    const partName = select.options[select.selectedIndex].text;
+    const select = $('#select-sparepart'); // Dùng jQuery cho đồng bộ với Select2
+    const qtyInput = document.getElementById('input-qty');
+    const qty = parseInt(qtyInput.value);
+    
+    const partId = parseInt(select.val());
+    if (!partId || qty <= 0) {
+        alert("Vui lòng chọn linh kiện và nhập số lượng hợp lệ!");
+        return;
+    }
 
-    if (qty <= 0) return;
+    const partName = select.find('option:selected').text();
 
-    selectedParts.push({ sparePartId: partId, quantity: qty, name: partName });
+    // Kiểm tra trùng lặp
+    const existing = selectedParts.find(p => p.sparePartId === partId);
+    if (existing) {
+        existing.quantity += qty;
+    } else {
+        selectedParts.push({ sparePartId: partId, quantity: qty, name: partName });
+    }
+
     renderPartList();
+    
+    // Reset input số lượng và xóa lựa chọn ở select (về placeholder)
+    qtyInput.value = 1;
+    select.val(null).trigger('change'); 
 };
 
 window.removePart = (index) => {
