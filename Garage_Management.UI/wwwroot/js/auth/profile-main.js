@@ -263,7 +263,7 @@ async function handleCustomerApproval(estimate, selectedSparePartIds, selectedSe
 
         // Kiểm tra TH2 (Bổ sung lỗi)
         const hasOnHoldService = currentJC.services && currentJC.services.some(s => s.status === 5);
-
+        const existingServiceIds = currentJC.services ? currentJC.services.map(s => s.serviceId) : [];
         // --- BƯỚC 5: ĐỒNG BỘ DỮ LIỆU ---
         
         // 5.1. Xử lý các mục ĐƯỢC DUYỆT MỚI (Nếu có)
@@ -298,10 +298,32 @@ async function handleCustomerApproval(estimate, selectedSparePartIds, selectedSe
                 });
                 await Promise.all(addPromises);
             } else {
+                
                 // TH1: Duyệt lần đầu (Chỉ chạy khi ko có OnHold) - PATCH cái có sẵn
                 const patchPromises = estimate.services.map(sv => {
                     const isApproved = selectedServiceIds.includes(sv.serviceId);
-                    return EstimateAPI.updateJobCardServiceStatus(jcId, sv.serviceId, isApproved ? 2 : 4);
+                    const isAlreadyInJobCard = existingServiceIds.includes(sv.serviceId);
+                    if (isApproved) {
+                        if (isAlreadyInJobCard) {
+                            return EstimateAPI.updateJobCardServiceStatus(jcId, sv.serviceId, isApproved ? 2 : 4);
+                        } else {
+                            return EstimateAPI.syncJobCardServiceSingle({
+                                jobCardId: jcId,
+                                serviceId: sv.serviceId,
+                                description: "Duyệt từ báo giá",
+                                price: sv.unitPrice || 0,
+                                status: 2, // 2: InProgress / Approved
+                                sourceInspectionItemId: 0 
+                            });
+                        }
+                    } else {
+                        if (isAlreadyInJobCard) {
+                            // Nếu nó vốn đã có trong JobCard ban đầu -> PATCH về Cancelled (4)
+                            return EstimateAPI.updateJobCardServiceStatus(jcId, sv.serviceId, 4);
+                        }
+                        // Nếu không duyệt và cũng không có trong JobCard thì không cần làm gì (bỏ qua)
+                        return Promise.resolve();
+                    }                   
                 });
                 await Promise.all(patchPromises);
             }
@@ -449,6 +471,7 @@ async function handleViewProgress(jobCardId) {
 
         if (result.success) {
             const data = result.data;
+            const activeServices = data.services.filter(sv => sv.status !== 4);
             content.innerHTML = `
                 <div style="background:#f8f9fa; padding:10px; border-radius:6px; margin-bottom:15px;">
                     <p style="margin:5px 0;"><strong>Xe:</strong> ${data.vehicleBrand} ${data.vehicleModel} (${data.vehicleLicensePlate})</p>
@@ -461,7 +484,7 @@ async function handleViewProgress(jobCardId) {
                 </div>
 
                 <div class="progress-steps">
-                    ${data.services.map(sv => `
+                    ${activeServices.length > 0 ? activeServices.map(sv => `
                         <div style="margin-bottom:20px; border-left:3px solid #1976d2; padding-left:15px;">
                             <h5 style="margin:0; color:#1976d2;">${sv.serviceName} 
                                 <small style="float:right;">${sv.serviceStatusName}</small>
@@ -479,7 +502,7 @@ async function handleViewProgress(jobCardId) {
                                 `).join('')}
                             </div>
                         </div>
-                    `).join('')}
+                    `).join('') : '<p style="text-align:center; color:#999;">Không có dịch vụ nào đang thực hiện.</p>'}
                 </div>
             `;
         } else {

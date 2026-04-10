@@ -1,6 +1,7 @@
+/* ================= VARIABLES ================= */
 :root {
     --primary-red: #e63946;
-    --dark-bg: #f0f2f5; /* Chuyển sang nền xám nhạt để card trắng nổi bật hơn */
+    --dark-bg: #f0f2f5;
     --sidebar-bg: #1a1d23;
     --card-bg: #ffffff;
     --text-dark: #2d3436;
@@ -9,6 +10,7 @@
     --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+/* ================= RESET ================= */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -22,7 +24,7 @@ body {
     min-height: 100vh;
 }
 
-/* --- Sidebar --- */
+/* ================= SIDEBAR ================= */
 .sidebar {
     width: 260px;
     background-color: var(--sidebar-bg);
@@ -51,7 +53,10 @@ body {
     transition: all 0.2s;
 }
 
-.nav-item i { width: 25px; font-size: 1.1rem; }
+.nav-item i {
+    width: 25px;
+    font-size: 1.1rem;
+}
 
 .nav-item.active {
     background: rgba(230, 57, 70, 0.1);
@@ -64,15 +69,19 @@ body {
     color: white;
 }
 
-.sidebar-footer { margin-top: auto; padding-bottom: 20px; }
+.sidebar-footer {
+    margin-top: auto;
+    padding-bottom: 20px;
+}
 
-/* --- Main Content --- */
+/* ================= MAIN CONTENT ================= */
 .main-content {
     flex-grow: 1;
     padding: 25px 40px;
     overflow-y: auto;
 }
 
+/* Header */
 .header-section {
     display: flex;
     justify-content: space-between;
@@ -80,7 +89,22 @@ body {
     margin-bottom: 30px;
 }
 
-.header-title { color: var(--text-dark); font-size: 1.8rem; }
+.section {
+    margin-top: 15px;
+}
+
+.section label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.header-title {
+    color: var(--text-dark);
+    font-size: 1.8rem;
+}
 
 .user-info {
     background: white;
@@ -94,9 +118,14 @@ body {
     box-shadow: var(--shadow);
 }
 
-.status-dot { width: 10px; height: 10px; background: #28a745; border-radius: 50%; }
+.status-dot {
+    width: 10px;
+    height: 10px;
+    background: #28a745;
+    border-radius: 50%;
+}
 
-/* Stats */
+/* ================= STATS ================= */
 .stats-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -124,10 +153,18 @@ body {
     font-size: 1.5rem;
 }
 
-.stat-info h3 { font-size: 0.9rem; color: var(--text-muted); }
-.stat-info .number { font-size: 1.8rem; font-weight: 800; color: var(--text-dark); }
+.stat-info h3 {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
 
-/* Layout Grid */
+.stat-info .number {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-dark);
+}
+
+/* ================= GRID / CARD ================= */
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr 1.6fr;
@@ -152,7 +189,7 @@ body {
     gap: 10px;
 }
 
-/* Template UI Dynamically Rendered */
+/* ================= REPAIR DETAIL ================= */
 .repair-detail-card {
     padding: 25px;
 }
@@ -165,6 +202,12 @@ body {
     letter-spacing: 1px;
 }
 
+.repairing-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
 .service-block {
     background: #fdfdfd;
     border: 1px solid #f0f0f0;
@@ -173,11 +216,14 @@ body {
     margin-bottom: 15px;
 }
 
+/* ================= BUTTONS ================= */
 .btn-finish {
-    background: var(--primary-red);
-    color: white;
-    transition: transform 0.2s, background 0.2s;
-    box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+    width: 100%;
+    margin-top: 15px;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .btn-finish:hover {
@@ -191,52 +237,189 @@ body {
     transition: all 0.3s;
 }
 
-.btn-detail:hover { background: #000; }
+.btn-detail:hover {
+    background: #000;
+}
 
+.badge-task {
+    background: rgba(230, 57, 70, 0.1);
+    color: var(--primary-red);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.btn-secondary {
+    background: #636e72;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: none;
+}
+
+.btn-add {
+    width: 40px;
+    height: 38px;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* ================= FORM ================= */
+input,
+select,
+textarea {
+    resize: none;
+    font-size: 0.9rem;
+}
+
+input:focus,
+select:focus {
+    border-color: var(--primary-red);
+}
+
+/* ================= TABLE ================= */
+
+.table-estimate {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.table-estimate thead {
+    background: #ecf5ff;
+}
+
+.table-estimate th {
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-estimate td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.table-estimate tr:last-child td {
+    border-bottom: none;
+}
+
+.table-estimate tbody tr:hover {
+    background: #fafafa;
+}
+
+/* ================= LOADING ================= */
 .loading-placeholder {
     padding: 50px;
     text-align: center;
     color: var(--text-muted);
 }
 
-/* Table Style for Estimate */
-.table-estimate th {
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    padding: 12px 8px;
-}
-
-.table-estimate td {
-    padding: 12px 8px;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-input, select, textarea {
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    outline: none;
-}
-
-input:focus, select:focus { border-color: var(--primary-red); }
-
-/* Animations */
+/* ================= ANIMATION ================= */
 @keyframes spin-slow {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
-.fa-spin-slow { animation: spin-slow 3s linear infinite; }
 
-/* Style cho danh sách trong popup */
-#fault-services-list, #fault-parts-list {
+.fa-spin-slow {
+    animation: spin-slow 3s linear infinite;
+}
+
+/* ================= POPUP LIST ================= */
+#fault-services-list,
+#fault-parts-list {
     background: #fdfdfd;
 }
 
-#fault-services-list li, #fault-parts-list li {
+#fault-services-list li,
+#fault-parts-list li {
     font-size: 0.8rem;
     border-bottom: 1px solid #eee;
 }
 
+.fault-list-container {
+    background: #fdfdfd;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 10px;
+    min-height: 80px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.fault-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85rem;
+}
+
+.fault-item:last-child {
+    border-bottom: none;
+}
+
+.modal-label {
+    display: block;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
 .swal2-html-container {
-    overflow-x: hidden !important; /* Tránh scroll ngang không cần thiết */
+    overflow-x: hidden !important;
+}
+
+.status-msg-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.select2-container {
+    width: 100% !important;
+}
+
+.select2-container--default .select2-selection--single {
+    height: 38px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.select2-selection__rendered {
+    line-height: normal !important;
+    padding-left: 0 !important;
+}
+
+.select2-selection__arrow {
+    height: 100% !important;
+}
+
+.spinner-border {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #eee;
+    border-top: 3px solid var(--primary-red);
+    border-radius: 50%;
+    animation: spin-slow 1s linear infinite;
 }

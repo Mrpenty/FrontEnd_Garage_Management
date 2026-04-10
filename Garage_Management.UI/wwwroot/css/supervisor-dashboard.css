@@ -410,3 +410,28 @@ body {
     font-size: 0.9rem;
     margin-bottom: 15px;
 }
+
+.btn-sort {
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.btn-sort:hover {
+    background: #f1f5f9;
+    color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+/* Badge số thứ tự ở giữa 2 nút */
+.queue-index {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #1e293b;
+    min-width: 20px;
+    text-align: center;
+}

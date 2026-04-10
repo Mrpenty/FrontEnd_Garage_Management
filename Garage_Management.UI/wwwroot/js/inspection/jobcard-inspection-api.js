@@ -2,6 +2,7 @@ import CONFIG from '../config.js';
 
 const JOBCARD_URL = `${CONFIG.API_BASE_URL}/JobCards`;
 const INVENTORY_URL = `${CONFIG.API_BASE_URL}/Inventories`;
+const SERVICE_URL = `${CONFIG.API_BASE_URL}/Services`;
 
 export const jobCardApi = {
     getAuthHeader: () => {
@@ -28,11 +29,19 @@ export const jobCardApi = {
     },
 
     getInventories: async () => {
-        const response = await fetch(`${CONFIG.API_BASE_URL}/Inventories?pageSize=1000`, {
+        const response = await fetch(`${INVENTORY_URL}?pageSize=1000`, {
             headers: jobCardApi.getAuthHeader()
         });
         const result = await response.json();
         return result.data.pageData; // Lấy danh sách linh kiện
+    },
+
+    getServices: async () => {
+        const res = await fetch(`${SERVICE_URL}?pageSize=1000`, { 
+            headers: jobCardApi.getAuthHeader() 
+        });
+        if (!res.ok) throw new Error("Không thể tải danh sách dịch vụ");
+        return await res.json();
     },
 
     submitRepairEstimate: async (estimateData) => {

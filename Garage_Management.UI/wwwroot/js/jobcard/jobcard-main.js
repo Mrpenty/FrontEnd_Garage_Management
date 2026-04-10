@@ -36,6 +36,7 @@ export async function initJobCardModule() {
         btnCheckAppointment: document.getElementById('btnCheckAppointment'),
         checkPhoneInput: document.getElementById('checkPhone'),
         appointmentResult: document.getElementById('appointmentResult'),
+        sparePartsDisplay: document.getElementById('appointmentSpareParts'),
         jobCardNote: document.getElementById('jobCardNote'),
         selectSupervisor: document.getElementById('selectSupervisor')
     };
@@ -421,6 +422,12 @@ async function applyAppointmentData(apt, elements) {
         }));
         renderServiceTable(elements);
     }
+
+    // Đổ danh sách phụ tùng
+    if (elements.sparePartsDisplay) {
+        const spareParts = apt.spareParts || apt.appointmentSpareParts || [];
+        jobcardUI.renderReadOnlySpareParts(elements.sparePartsDisplay, spareParts);
+    }
     
     elements.appointmentResult.innerHTML = `<div class="info-alert success">Đã áp dụng lịch hẹn ngày ${new Date(apt.appointmentDateTime).toLocaleString()}</div>`;
 }
@@ -566,6 +573,9 @@ function initJobCardSubmit(elements) {
                     elements.createJobCardForm.reset();
                     selectedServices = [];
                     currentAppointmentId = null;
+                    if (elements.sparePartsDisplay) {
+                        elements.sparePartsDisplay.innerHTML = '<p class="text-muted small"><i>Chưa chọn lịch hẹn...</i></p>';
+                    }
                     renderServiceTable(elements); // Xóa bảng dịch vụ trên UI
                     loadJobCards(elements.jobCardBody); // Reload danh sách chính
                 } else {

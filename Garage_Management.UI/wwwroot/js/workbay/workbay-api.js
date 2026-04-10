@@ -90,4 +90,14 @@ export const workbayApi = {
         });
         return response.ok;
     },
+
+    reorderQueue: async (data) => {
+        const response = await fetch(`${JOBCARD_URL}/reorder-workbay-queue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error("Lỗi khi cập nhật thứ tự hàng đợi");
+        return await response.json();
+    },
 };

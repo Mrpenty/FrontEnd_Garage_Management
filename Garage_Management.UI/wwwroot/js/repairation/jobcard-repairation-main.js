@@ -27,6 +27,8 @@ export const repairExecution = {
 
             // Duyệt trực tiếp trên detailResult để tính tiến độ
             detailResult.services.forEach(svc => {
+                const sStatus = parseInt(svc.status);
+                if (sStatus === 4) return;
                 const hasTasks = svc.serviceTasks && svc.serviceTasks.length > 0;
 
                 if (hasTasks) {
@@ -104,27 +106,40 @@ export const repairExecution = {
             // 2. Render nội dung vào một Modal (Ví dụ dùng SweetAlert2 hoặc Bootstrap)
             // Ở đây tôi dùng ví dụ logic để bạn đưa vào UI của mình
             const modalHtml = `
-                <div style="text-align: left; font-family: sans-serif;">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Ghi chú lỗi phát hiện thêm:</label>
-                        <textarea id="fault-note" class="form-control" rows="3" placeholder="Mô tả hỏng hóc thực tế..."></textarea>
+                <div style="text-align: left; font-family: 'Inter', sans-serif; padding: 10px;">
+                    <div class="mb-4">
+                        <label class="modal-label"><i class="fa-solid fa-pen-to-square"></i> Ghi chú lỗi phát hiện thêm</label>
+                        <textarea id="fault-note" class="form-control" rows="2" 
+                        style="border-radius: 8px; font-size: 0.9rem;" 
+                        placeholder="Mô tả cụ thể tình trạng hỏng hóc thực tế..."></textarea> 
                     </div>
                     <div class="row">
                         <div class="col-md-6 border-end">
-                            <label class="fw-bold text-danger"><i class="fa-solid fa-wrench"></i> Dịch vụ phát sinh</label>
-                            <select id="fault-service-select" class="form-select form-select-sm mb-2 select-search">
-                                ${allServices.map(s => `<option value="${s.serviceId}">${s.serviceName}</option>`).join('')}
-                            </select>
-                            <button class="btn btn-primary btn-sm w-100 mb-2" onclick="window.addFaultItem('service')">+ Thêm Dịch Vụ</button>
-                            <ul id="fault-services-list" class="list-group list-group-flush border rounded" style="min-height: 50px; max-height: 150px; overflow-y: auto;"></ul>
+                            <label class="modal-label" style="color: var(--primary-red);">
+                                <i class="fa-solid fa-screwdriver-wrench"></i> Dịch vụ phát sinh
+                            </label>
+                            <div class="input-group-custom">
+                                <select id="fault-service-select" class="form-select form-select-sm mb-2 select-search">
+                                    ${allServices.map(s => `<option value="${s.serviceId}">${s.serviceName}</option>`).join('')}
+                                </select>
+                                <button class="btn-action-add" style="height: 31px; padding: 0 10px;" onclick="window.addFaultItem('service')">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                            <div id="fault-services-list" class="fault-list-container">
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="fw-bold text-primary"><i class="fa-solid fa-box"></i> Linh kiện/Phụ tùng</label>
+                            <label class="modal-label" style="color: var(--primary-dark);">
+                                <i class="fa-solid fa-gears"></i> Linh kiện/Phụ tùng
+                            </label>
                             <select id="fault-part-select" class="form-select form-select-sm mb-2 select-search">
                                 ${allParts.map(p => `<option value="${p.sparePartId}">${p.partName} (Kho: ${p.quantity})</option>`).join('')}
                             </select>
-                            <button class="btn btn-primary btn-sm w-100 mb-2" onclick="window.addFaultItem('part')">+ Thêm Linh Kiện</button>
-                            <ul id="fault-parts-list" class="list-group list-group-flush border rounded" style="min-height: 50px; max-height: 150px; overflow-y: auto;"></ul>
+                            <button class="btn-action-add" style="height: 31px; padding: 0 10px;" onclick="window.addFaultItem('part')">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        <div id="fault-parts-list" class="fault-list-container">
                         </div>
                     </div>
                 </div>
@@ -182,11 +197,13 @@ export const repairExecution = {
         if (!container) return;
 
         container.innerHTML = data.map((item, index) => `
-            <li class="list-group-item d-flex justify-content-between align-items-center p-2" style="font-size: 0.8rem;">
-                ${item.name}
-                <span class="badge bg-danger rounded-pill" style="cursor:pointer" 
-                    onclick="window.removeFaultItem('${type}', ${index})">x</span>
-            </li>
+            <div class="fault-item">
+                <span style="font-weight: 500; color: var(--text-dark);">${item.name}</span>
+                <button onclick="window.removeFaultItem('${type}', ${index})" 
+                        style="border:none; background:none; color: #ff7675; cursor:pointer;">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+            </div>
         `).join('');
     },
 
@@ -245,9 +262,9 @@ export const repairExecution = {
 
             // A. Cập nhật Status từng Service sang 3 (Đã xong)
             if (detailResult.services && detailResult.services.length > 0) {
-                const servicePromises = detailResult.services.map(svc => 
-                    repairApi.updateJobCardServiceStatus(jobCardId, svc.serviceId, 3)
-                );
+                const servicePromises = detailResult.services
+                    .filter(svc => parseInt(svc.status) !== 4) 
+                    .map(svc => repairApi.updateJobCardServiceStatus(jobCardId, svc.serviceId, 3));
                 await Promise.all(servicePromises);
             }
 

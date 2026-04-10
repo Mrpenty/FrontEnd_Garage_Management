@@ -3,6 +3,8 @@ import { jobCardUI } from './jobcard-inspection-ui.js';
 import '../repairation/jobcard-repairation-main.js';
 
 let selectedParts = [];
+let selectedServices = [];
+
 const MechanicStatus = { 
     Assigned: 1, 
     InProgress: 2, 
@@ -23,26 +25,47 @@ async function initDashboard() {
     try {
         const pageData = await jobCardApi.getJobsForMechanic();
         const safeData = pageData || [];
-
-        // 1. Cột trái: Assigned (1) -> Đã phân công nhưng chưa bắt đầu
-        const waitingJobs = safeData.filter(j => j.mechanicAssignmenStatus === 1);
-        const nextJob = sortNextJob(waitingJobs);
-        jobCardUI.renderNextJob(nextJob);
-
-        // 2. Cột phải: InProgress (2) hoặc OnHold (4)
+        
+        // Cột phải: InProgress (2) hoặc OnHold (4)
         const repairingJobs = safeData.filter(j => 
             j.mechanicAssignmenStatus === 2 || j.mechanicAssignmenStatus === 4
         );
-        // Hiển thị job đầu tiên đang làm (nếu có)
-        jobCardUI.renderRepairingJob(repairingJobs[0]);
+        const currentJob = repairingJobs[0];
+        const hasActiveJob = repairingJobs.length > 0;
 
-        if ($('#select-sparepart').length > 0) {
-            $('#select-sparepart').select2({
-                placeholder: "Tìm mã hoặc tên linh kiện...",
-                width: '100%',
-                allowClear: true
-            });
+        if (currentJob) {
+            // Nạp linh kiện cũ (nếu có)
+            selectedParts = currentJob.appointmentSpareParts?.map(p => ({
+                sparePartId: p.sparePartId,
+                name: p.partName,
+            })) || [];
+
+            // Nạp dịch vụ khách chọn trước
+            selectedServices = currentJob.services?.map(s => ({
+                serviceId: s.serviceId,
+                name: s.serviceName
+            })) || [];
         }
+
+        // Cột trái: Assigned (1) -> Đã phân công nhưng chưa bắt đầu
+        const waitingJobs = safeData.filter(j => j.mechanicAssignmenStatus === 1);
+        const nextJob = sortNextJob(waitingJobs);
+        jobCardUI.renderNextJob(nextJob, hasActiveJob);
+
+        // Hiển thị job đầu tiên đang làm (nếu có)
+        await jobCardUI.renderRepairingJob(repairingJobs[0]);
+        renderPartList();
+        renderServiceList();
+
+        if ($('#select-sparepart').length > 0) $('#select-sparepart').select2({ placeholder: "Chọn linh kiện..." });
+        const allServices = await jobCardApi.getServices(); 
+        const allServicesMaster = allServices?.data?.pageData || [];
+            $('#select-service').select2({
+            data: allServicesMaster.map(s => ({ id: s.serviceId, text: s.serviceName })),
+            placeholder: "Chọn thêm dịch vụ...",
+            width: '100%',
+            allowClear: true
+        }).val(null).trigger('change');
 
         // 3. Thống kê (Sử dụng đúng Enum MechanicAssignmentStatus)
         jobCardUI.updateStats({
@@ -58,33 +81,8 @@ async function initDashboard() {
 
 function sortNextJob(jobs) {
     if (jobs.length === 0) return null;
-    const now = new Date();
-    
-    return jobs.sort((a, b) => {
-        // Ưu tiên có lịch hẹn
-        if (a.appointmentId && !b.appointmentId) return -1;
-        if (!a.appointmentId && b.appointmentId) return 1;
-        // Ưu tiên thời gian gần nhất
-        return Math.abs(new Date(a.jobCardStartDate) - now) - Math.abs(new Date(b.jobCardStartDate) - now);
-    })[0];
+    return jobs.sort((a, b) => (a.queueOrder || 0) - (b.queueOrder || 0))[0];
 }
-
-window.renderPartList = () => {
-    const body = document.getElementById('estimate-parts-body');
-    if (!body) return; // Tránh lỗi nếu đang ở màn hình khác
-    
-    body.innerHTML = selectedParts.map((p, index) => `
-        <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 8px;">${p.name}</td>
-            <td style="padding: 8px; text-align:center;">${p.quantity}</td>
-            <td style="padding: 8px; text-align:right;">
-                <button onclick="window.removePart(${index})" style="color:red; border:none; background:none;">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-};
 
 // Gán hàm vào window để gọi được từ onclick trong HTML string
 window.handleStartJob = async (id) => {
@@ -105,6 +103,25 @@ window.handleStartJob = async (id) => {
             console.error("Lỗi Start Job:", error);
         }
     }
+};
+
+window.renderPartList = () => {
+    const body = document.getElementById('estimate-parts-body');
+    if (!body) return;
+    
+    body.innerHTML = selectedParts.map((p, index) => `
+        <tr>
+            <td style="font-weight: 500;">${p.name}</td>
+            <td style="text-align:center;">
+                <span class="badge-task">${1}</span>
+            </td>
+            <td style="text-align:right;">
+                <button class="btn-secondary" onclick="window.removePart(${index})">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
 };
 
 window.addPartRow = () => {
@@ -144,16 +161,8 @@ window.handleSubmitEstimate = async (jobCardId) => {
     const noteElement = document.getElementById('estimate-note');
     const note = noteElement ? noteElement.value : "";
     
-    // 1. Lấy danh sách ServiceId từ UI (những dịch vụ sẵn có của JobCard)
-    const serviceElements = document.querySelectorAll('.job-service-id');
-    const services = Array.from(serviceElements).map(el => ({
-        serviceId: parseInt(el.value),
-        quantity: 1 // Mặc định mỗi dịch vụ là 1, bạn có thể thêm input số lượng nếu cần
-    }));
-
-    // Kiểm tra mảng linh kiện
-    if (selectedParts.length === 0) {
-        alert("BẮT BUỘC: Vui lòng kiểm tra và thêm ít nhất một linh kiện/vật tư thay thế (hoặc vật tư tiêu hao) để tạo báo giá.");
+    if (selectedServices.length === 0) {
+        alert("Vui lòng chọn ít nhất một dịch vụ thực hiện.");
         return;
     }
 
@@ -169,7 +178,10 @@ window.handleSubmitEstimate = async (jobCardId) => {
     const request = {
         jobCardId: jobCardId,
         note: note,
-        services: services, // Đưa mảng dịch vụ vào đây
+        services: selectedServices.map(s => ({
+            serviceId: s.serviceId,
+            quantity: 1
+        })),
         spareParts: selectedParts.map(p => ({ 
             sparePartId: p.sparePartId, 
             quantity: p.quantity 
@@ -196,6 +208,84 @@ window.handleSubmitEstimate = async (jobCardId) => {
         }
     } catch (error) {
         console.error("Lỗi khi gửi báo giá:", error);
+    }
+};
+
+window.renderServiceList = () => {
+    const body = document.getElementById('estimate-services-body');
+    if (!body) return;
+    
+    body.innerHTML = selectedServices.map((s, index) => `
+        <tr>
+            <td>${s.name}</td>
+            <td style="text-align:right;">
+                <button class="btn-secondary" onclick="window.removeService(${index})">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+window.addServiceRow = () => {
+    const select = $('#select-service');
+    const serviceId = parseInt(select.val());
+    if (!serviceId) return;
+
+    // Lấy text chuẩn từ Select2
+    const serviceName = select.find('option:selected').text();
+
+    if (selectedServices.find(s => s.serviceId === serviceId)) {
+        alert("Dịch vụ này đã có trong danh sách");
+        return;
+    }
+
+    selectedServices.push({ serviceId, name: serviceName });
+    renderServiceList();
+    select.val(null).trigger('change');
+};
+
+window.removeService = (index) => {
+    selectedServices.splice(index, 1);
+    renderServiceList();
+};
+
+window.handleNoFaultFound = async (id) => {
+    const note = document.getElementById('estimate-note')?.value || "";
+    
+    // Yêu cầu thợ nhập lý do tại sao không tìm thấy lỗi
+    if (!note.trim() || note.trim().length < 5) {
+        alert("Vui lòng ghi chú ngắn gọn tình trạng xe (Ví dụ: Xe hoạt động bình thường, không phát hiện hỏng hóc) vào ô Ghi chú.");
+        document.getElementById('estimate-note').focus();
+        return;
+    }
+
+    if (!confirm("Xác nhận kết thúc kiểm tra: Không tìm thấy lỗi phát sinh?")) return;
+
+    try {
+        Swal.fire({ title: 'Đang xử lý...', didOpen: () => Swal.showLoading() });
+
+        // 1. Cập nhật JobCard sang trạng thái 11 (Không tìm thấy lỗi)
+        // 2. Cập nhật trạng thái thợ sang 3 (Hoàn thành/Sẵn sàng)
+        const [resJobCard, resMechanic] = await Promise.all([
+            jobCardApi.updateJobCardStatus(id, 11), 
+            jobCardApi.updateMechanicStatus(id, 3)
+        ]);
+
+        if (resJobCard && resMechanic) {
+            await Swal.fire({
+                icon: 'success',
+                title: 'Đã hoàn tất',
+                text: 'Hệ thống ghi nhận không có lỗi. Xe sẽ được chuyển về trạng thái chờ bàn giao.',
+                timer: 2000
+            });
+            location.reload();
+        } else {
+            alert("Có lỗi xảy ra khi cập nhật trạng thái lên hệ thống.");
+        }
+    } catch (error) {
+        console.error("Lỗi NoFaultFound:", error);
+        alert("Lỗi kết nối server.");
     }
 };
 

@@ -1,5 +1,7 @@
 import { workbayApi } from './workbay-api.js';
 
+let globalWorkbays = [];
+
 async function refreshData() {
     const supervisorId = localStorage.getItem('employeeId');
     if (!supervisorId) return;
@@ -12,6 +14,8 @@ async function refreshData() {
 
         const jobs = Array.isArray(jobsRes) ? jobsRes : (jobsRes.data || []);
         const workbays = Array.isArray(wbsRes) ? wbsRes : (wbsRes.data || []);
+
+        globalWorkbays = workbays;
 
         renderPendingJobs(jobs, workbays);
         renderWorkbayGrid(workbays);
@@ -106,15 +110,14 @@ async function refreshData() {
             grid.innerHTML = workbays.map(wb => {
                 let displayJob = null;
                 const allCards = Array.isArray(wb.jobCards) ? wb.jobCards : [];
-                const cards = allCards.filter(j => [1, 2, 3, 4, 5, 6, 7, 12].includes(j.status));
+                const cards = allCards.filter(j => [2, 3, 4, 5, 6, 7, 12].includes(j.status));
                 
                 if (cards.length > 0) {
                     const highPriority = cards.filter(j => [4, 5, 6, 7, 12].includes(j.status));
                     if (highPriority.length > 0) {
-                        displayJob = highPriority.sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0];
+                        displayJob = highPriority.sort((a, b) => (a.queueOrder || 0) - (b.queueOrder || 0))[0];
                     } else {
-                        const lowPriority = cards.filter(j => [2, 3].includes(j.status));
-                        displayJob = lowPriority.sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0];
+                        displayJob = cards.sort((a, b) => (a.queueOrder || 0) - (b.queueOrder || 0))[0];
                     }
                 }
 
@@ -124,20 +127,6 @@ async function refreshData() {
                 const mechanicNames = (displayJob?.mechanics && displayJob.mechanics.length > 0)
                  ? displayJob.mechanics.map(m => m.mechanicName).join(', ')
                  : "Chưa có thợ";
-                
-            //     // Fix lỗi hiển thị khi vehicle hoặc customer bị null từ API
-            //     const plateDisplay = displayJob?.vehicle?.licensePlate || "N/A";
-            //     const customerDisplay = displayJob?.customerName || "Khách vãng lai";
-
-            //     // FIX LỖI RangeError: Đổi '2d' thành '2-digit'
-            //     const timeDisplay = hasJob ? (() => {
-            //     const d = new Date(wb.startAt);
-            //     d.setHours(d.getHours() + 7); // Thêm 7 tiếng
-            //     return d.toLocaleTimeString('vi-VN', {
-            //         hour: '2-digit', 
-            //         minute: '2-digit'
-            //     });
-            // })() : "";
 
             return `
                 <div class="workbay-card ${statusClass}">
@@ -150,7 +139,11 @@ async function refreshData() {
                             <span class="badge-status s-${displayJob.status}">${statusTextMap[displayJob.status] || 'Đang xử lý'}</span>
                             <div class="wb-plate" style="font-size:1.2rem; margin:10px 0; font-weight:bold;">${displayJob.vehicle?.licensePlate || "N/A"}</div>
                             <div class="wb-customer" style="font-size:0.85rem; color:#64748b; margin-bottom:5px;"><i class="far fa-user"></i> ${displayJob.customerName || "Khách"}</div>
-                            
+                            ${[4, 5, 6, 7, 12].includes(displayJob.status) ? `
+                                <div class="wb-eta" style="font-size:0.85rem; color:#f59e0b; font-weight:bold; margin-bottom:5px;">
+                                    <i class="fas fa-history"></i> Xong dự kiến: <span style="color:#1e293b">Cập nhật sau</span>
+                                </div>
+                            ` : ''}
                             <div class="wb-mechanic" style="font-size:0.85rem; color:#4f46e5; font-weight:500;">
                                 <i class="fas fa-wrench"></i> Thợ: ${mechanicNames}
                             </div>
@@ -170,6 +163,24 @@ async function refreshData() {
                     </div>
                 </div>`;
             }).join('');
+    }
+
+    function getBusyMechanics(allWorkbays) {
+        const busyIds = new Set();
+        if (!Array.isArray(allWorkbays)) return busyIds;
+        allWorkbays.forEach(wb => {
+        (wb.jobCards || []).forEach(job => {
+            // Bao gồm các trạng thái đang làm việc
+            if ([4, 5, 6, 7, 12].includes(job.status)) {
+                (job.mechanics || []).forEach(m => {
+                    // Lấy mechanicId hoặc id tùy theo cấu trúc thợ trong JobCard
+                    const id = m.mechanicId || m.id || m.employeeId;
+                    if (id) busyIds.add(id);
+                });
+            }
+        });
+    });
+    return busyIds;
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -223,8 +234,9 @@ window.viewWbQueue = async (wbId) => {
     try {
         const res = await workbayApi.getJobCardsByWorkBay(wbId);
         const wbData = res.data;
-        const jobCards = wbData.jobCards || [];
-
+        const allCards = wbData.jobCards || [];
+        const jobCards = allCards.filter(job => [2, 3, 4, 5, 6, 7, 12].includes(job.status));
+        window.currentQueueData = jobCards;
         // Cập nhật tiêu đề modal (nếu cần lấy tên Workbay bạn có thể truyền thêm name vào hàm)
         modalTitle.innerHTML = `<i class="fas fa-warehouse"></i> Hàng đợi: ${wbData.name}`;
 
@@ -255,7 +267,13 @@ window.viewWbQueue = async (wbId) => {
 
             return `
                 <tr>
-                    <td style="text-align:center; font-weight:bold">${index + 1}</td>
+                    <td style="text-align:center;">
+                        <div style="display:flex; flex-direction:column; gap:2px; align-items:center;">
+                            ${index > 0 ? `<button class="btn-sort" onclick="window.moveJob(${index}, 'up', ${wbId})"><i class="fas fa-chevron-up"></i></button>` : ''}
+                            <span style="font-weight:bold">${index + 1}</span>
+                            ${index < jobCards.length - 1 ? `<button class="btn-sort" onclick="window.moveJob(${index}, 'down', ${wbId})"><i class="fas fa-chevron-down"></i></button>` : ''}
+                        </div>
+                    </td>
                     <td>
                         <div style="font-weight:bold; color:#4f46e5">#JC-${job.jobCardId}</div>
                         <small style="color:#64748b">${job.customerName || 'N/A'}</small>
@@ -396,7 +414,7 @@ window.viewJobDetail = async (jobCardId) => {
         }
 
         // 4. Logic Action Zone
-        handleActionZone(job, actionZone);
+        handleActionZone(job, actionZone, globalWorkbays);
 
     } catch (error) {
         infoBox.innerHTML = `<div class="error-msg" style="color:red; text-align:center">Lỗi: ${error.message}</div>`;
@@ -419,22 +437,16 @@ function renderEstimateUI(est, title, color, servicesToShow = []) {
             <table style="width:100%; font-size:0.85rem; border-collapse: collapse;">
                  ${estServices.map(s => `
                     <tr style="border-bottom:1px solid #f1f5f9; color: #4338ca;">
-                        <td style="padding:5px 0;"><i class="fas fa-wrench" style="font-size:0.7rem"></i> ${s.serviceName || 'Dịch vụ'}</td>
+                        <td style="padding:5px 0;"><i class="fas fa-wrench" style="font-size:0.7rem"></i> Tiền công làm dịch vụ ${s.serviceName || 'Dịch vụ'}</td>
                         <td style="text-align:right; font-weight:bold;">${(s.totalAmount || 0).toLocaleString()}đ</td>
                     </tr>
                 `).join('')}
                 ${est.spareParts.map(p => `
                     <tr style="border-bottom:1px solid #f1f5f9;">
-                        <td style="padding:5px 0;">${p.sparePartName} (x${p.quantity})</td>
+                        <td style="padding:5px 0;"> Tiền phụ tùng: ${p.sparePartName} (x${p.quantity})</td>
                         <td style="text-align:right; font-weight:500;">${p.totalAmount.toLocaleString()}đ</td>
                     </tr>
                 `).join('')}
-                ${servicesToShow.length > 0 ? `
-                    <tr style="border-bottom:1px solid #f1f5f9; color:#6366f1;">
-                        <td style="padding:5px 0;">+ Tiền công dịch vụ</td>
-                        <td style="text-align:right; font-weight:500;">${servicePrice.toLocaleString()}đ</td>
-                    </tr>
-                ` : ''}
             </table>
             <div style="text-align:right; font-weight:bold; margin-top:10px; color:${color}; border-top:1px dashed #e2e8f0; padding-top:8px;">
                 Cộng phiếu: ${est.grandTotal.toLocaleString()}đ
@@ -444,7 +456,7 @@ function renderEstimateUI(est, title, color, servicesToShow = []) {
 }
 
 // Hàm tách riêng để xử lý nút bấm cho đỡ rối
-async function handleActionZone(job, actionZone) {
+async function handleActionZone(job, actionZone, allWorkbays) {
     if (job.status === 2) {
         actionZone.style.display = "block";
         actionZone.innerHTML = `<div style="text-align:center"><i class="fas fa-circle-notch fa-spin"></i> Đang lấy danh sách thợ...</div>`;
@@ -452,13 +464,22 @@ async function handleActionZone(job, actionZone) {
         try {
             const res = await workbayApi.getMechanics();
             const mechanics = res.data || res;
-            
+            const busyMechanics = getBusyMechanics(allWorkbays);
+
             actionZone.innerHTML = `
                 <label style="font-weight:bold; display:block; margin-bottom:8px;">ĐIỀU PHỐI NHÂN VIÊN KỸ THUẬT:</label>
                 <div style="display:flex; gap:10px;">
                     <select id="select-mechanic" class="form-group" style="flex:1; padding:10px; border-radius:8px; border:1px solid #cbd5e1;">
                         <option value="">-- Chọn Mechanic --</option>
-                        ${mechanics.map(m => `<option value="${m.employeeId || m.id}">${m.fullName} (ID: ${m.employeeId || m.id})</option>`).join('')}                    </select>
+                        ${mechanics.map(m => {
+                            const isBusy = busyMechanics.has(m.employeeId || m.id);
+                            const statusText = isBusy ? ' (⚠️ Đang bận khoang khác)' : ' (✅ Đang rảnh)';
+                            const style = isBusy ? 'color: #be123c;' : 'color: #10b981;';
+                            return `<option value="${m.employeeId || m.id}" data-busy="${isBusy}" style="${style}">
+                                ${m.fullName}${statusText}
+                            </option>`;
+                        }).join('')}
+                    </select>
                     <button class="btn-primary" onclick="window.doAssignMechanic(${job.jobCardId})" style="padding:0 20px;">GIAO VIỆC</button>
                 </div>
             `;
@@ -500,6 +521,7 @@ window.closeJobDetailModal = () => document.getElementById('job-detail-modal').s
 // Hàm thực thi giao việc (Sửa lại)
 window.doAssignMechanic = async (jobCardId) => {
     const selectElem = document.getElementById('select-mechanic');
+    const selectedOption = selectElem.options[selectElem.selectedIndex];
     const mechId = selectElem.value;
     
     if(!mechId) {
@@ -508,19 +530,18 @@ window.doAssignMechanic = async (jobCardId) => {
     }
     
     // Bạn có thể lấy tên thợ để confirm cho chắc
-    const mechName = selectElem.options[selectElem.selectedIndex].text;
+    const mechName = selectedOption.text.split(' (')[0];
+    const isBusy = selectedOption.getAttribute('data-busy') === 'true';
 
-    if(confirm(`Xác nhận giao lệnh #JC-${jobCardId} cho thợ: ${mechName}?`)) {
+    const confirmMsg = isBusy 
+        ? `Thợ ${mechName} đang bận công việc ở khoang khác, bạn chắc chắn muốn giao cho thợ này không?`
+        : `Xác nhận giao lệnh #JC-${jobCardId} cho thợ ${mechName}?`;
+
+    if(confirm(confirmMsg)) {
         try {
-            // Gọi API với đúng cấu trúc: id lệnh, id thợ, ghi chú
-            await workbayApi.assignMechanic(jobCardId, mechId, "Supervisor phân công trực tiếp");
-            
+            await workbayApi.assignMechanic(jobCardId, mechId, "Supervisor phân công");
             alert("Đã giao việc thành công!");
-            
-            // Đóng modal chi tiết
             window.closeJobDetailModal();
-            
-            // Cập nhật lại toàn bộ giao diện
             await refreshData(); 
         } catch (error) {
             alert("Lỗi: " + error.message);
@@ -571,5 +592,48 @@ window.approveExtraJob = async (jobCardId) => {
         }
     } catch (error) {
         alert("Lỗi: " + error.message);
+    }
+};
+
+window.moveJob = async (currentIndex, direction, workBayId) => {
+    const queue = window.currentQueueData;
+    if (!queue) return;
+
+    const currentJob = queue[currentIndex];
+    let prevId = null;
+    let nextId = null;
+
+    if (direction === 'up') {
+        // Nếu lên trên: Vị trí mới là index - 1
+        // Job đứng trước vị trí mới sẽ là index - 2
+        // Job đứng sau vị trí mới sẽ là index - 1 (chính là job bị đẩy xuống)
+        prevId = currentIndex - 2 >= 0 ? queue[currentIndex - 2].jobCardId : null;
+        nextId = queue[currentIndex - 1].jobCardId;
+    } else {
+        // Nếu xuống dưới: Vị trí mới là index + 1
+        // Job đứng trước vị trí mới là index + 1 (chính là job bị đẩy lên)
+        // Job đứng sau vị trí mới là index + 2
+        prevId = queue[currentIndex + 1].jobCardId;
+        nextId = currentIndex + 2 < queue.length ? queue[currentIndex + 2].jobCardId : null;
+    }
+
+    const payload = {
+        jobCardId: currentJob.jobCardId,
+        workBayId: workBayId,
+        previousJobCardId: prevId,
+        nextJobCardId: nextId
+    };
+
+    try {
+        // Hiển thị loading nhẹ hoặc disable nút để tránh bấm liên tục
+        await workbayApi.reorderQueue(payload);
+        
+        // Tải lại danh sách hàng đợi sau khi đổi
+        await window.viewWbQueue(workBayId); 
+        
+        // Tải lại grid bên ngoài để cập nhật số lượng/thứ tự hiển thị
+        await refreshData(); 
+    } catch (error) {
+        alert("Không thể thay đổi thứ tự: " + error.message);
     }
 };

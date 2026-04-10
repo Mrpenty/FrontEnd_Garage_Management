@@ -21,7 +21,7 @@ export const bookingUI = {
                     data-brand="${v.brandName}" 
                     data-brandid="${v.brandId}" 
                     data-model="${v.modelName}"
-                    data-modelid="${v.vehicleModelId}">
+                    data-modelid="${v.modelId}">
                 ${v.licensePlate} - ${v.brandName} ${v.modelName}
             </option>`).join('');
     },
@@ -125,14 +125,15 @@ export const bookingUI = {
     },
 
     //Render Booking form
-    renderBookingForm: (container, userInfo) => {
+    renderBookingForm: (container, userInfo, state) => {
         // Kiểm tra xem có phải Customer không
         const isCustomer = !!(userInfo.userId || userInfo.id);       
         const fullName = userInfo.fullName || "";
         const nameParts = fullName.split(' ');
         const lastName = nameParts.length > 1 ? nameParts.pop() : "";
         const firstName = nameParts.join(' ');
-        const licensePlateValue = window.bookingState?.licensePlate || "";
+        const licensePlateValue = state?.licensePlate || "";
+        const isVehicleReadOnly = !!(state?.vehicleId && state.vehicleId > 0);
         const isLogged = isCustomer;
         container.innerHTML = `
             <div class="booking-form-wrapper">
@@ -151,7 +152,11 @@ export const bookingUI = {
                 </div>
                 <input type="text" id="phone" placeholder="Số điện thoại *" value="${userInfo.phoneNumber || ''}" ${isLogged ? 'readonly' : ''} required>
                 
-                <input type="text" id="licensePlate" placeholder="Biển số xe *" value="${licensePlateValue}" maxlength="11" required>
+                <input type="text" id="licensePlate" placeholder="Ví dụ: 29BF-009.09 *" 
+                   value="${licensePlateValue}" 
+                   ${isVehicleReadOnly ? 'readonly style="background-color: #e9ecef;"' : ''} 
+                   maxlength="11" required>                
+                <small class="text-muted">Định dạng bắt buộc: 29XX-XXX.XX</small>
 
                 <label style="margin-top: 10px; display: block;">Chọn ngày hẹn:</label>
                 <input type="date" id="appointmentDate" min="${new Date().toISOString().split('T')[0]}" required>
@@ -172,26 +177,28 @@ export const bookingUI = {
         const checkOther = document.getElementById("bookForOthers");
         if (checkOther) {
             checkOther.addEventListener('change', (e) => {
-                const fields = ['firstName', 'lastName', 'phone'];
-                if (e.target.checked) {
-                    // Chuyển sang chế độ nhập tự do
-                    fields.forEach(id => {
-                        const el = document.getElementById(id);
+                const fields = ['firstName', 'lastName', 'phone', 'licensePlate'];
+                const isChecked = e.target.checked;
+                fields.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (isChecked) {
                         el.value = "";
                         el.readOnly = false;
                         el.style.backgroundColor = "#fff";
-                    });
-                } else {
-                    // Khôi phục dữ liệu đăng nhập và readonly
-                    document.getElementById("firstName").value = firstName;
-                    document.getElementById("lastName").value = lastName;
-                    document.getElementById("phone").value = userInfo.phoneNumber || "";
-                    fields.forEach(id => {
-                        const el = document.getElementById(id);
-                        el.readOnly = true;
-                        el.style.backgroundColor = "#e9ecef";
-                    });
-                }
+                    } else {
+                        if (id === 'firstName') el.value = firstName;
+                        if (id === 'lastName') el.value = lastName;
+                        if (id === 'phone') el.value = userInfo.phoneNumber || "";
+                        if (id === 'licensePlate') {
+                            el.value = licensePlateValue;
+                            el.readOnly = isVehicleReadOnly;
+                            el.style.backgroundColor = isVehicleReadOnly ? "#e9ecef" : "#fff";
+                        } else {
+                            el.readOnly = true;
+                            el.style.backgroundColor = "#e9ecef";
+                        }
+                    }
+                });
             });
         }
     },

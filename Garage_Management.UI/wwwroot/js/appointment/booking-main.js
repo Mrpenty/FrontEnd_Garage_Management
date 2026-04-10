@@ -115,7 +115,7 @@ async function loadInitialData() {
     const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
     const formContainer = document.getElementById("booking-form");
     
-    bookingUI.renderBookingForm(formContainer, userInfo);
+    bookingUI.renderBookingForm(formContainer, userInfo, bookingState);
     
     const slotContainer = document.getElementById("time-slots");
     bookingUI.renderTimeSlots(slotContainer, TIME_SLOTS);
@@ -185,7 +185,13 @@ function renderCurrentServicePage() {
 
 async function loadInventories() {
     const container = document.getElementById("part-list");
-    container.innerHTML = "<p class='loading-text'>Đang tìm phụ tùng phù hợp cho xe của bạn...</p>";
+    if (!bookingState.brandId || bookingState.brandId === 0) {
+        container.innerHTML = "<p class='info-msg'>Hãng xe này hiện chưa có danh sách phụ tùng mẫu. Vui lòng ghi chú yêu cầu ở bước sau.</p>";
+        allParts = []; // Reset danh sách
+        return;
+    }
+
+    container.innerHTML = "<p class='loading-text'>Đang tìm phụ tùng phù hợp cho hãng xe...</p>";
     
     try {
         // Sử dụng brandId đã lưu ở State từ Bước 0
@@ -262,9 +268,17 @@ function nextStep(step) {
     }
 
     if (step === 3) {
-        // Lưu các phụ kiện đã chọn vào state trước khi sang bước thông tin
         const checkedParts = [...document.querySelectorAll('input[name="part-item"]:checked')];
         bookingState.parts = checkedParts.map(input => parseInt(input.value));
+
+        const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        const formContainer = document.getElementById("booking-form");
+        
+        // TRUYỀN THÊM bookingState VÀO ĐÂY
+        bookingUI.renderBookingForm(formContainer, userInfo, bookingState); 
+
+        const slotContainer = document.getElementById("time-slots");
+        bookingUI.renderTimeSlots(slotContainer, TIME_SLOTS);
     }
 
     bookingUI.showStepContent(step);
@@ -279,22 +293,30 @@ async function handleFormSubmit(e) {
     const timeSlot = document.querySelector('input[name="time-slot"]:checked')?.value;
     const isLogged = !!getCustomerId();
     const rawLicensePlate = document.getElementById("licensePlate").value.trim();
-    const cleanLicensePlate = rawLicensePlate.replace(/\s+/g, '');
+    const plateRegex = /^[0-9]{2}[A-Z]{1,2}-[0-9]{3}\.[0-9]{2}$/;
     if (!date || !timeSlot) {
         alert("Vui lòng chọn đầy đủ ngày và giờ hẹn!");
         return;
     }
 
-    if (cleanLicensePlate.length > 11) {
+    if (rawLicensePlate.length > 11) {
         alert("Biển số xe không được quá 11 ký tự!");
         document.getElementById("licensePlate").focus();
         return;
     }
 
-    if (cleanLicensePlate.length < 4) { // Validate tối thiểu nếu cần
+    if (rawLicensePlate.length < 4) { // Validate tối thiểu nếu cần
         alert("Biển số xe không hợp lệ!");
         return;
     }
+
+    if (!plateRegex.test(rawLicensePlate)) {
+        alert("Biển số xe không đúng định dạng! (Ví dụ đúng: 29BF-009.09)");
+        document.getElementById("licensePlate").focus();
+        return;
+    }
+
+    const cleanLicensePlate = rawLicensePlate;
 
    // Xử lý thời gian chuẩn ISO
     const dateObj = new Date(`${date}T${timeSlot}:00`);

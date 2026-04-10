@@ -77,6 +77,14 @@ export const BookingAPI = {
         return await res.json();
     },
 
+    getInventoryByBrandId: async (brandId) => {
+        const res = await fetch(`${INVENTORY_URL}/by-brand/${brandId}`, { 
+            headers: getHeaders() 
+        });
+        if (!res.ok) throw new Error("Không thể tải danh sách phụ tùng");
+        return await res.json();
+    },
+
     // Tạo lịch hẹn mới
     async createAppointment(requestBody) {
         const res = await fetch(`${APPOINTMENT_URL}`, {

@@ -21,11 +21,11 @@ export const jobcardUI = {
                             <tr>
                                 <th>ID</th>
                                 <th>Tên khách hàng</th>
-                                <th>Hãng xe</th>
+                                <th>Số điện thoại</th>
                                 <th>Loại xe</th>
                                 <th>Biển số xe</th>
-                                <th>Check-in</th>
-                                <th>Phụ trách</th>
+                                <th>Giờ tiếp nhận xe</th>
+                                <th>Thợ phụ trách</th>
                                 <th>Tình trạng</th>
                                 <th class="text-center">Thao tác</th>
                             </tr>
@@ -113,6 +113,12 @@ export const jobcardUI = {
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                            <div class="form-group mt-3">
+                                <label><strong>Linh kiện yêu cầu trước (Từ lịch hẹn):</strong></label>
+                                <div id="appointmentSpareParts">
+                                    <p class="text-muted small"><i>Chưa chọn lịch hẹn...</i></p>
+                                </div>
                             </div>
 
                             <div class="grid-2-cols">
@@ -285,7 +291,7 @@ export const jobcardUI = {
                 case 5: return { label: 'Chờ Supervisor duyệt', class: 'status-waiting-sv' };
                 case 6: return { label: 'Chờ khách duyệt', class: 'status-waiting-cust' };
                 case 7: return { label: 'Đang sửa chữa', class: 'status-inprogress' };
-                case 8: return { label: 'Chờ nhận xe', class: 'status-waiting-pickup' };
+                case 8: return { label: 'Chờ thanh toán', class: 'status-waiting-pickup' };
                 case 9: return { label: 'Hoàn thành', class: 'status-completed' };
                 case 10: return { label: 'Đã hủy', class: 'status-rejected' };
                 case 11: return { label: 'Không phát hiện lỗi', class: 'status-noissue' };
@@ -307,21 +313,20 @@ export const jobcardUI = {
             const statusInfo = getStatusInfo(item.status);
             
             // Xử lý hiển thị thợ máy (vì mechanics là mảng)
-            const mechanicName = (item.mechanics && item.mechanics.length > 0) 
-                ? item.mechanics[0].fullName 
-                : 'Chưa phân công';
+            const mechanicDisplay = (item.mechanics && item.mechanics.length > 0) 
+            ? item.mechanics[0].mechanicName 
+            : 'Chưa phân công';
 
             return `
                 <tr>
                     <td>#${item.jobCardId}</td>
                     <td>${item.customerName || 'N/A'}</td>
-                    <td>${vehicle.brandName || '-'}</td>
-                    <td>${vehicle.modelName || '-'}</td>
+                    <td>${item.customerPhone || '-'}</td><td>${vehicle.modelName || '-'}</td>
                     <td><span class="plate-badge">${vehicle.licensePlate || 'N/A'}</span></td>
                     <td>${item.startDate ? new Date(item.startDate).toLocaleString('vi-VN') : 'N/A'}</td>
                     <td>
                         <span class="supervisor-name">
-                            <i class="fa-solid fa-user-gear"></i> ${mechanicName}
+                        <i class="fa-solid fa-user-gear"></i> ${mechanicDisplay}
                         </span>
                     </td>                   
                     <td>
@@ -342,8 +347,6 @@ export const jobcardUI = {
             `;
         }).join('');
     },
-
-    
 
     // Render kết quả tìm kiếm khách hàng (Autocomplete)
     renderCustomerSearchResults: (ulElement, customers, onSelectCallback) => {
@@ -559,6 +562,36 @@ export const jobcardUI = {
         });
     },
 
+    renderReadOnlySpareParts(container, spareParts) {
+        if (!spareParts || spareParts.length === 0) {
+            container.innerHTML = '<p class="text-muted small"><i>Không có linh kiện yêu cầu trước.</i></p>';
+            return;
+        }
+
+        let html = `
+            <table class="table table-sm table-bordered mt-2" style="font-size: 0.85rem; background: #f8f9fa;">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Tên linh kiện</th>
+                        <th class="text-center">Số lượng</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        spareParts.forEach(item => {
+            html += `
+                <tr>
+                    <td>${item.sparePartName || item.name}</td>
+                    <td class="text-center">${item.quantity}</td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    },
+
     renderJobCardDetailModal: (data) => {
     const getStatusInfo = (status) => {
         switch (status) {
@@ -569,7 +602,7 @@ export const jobcardUI = {
             case 5: return { label: 'Chờ Supervisor duyệt', class: 'status-waiting-sv' };
             case 6: return { label: 'Chờ khách duyệt', class: 'status-waiting-cust' };
             case 7: return { label: 'Đang sửa chữa', class: 'status-inprogress' };
-            case 8: return { label: 'Chờ nhận xe', class: 'status-waiting-pickup' };
+            case 8: return { label: 'Chờ thanh toán', class: 'status-waiting-pickup' };
             case 9: return { label: 'Hoàn thành', class: 'status-completed' };
             case 10: return { label: 'Đã hủy', class: 'status-rejected' };
             case 11: return { label: 'Không phát hiện lỗi', class: 'status-noissue' };

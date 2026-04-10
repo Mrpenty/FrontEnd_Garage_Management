@@ -49,7 +49,7 @@ export const repairUI = {
                     <ul style="list-style: none; padding-left: 5px;">
                         ${tasks.map(task => {
                             // Logic chọn btnClass, btnText giữ nguyên...
-                            let btnClass = task.serviceTaskStatus === 2 ? 'btn-primary' : (task.serviceTaskStatus === 3 ? 'btn-success' : 'btn-outline-secondary');
+                            let btnClass = task.serviceTaskStatus === 2 ? 'btn-secondary' : (task.serviceTaskStatus === 3 ? 'btn-secondary' : 'btn-outline-secondary');
                             let btnText = task.serviceTaskStatus === 2 ? 'Đang làm...' : (task.serviceTaskStatus === 3 ? 'Đã xong' : 'Bắt đầu');
                             let nextStatus = task.serviceTaskStatus === 2 ? 3 : (task.serviceTaskStatus === 3 ? 1 : 2);
 
@@ -57,7 +57,7 @@ export const repairUI = {
                                 <li style="font-size: 0.85rem; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #eee;">
                                     <span style="color: #444; font-weight: 500;">${task.taskName}</span>
                                     <button 
-                                        class="btn btn-sm ${btnClass} task-action-btn" 
+                                        class="btn-secondary ${btnClass} task-action-btn" 
                                         ${isDisabled ? 'disabled' : ''} 
                                         onclick="window.handleTaskAction(${job.jobCardId}, ${task.serviceTaskId}, ${task.serviceTaskStatus}, ${nextStatus}, '${task.taskName.replace(/'/g, "\\'")}', ${job.status}, ${service.serviceStatus}, '${encodeURIComponent(JSON.stringify(job))}')">
                                         ${btnText}
@@ -86,7 +86,7 @@ export const repairUI = {
                 
                 <div class="section-label" style="margin-top:20px; font-weight: bold;">Ghi chú / Phát hiện lỗi thêm:</div>
                 <div style="position: relative;">
-                     <button class="btn btn-danger btn-sm" style="width: 100%; font-weight: bold;" 
+                     <button class="btn-add" style="width: 100%; font-weight: bold;" 
                         onclick="window.openNewFaultPopup(${job.jobCardId})">
                         <i class="fa-solid fa-file-medical"></i> LẬP BÁO CÁO PHÁT SINH
                     </button>

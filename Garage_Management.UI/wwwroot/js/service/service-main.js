@@ -5,6 +5,12 @@ const TASK_API = `${CONFIG.API_BASE_URL}/ServiceTasks`;
 
 document.addEventListener('DOMContentLoaded', () => {
     loadServices();
+    const userInfoStr = localStorage.getItem('userInfo');
+
+    if (userInfoStr) {
+        const userInfo = JSON.parse(userInfoStr);
+        document.getElementById('display-name').innerText = `${userInfo.fullName} (${userInfo.email})`;
+    }
 
     // Xử lý tạo Service mới
     document.getElementById('service-form').addEventListener('submit', async (e) => {
@@ -25,6 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModals();
             loadServices();
         }
+
+        document.getElementById('prev-btn').onclick = () => changePage(-1);
+        document.getElementById('next-btn').onclick = () => changePage(1);
     });
 
     // Xử lý tạo Task mới
@@ -64,6 +73,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+function changePage(step) {
+    const newPage = currentPage + step;
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        loadTableData();
+    }
+}
+
+function updatePaginationUI() {
+    document.getElementById('page-info').innerText = `Trang ${currentPage} / ${totalPages}`;
+    document.getElementById('prev-btn').disabled = (currentPage === 1);
+    document.getElementById('next-btn').disabled = (currentPage === totalPages);
+}
 
 async function loadServices() {
     const res = await fetch(`${SERVICE_API}?page=1&pageSize=20`);

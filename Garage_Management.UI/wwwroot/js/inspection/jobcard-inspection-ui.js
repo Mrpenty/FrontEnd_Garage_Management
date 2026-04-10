@@ -3,41 +3,60 @@ import { repairUI} from '../repairation/jobcard-repairation-ui.js';
 
 export const jobCardUI = {
     // Render Job ở cột trái (Hàng đợi/Tiếp theo)   
-    renderNextJob: (job) => {
+    renderNextJob: (job, hasActiveJob) => {
         const container = document.getElementById('next-job-content');
-        console.log(">>> Dữ liệu Job hiện tại:", job);
+
         if (!job) {
-            container.innerHTML = `<div class="no-job" style="padding:20px; text-align:center;">Không có JobCard chờ</div>`;
+            container.innerHTML = `<div class="loading-placeholder">Không có JobCard chờ</div>`;
             return;
         }
 
-        // Lấy danh sách tên dịch vụ
+        const warningMsg = hasActiveJob 
+            ? `<div class="service-block" style="background:#fff3cd; color:#856404;">
+                    Hoàn thành công việc hiện tại để bắt đầu xe mới
+            </div>` 
+            : '';
+
         const serviceNames = job.services.map(s => s.serviceName).join(', ');
-        // Tính tổng số task
         const totalTasks = job.services.reduce((acc, s) => acc + s.serviceTasks.length, 0);
 
         container.innerHTML = `
-            <div class="item-card" style="margin: 15px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background: #fff; color: #333;">
+            <div class="column-box repair-detail-card">
+                
                 <div style="display:flex; justify-content: space-between; align-items: flex-start;">
                     <p><strong>Khách:</strong> ${job.customerFullName}</p>
-                    <span style="background: #ffe3e3; color: #e63946; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">
-                        ${totalTasks} Tasks
-                    </span>
-                </div>
-                <p><strong>Xe:</strong> ${job.licensePlate} (${job.vehicleModel})</p>
-                
-                <div style="margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 6px;">
-                    <strong style="font-size: 0.85rem; color: #555;">DỊCH VỤ YÊU CẦU:</strong>
-                    <p style="font-size: 0.9rem; color: #e63946; font-weight: 500;">${serviceNames}</p>
+                    <span class="badge-task">${totalTasks} Tasks</span>
                 </div>
 
-                <p style="font-size: 0.8rem; color: #888; margin-top:10px;">
+                <p><strong>Xe:</strong> ${job.licensePlate} (${job.vehicleModel})</p>
+
+                <div class="service-block">
+                    <strong style="font-size: 0.85rem; color: var(--text-muted);">
+                        DỊCH VỤ YÊU CẦU
+                    </strong>
+                    <p style="color: var(--primary-red); font-weight: 500;">
+                        ${serviceNames}
+                    </p>
+                </div>
+
+                <p style="font-size: 0.8rem; color: var(--text-muted);">
                     <i class="fa-solid fa-user-tie"></i> Supervisor: ${job.supervisor}
                 </p>
-                <button class="btn-detail" style="margin-top:15px; width:100%" onclick="window.handleStartJob(${job.jobCardId})">
-                    BẮT ĐẦU KIỂM TRA
-                </button>
-            </div>`;
+
+                ${warningMsg}
+
+                ${
+                    !hasActiveJob 
+                    ? `<button class="btn-detail" 
+                            style="margin-top:15px; width:100%;" 
+                            onclick="window.handleStartJob(${job.jobCardId})">
+                            BẮT ĐẦU KIỂM TRA
+                    </button>`
+                    : ''
+                }
+
+            </div>
+        `;
     },
 
     // Render Job ở cột phải (Đang sửa) kèm Checklist Tasks
@@ -46,7 +65,7 @@ export const jobCardUI = {
         const header = `<div class="column-header repairing-header">Xe đang xử lý</div>`;
         
         if (!job) {
-            container.innerHTML = header + `<div class="no-job-msg">Không có xe đang xử lý</div>`;
+            container.innerHTML = header + `<div class="loading-placeholder">Không có xe đang xử lý</div>`;
             return;
         }
 
@@ -84,58 +103,97 @@ export const jobCardUI = {
 
     // Template cho màn hình lập báo giá (Trường hợp 1)
     templateEstimate: (job, inventories) => {
-        const currentServicesHtml = job.services.map(s => `
-            <div class="service-item-static" style="background: #fff5f5; padding: 8px; border-radius: 4px; margin-bottom: 5px; border-left: 3px solid #e63946; display: flex; justify-content: space-between;">
-                <span><i class="fa-solid fa-check-double"></i> ${s.serviceName}</span>
-                <span class="badge bg-danger" style="font-size: 0.7rem; align-self: center;">Sẵn có</span>
-                <input type="hidden" class="job-service-id" value="${s.serviceId}">
-            </div>
-        `).join('');
-
         let inventoryOptions = inventories.map(item => 
-            `<option value="${item.sparePartId}" data-price="${item.sellingPrice}">[${item.partCode}] ${item.partName} - Tồn: ${item.quantity}</option>`
+            `<option value="${item.sparePartId}" data-price="${item.sellingPrice}">
+                [${item.partCode}] ${item.partName} - Tồn: ${item.quantity}
+            </option>`
         ).join('');
 
         return `
-            <div class="repair-detail-card">
-                <h3><i class="fa-solid fa-file-invoice-dollar"></i> LẬP PHIẾU KIỂM TRA & BÁO GIÁ</h3>
-                <p>Xe: <strong>${job.licensePlate}</strong> | Khách: ${job.customerFullName}</p>
-                <hr>
+            <div class="column-box repair-detail-card">
 
-                <div class="section" style="margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: #555;">DỊCH VỤ ĐÃ CHỌN:</label>
-                    <div id="current-services-list" style="margin-top: 5px;">
-                        ${currentServicesHtml}
-                    </div>
+                <h3>
+                    <i class="fa-solid fa-file-invoice-dollar"></i> 
+                    LẬP PHIẾU KIỂM TRA & BÁO GIÁ
+                </h3>
+
+                <p>
+                    Xe: <strong>${job.licensePlate}</strong> | 
+                    Khách: ${job.customerFullName}
+                </p>
+                <br>
+
+                <!-- SERVICE -->
+                <div style="display:flex; gap:10px; margin-bottom:10px; ">
+                    <select id="select-service" style="flex:1;"></select>
+                    <button class="btn-add" onclick="window.addServiceRow()">+</button>
                 </div>
-                
-                <div class="section">
-                    <label style="font-weight: bold; color: #555;">THÊM LINH KIỆN THAY THẾ (NẾU CÓ):</label>
-                    <div style="display: flex; gap: 5px; margin-top: 5px;">
-                        <select id="select-sparepart" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+
+                <table class="table-estimate" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Tên dịch vụ</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="estimate-services-body"></tbody>
+                </table>
+
+                <!-- PART -->
+                <div class="service-block">
+                    <strong style="color: var(--text-muted);">
+                        THÊM LINH KIỆN THAY THẾ (NẾU CÓ)
+                    </strong>
+
+                    <div style="display:flex; gap:5px; margin-top:10px;">
+                        <select id="select-sparepart" style="flex:1;">
                             ${inventoryOptions}
                         </select>
-                        <input type="number" id="input-qty" value="1" min="1" style="width: 60px; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
-                        <button class="btn-add" onclick="window.addPartRow()" style="background: #28a745; color: white; border: none; padding: 0 15px; border-radius: 4px;">+</button>
+                        <input type="number" id="input-qty" value="1" min="1" style="width:70px;">
+                        <button class="btn-add" onclick="window.addPartRow()">+</button>
                     </div>
                 </div>
 
-                <table class="table-estimate" style="width: 100%; margin-top: 15px; font-size: 0.85rem; border-collapse: collapse;">
-                    <thead style="background: #f4f4f4;">
-                        <tr><th style="padding: 8px; text-align: left;">Linh kiện</th><th style="padding: 8px;">SL</th><th style="padding: 8px;">Xóa</th></tr>
+                <table class="table-estimate" style="width:100%; margin-top:15px;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Linh kiện</th>
+                            <th>SL</th>
+                            <th style="text-align:right;">Xóa</th>
+                        </tr>
                     </thead>
                     <tbody id="estimate-parts-body"></tbody>
                 </table>
 
-                <div class="section" style="margin-top:15px;">
-                    <label style="font-weight: bold; color: #555;">GHI CHÚ KIỂM TRA CHI TIẾT:</label>
-                    <textarea id="estimate-note" style="width: 100%; height: 80px; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Ví dụ: Má phanh mòn cần thay, dầu máy đen..."></textarea>
+                <!-- NOTE -->
+                <div class="service-block">
+                    <strong style="color: var(--text-muted);">
+                        GHI CHÚ KIỂM TRA CHI TIẾT
+                    </strong>
+                    <textarea 
+                        id="estimate-note" 
+                        placeholder="Ví dụ: Má phanh mòn cần thay..."
+                        style="width:100%; height:80px; margin-top:10px;">
+                    </textarea>
                 </div>
 
-                <button class="btn-submit-estimate" onclick="window.handleSubmitEstimate(${job.jobCardId})" style="margin-top: 15px; width: 100%; background: #e63946; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold;">
-                    GỬI YÊU CẦU DUYỆT BÁO GIÁ
-                </button>
-            </div>`;
+                <div class="column-box repair-detail-card">
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                        <button class="btn-finish" 
+                                style="width:100%;"
+                                onclick="window.handleSubmitEstimate(${job.jobCardId})">
+                            <i class="fa-solid fa-paper-plane"></i> Gửi yêu cầu duyệt báo giá
+                        </button>
+
+                        <button class="btn-secondary" 
+                                style="width:100%; background-color: #6c757d; color: white; border: none; padding: 10px; border-radius: 4px;"
+                                onclick="window.handleNoFaultFound(${job.jobCardId})">
+                            <i class="fa-solid fa-magnifying-glass-minus"></i> Không tìm thấy lỗi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
     },
 
     // Template cho các trạng thái chờ (Trường hợp 2 & 3)
