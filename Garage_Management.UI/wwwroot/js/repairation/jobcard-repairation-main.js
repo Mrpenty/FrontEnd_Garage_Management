@@ -259,11 +259,12 @@ export const repairExecution = {
     finalizeRepair: async (jobCardId, detailResult) => {
         try {
             Swal.fire({ title: 'Đang hoàn tất thủ tục...', didOpen: () => Swal.showLoading() });
-
+            const validServices = (detailResult.services || []).filter(svc => parseInt(svc.status) !== 4);
+            const serviceTotal = validServices.reduce((sum, svc) => sum + (svc.price || 0), 0);
+            const sparePartTotal = (detailResult.spareParts || []).reduce((sum, part) => sum + (part.totalAmount || 0), 0);
             // A. Cập nhật Status từng Service sang 3 (Đã xong)
             if (detailResult.services && detailResult.services.length > 0) {
-                const servicePromises = detailResult.services
-                    .filter(svc => parseInt(svc.status) !== 4) 
+                const servicePromises = validServices
                     .map(svc => repairApi.updateJobCardServiceStatus(jobCardId, svc.serviceId, 3));
                 await Promise.all(servicePromises);
             }
@@ -280,7 +281,27 @@ export const repairExecution = {
                 if (!released) console.warn("Cảnh báo: Không thể giải phóng khoang tự động.");
             }
 
-            await Swal.fire('Thành công', 'Đã hoàn thành sửa chữa và bàn giao lệnh!', 'success');
+            //E. Tạo hóa đơn thanh toán
+            const invoiceRequest = {
+                jobCardId: jobCardId,
+                invoiceDate: new Date().toISOString(),
+                serviceTotal: serviceTotal, // Lấy từ detailResult
+                sparePartTotal: sparePartTotal, // Lấy từ detailResult
+                paymentMethod: null
+            };
+
+            console.log("Dữ liệu Invoice gửi đi:", invoiceRequest);
+            const invoiceOk = await repairApi.createInvoice(invoiceRequest);
+
+            if (invoiceOk) {
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Hoàn tất sửa chữa',
+                    text: `Hóa đơn đã được tạo. Tổng dịch vụ: ${serviceTotal.toLocaleString()}đ, Linh kiện: ${sparePartTotal.toLocaleString()}đ`,
+                });
+            } else {
+                await Swal.fire('Lưu ý', 'Đã xong sửa chữa nhưng không thể tạo hóa đơn tự động.', 'warning');
+            }
             location.reload();
         } catch (error) {
             console.error("Lỗi hoàn tất:", error);
