@@ -1,5 +1,233 @@
-<script type="module">
-    import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
-    // Kiểm tra đúng role mới cho ở lại
-    authGuard.authorize('Stocker'); 
-</script>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stocker Dashboard - Quản lý Kho</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-primary mb-4 shadow-sm">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-box-seam me-2"></i>Quản lý Gara - Bộ phận Kho
+            </span>
+            <div class="d-flex">
+                <button id="btn-staff-logout" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right me-1"></i> Đăng xuất
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <ul class="nav nav-pills bg-white p-2 rounded shadow-sm" id="stockerTab" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory">Tồn kho hiện tại</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions">Lịch sử Giao dịch</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="tab-content" id="stockerTabContent">
+            <div class="tab-pane fade show active" id="inventory">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Danh sách Phụ tùng</h5>
+                        <button class="btn btn-success btn-sm" onclick="inventoryUI.showCreateModal()">
+                            <i class="bi bi-plus-circle"></i> Thêm Phụ tùng mới
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <input type="text" id="invSearch" class="form-control" placeholder="Tìm tên, mã phụ tùng...">
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary w-100" onclick="inventoryMain.loadInventory()">Tìm kiếm</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mã PT</th>
+                                        <th>Tên phụ tùng</th>
+                                        <th>Thương hiệu</th>
+                                        <th>Tồn kho</th>
+                                        <th>Đơn vị</th>
+                                        <th>Giá bán</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody"></tbody>
+                                
+                            </table>
+                            <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Hiển thị 10 phụ tùng mỗi trang</small>
+                                    <div id="invPagination"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="transactions">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Nhập/Xuất/Kiểm kê Kho</h5>
+                        <button class="btn btn-primary btn-sm" onclick="inventoryUI.showTransactionModal()">
+                            <i class="bi bi-arrow-left-right"></i> Tạo Phiếu Mới
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="transactionTableContainer">
+                             <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày</th>
+                                        <th>Loại</th>
+                                        <th>Phụ tùng</th>
+                                        <th>Thay đổi</th>
+                                        <th>Mã chứng từ</th>
+                                        <th>Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionTableBody"></tbody>                              
+                             </table>
+                             <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Hiển thị 10 phụ tùng mỗi trang</small>
+                                    <div id="transPagination"></div>
+                             </div>
+                        </div>
+                    </div>                 
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="transactionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="transactionForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Tạo Giao dịch Kho</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Loại giao dịch</label>
+                            <select class="form-select" name="transactionType" id="transactionType" onchange="inventoryUI.toggleTransactionFields()">
+                                <option value="1">Nhập kho (Import)</option>
+                                <option value="2">Xuất kho (Export)</option>
+                                <option value="4">Kiểm kê/Điều chỉnh (Adjustment)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phụ tùng</label>
+                            <select class="form-select" name="sparePartId" id="sparePartSelect" required></select>
+                        </div>
+                        <div id="divQuantity" class="mb-3">
+                            <label class="form-label">Số lượng thay đổi</label>
+                            <input type="number" class="form-control" name="quantityChange" value="1">
+                        </div>
+                        <div id="divActual" class="mb-3 d-none">
+                            <label class="form-label text-primary fw-bold">Số lượng thực tế tại kho</label>
+                            <input type="number" class="form-control border-primary" name="actualQuantity">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mã chứng từ / Số hóa đơn</label>
+                            <input type="text" class="form-control" name="receiptCode">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ghi chú</label>
+                            <textarea class="form-control" name="note"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Xác nhận Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="inventoryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form id="inventoryForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="invModalTitle">Thêm Phụ tùng mới</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="sparePartId" id="editSparePartId">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Mã phụ tùng</label>
+                                <input type="text" class="form-control" name="partCode" placeholder="Ví dụ: LOP-001">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tên phụ tùng *</label>
+                                <input type="text" class="form-control" name="partName" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Đơn vị tính</label>
+                                <input type="text" class="form-control" name="unit" placeholder="Cái, Bộ, Lít...">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Số lượng hiện tại</label>
+                                <input type="number" class="form-control" name="quantity" value="0">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Định mức tối thiểu</label>
+                                <input type="number" class="form-control" name="minQuantity" value="5">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Giá nhập cuối</label>
+                                <input type="number" class="form-control" name="lastPurchasePrice" value="0">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Giá bán niêm yết</label>
+                                <input type="number" class="form-control" name="sellingPrice" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-success">Lưu phụ tùng</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
+        import CONFIG from '../../wwwroot/js/config.js';
+        // Kiểm tra đúng role mới cho ở lại
+        authGuard.authorize('Stocker'); 
+
+        const logoutBtn = document.getElementById('btn-staff-logout');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                    localStorage.clear();
+                    // Sử dụng đường dẫn từ CONFIG hoặc link cứng nếu CONFIG chưa khớp
+                    window.location.href = CONFIG.PAGES?.STAFF_LOGIN || '../auth/login.html';
+                }
+            });
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="../../wwwroot/js/inventory/inventory-main.js"></script>
+    
+</body>
+</html>

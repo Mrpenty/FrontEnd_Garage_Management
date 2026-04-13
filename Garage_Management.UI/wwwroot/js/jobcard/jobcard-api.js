@@ -8,6 +8,8 @@ const JOBCARD_URL = `${CONFIG.API_BASE_URL}/JobCards`;
 const SERVICE_URL = `${CONFIG.API_BASE_URL}/Services`;
 const CUSTOMER_URL = `${CONFIG.API_BASE_URL}/Customer`;
 const USER_URL = `${CONFIG.API_BASE_URL}/User`;
+const PAYMENT_URL = `${CONFIG.API_BASE_URL}/Payment`;
+const INVOICE_URL = `${CONFIG.API_BASE_URL}/Invoices`;
 
 const getHeaders = () => ({
     'Content-Type': 'application/json',
@@ -203,3 +205,156 @@ export const appointmentApi = {
         return await response.json();
     }
 }
+
+export const EstimateAPI = {
+    getByJobCard: async (jcId) => {
+        const res = await fetch(`${CONFIG.API_BASE_URL}/RepairEstimates/job-cards/${jcId}`, { headers: { 'Content-Type': 'application/json' } });
+        return await res.json();
+    },
+
+    // 1. Cập nhật status cho từng Phụ tùng trong báo giá
+    updateSparePartStatus: async (estId, spId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/RepairEstimateSpareParts/${estId}/${spId}/status`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: status})
+        });
+    },
+
+    // 2. Cập nhật status cho từng Dịch vụ trong báo giá
+    updateServiceStatus: async (estId, svId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/RepairEstimateServices/${estId}/${svId}/status`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ status: status})
+        });
+    },
+
+    // 3. Cập nhật status của bản ghi RepairEstimate (Bảng tổng)
+    updateEstimateStatus: async (estId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/RepairEstimates/${estId}/status`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ status: status})
+        });
+    },
+
+    // 4. Đồng bộ phụ tùng sang JobCard thực tế
+    syncSpareParts: async (jcId, data) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/JobCardSparepart/${jcId}/spare-parts`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(data) // Gửi trực tiếp mảng Object
+        });
+    },
+
+    // Thêm hàm POST cho Dịch vụ
+    syncJobCardServiceSingle: async (payload) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/JobCardServices`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(payload) 
+        });
+    },
+
+    // 5. Cập nhật status JobCard (7: Đã duyệt, 10: Hủy)
+    updateJobCardStatus: async (jcId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${JOBCARD_URL}/${jcId}/status`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ status: status})
+        });
+    },
+
+    //Lấy danh dách JobCard của khách hàng
+    getMyJobCard: async (customerId) => {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${JOBCARD_URL}/customer/${customerId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return await response.json();
+    },
+
+    // Cập nhật status cho JobCardService thực tế
+    updateJobCardServiceStatus: async (jcId, serviceId, status) => {
+        const token = localStorage.getItem('accessToken');
+        return await fetch(`${CONFIG.API_BASE_URL}/JobCardServices/service/${serviceId}/status?jobCardId=${jcId}`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ status: status }) // Truyền status vào body
+        });
+    },
+
+    getEstimateByJobCardId: async (jobCardId) => {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${CONFIG.API_BASE_URL}/RepairEstimates/job-cards/${jobCardId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return await response.json();
+    },
+}
+
+export const PaymentAPI = {
+    getAuthHeader: () => {
+        const token = localStorage.getItem('accessToken'); 
+        return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+    },
+
+    getInvoices: async () => {
+            const response = await fetch(`${INVOICE_URL}`, {
+                headers: PaymentAPI.getAuthHeader()
+            }); 
+            return await response.json();
+        },
+
+    getBankTransferQr: async (invoiceId) => {
+        const response = await fetch(`${PAYMENT_URL}/bank-transfer/${invoiceId}`, {
+            headers: PaymentAPI.getAuthHeader()
+        });
+        return await response.json();
+    },
+
+    confirmCashPayment: async (invoiceId) => {
+        const response = await fetch(`${PAYMENT_URL}/cash-confirm`, {
+            method: 'POST',
+            headers: PaymentAPI.getAuthHeader(),
+            body: JSON.stringify({ invoiceId: invoiceId })
+        });
+        return await response.json();
+    },
+};

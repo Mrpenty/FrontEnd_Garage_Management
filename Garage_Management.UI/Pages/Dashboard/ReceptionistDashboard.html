@@ -61,8 +61,33 @@
                 </div>
             </div>
         </div>
-    </div>
 
+        <div class="modal fade" id="estimateModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Xử lý duyệt báo giá hộ khách</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-center">Đang tải dữ liệu...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="paymentModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thanh toán</h5>
+                <button type="button" class="btn-close close-modal" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"> 
+                </div>
+        </div>
+    </div>
+</div>
     <script type="module">
         import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
         import CONFIG from '../../wwwroot/js/config.js';

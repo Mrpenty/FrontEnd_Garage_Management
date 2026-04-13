@@ -1,4 +1,4 @@
-import { vehicleApi, serviceApi, jobcardApi, customerApi, appointmentApi } from './jobcard-api.js';
+import { vehicleApi, serviceApi, jobcardApi, customerApi, appointmentApi, EstimateAPI, PaymentAPI} from './jobcard-api.js';
 import { jobcardUI } from './jobcard-ui.js';
 
 // --- State Management (Dùng để lưu trữ tạm thời khi tạo JobCard) ---
@@ -8,7 +8,7 @@ let currentAppointmentId = null;
 
 export async function initJobCardModule() {
     const mainContent = document.getElementById('main-display');
-    
+    const modalElement = document.getElementById('paymentModal');
     // 1. Render Layout khung (Stats + Table)
     jobcardUI.renderDashboardLayout(mainContent);
 
@@ -40,7 +40,6 @@ export async function initJobCardModule() {
         jobCardNote: document.getElementById('jobCardNote'),
         selectSupervisor: document.getElementById('selectSupervisor')
     };
-
     // 3. Khởi tạo các Logic sự kiện
     initModalEvents(elements);
     initCustomerSearch(elements);
@@ -68,6 +67,105 @@ async function loadJobCards(tbody) {
     } catch (err) {
         console.error("Lỗi tải danh sách JobCard:", err);
         tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color:red">Lỗi kết nối server</td></tr>`;
+    }
+}
+
+async function handleProxyApproval(jobCardId, selectedSparePartIds = [], selectedServiceIds = []) {
+    try {
+        // 1. Lấy dữ liệu báo giá
+        const res = await EstimateAPI.getEstimateByJobCardId(jobCardId);
+        
+        // Bóc tách data dựa trên cấu trúc API trả về { success, data: [...] }
+        const estimate = (res && res.success && res.data && res.data.length > 0) ? res.data[0] : null;
+        
+        if (!estimate) throw new Error("Không tìm thấy thông tin báo giá.");
+        
+        const estId = estimate.repairEstimateId;
+
+        // Đảm bảo spareParts và services luôn là mảng để không bị lỗi .map() hoặc .filter()
+        const spareParts = estimate.spareParts || [];
+        const services = estimate.services || [];
+
+        // 2. Cập nhật trạng thái từng hạng mục (Sử dụng mảng đã được bảo vệ)
+        const spPromises = spareParts.map(sp => {
+            const isApproved = selectedSparePartIds.includes(sp.sparePartId);
+            return EstimateAPI.updateSparePartStatus(estId, sp.sparePartId, isApproved ? 2 : 3);
+        });
+        
+        const svPromises = services.map(sv => {
+            const isApproved = selectedServiceIds.includes(sv.serviceId);
+            return EstimateAPI.updateServiceStatus(estId, sv.serviceId, isApproved ? 2 : 3);
+        });
+        
+        await Promise.all([...spPromises, ...svPromises]);
+
+        // 3. Cập nhật trạng thái tổng
+        const hasAnyApproval = selectedSparePartIds.length > 0 || selectedServiceIds.length > 0;
+        await EstimateAPI.updateEstimateStatus(estId, hasAnyApproval ? 2 : 3);
+
+        // 4. Lấy dữ liệu JobCard hiện tại
+        const resJC = await jobcardApi.getById(jobCardId);
+        const currentJC = resJC.success ? resJC.data : resJC;
+        
+        // Kiểm tra an toàn cho currentJC.services
+        const jcServices = currentJC?.services || [];
+        const hasOnHoldService = jcServices.some(s => s.status === 5);
+
+        // 5. Đồng bộ sang JobCard
+        if (hasAnyApproval) {
+            // Đồng bộ phụ tùng
+            const approvedParts = spareParts.filter(sp => selectedSparePartIds.includes(sp.sparePartId));
+            if (approvedParts.length > 0) {
+                await EstimateAPI.syncSpareParts(jobCardId, {
+                    spareParts: approvedParts.map(sp => ({
+                        sparePartId: sp.sparePartId,
+                        quantity: sp.quantity,
+                        isUnderWarranty: false,
+                        note: "Duyệt hộ từ báo giá #" + estId
+                    }))
+                });
+            }
+
+            // Đồng bộ dịch vụ
+            const approvedServices = services.filter(sv => selectedServiceIds.includes(sv.serviceId));
+            const existingServiceIds = jcServices.map(s => s.serviceId);
+
+            const syncPromises = approvedServices.map(sv => {
+                if (existingServiceIds.includes(sv.serviceId)) {
+                    return EstimateAPI.updateJobCardServiceStatus(jobCardId, sv.serviceId, 2);
+                } else {
+                    return EstimateAPI.syncJobCardServiceSingle({
+                        jobCardId: jobCardId,
+                        serviceId: sv.serviceId,
+                        description: "Duyệt bổ sung (Lễ tân)",
+                        price: sv.unitPrice || 0,
+                        status: 2,
+                        sourceInspectionItemId: 0
+                    });
+                }
+            });
+            await Promise.all(syncPromises);
+        }
+
+        // 6. Khôi phục các dịch vụ cũ đang chờ (Status 5 -> 2)
+        if (hasOnHoldService) {
+            const onHoldServices = jcServices.filter(s => s.status === 5);
+            await Promise.all(onHoldServices.map(s => 
+                EstimateAPI.updateJobCardServiceStatus(jobCardId, s.serviceId, 2)
+            ));
+        }
+
+        // 7. Cập nhật trạng thái cuối cho JobCard
+        const finalStatus = (hasAnyApproval || hasOnHoldService) ? 7 : 10;
+        await EstimateAPI.updateJobCardStatus(jobCardId, finalStatus);
+
+        alert(hasAnyApproval ? "Đã duyệt báo giá hộ khách hàng!" : "Đã ghi nhận từ chối báo giá.");
+        return true;
+
+    } catch (error) {
+        console.error("Lỗi duyệt hộ:", error);
+        alert("Có lỗi xảy ra: " + error.message);
+        return false;
     }
 }
 
@@ -99,11 +197,12 @@ async function loadServiceList(selectElement) {
 
 // Hàm xử lý khi bấm nút View/Detail
 function initTableActions(tbody) {
-    tbody.querySelectorAll('.btn-action.view').forEach(btn => {
-        btn.onclick = async () => {
-            const id = btn.dataset.id;
+    tbody.onclick = async (e) => {
+        const btn = e.target.closest('.btn-action');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.classList.contains('view')) {
             const res = await jobcardApi.getById(id);
-            
             // Backend của bạn trả về Object trực tiếp, 
             // nên ta kiểm tra res hoặc res.data tùy theo cách jobcardApi.getById được viết
             const data = res.success ? res.data : res; 
@@ -126,8 +225,46 @@ function initTableActions(tbody) {
             } else {
                 alert("Không thể tải thông tin chi tiết!");
             }
-        };
-    });
+        } else if (btn.classList.contains('approve-proxy')) {
+            handleOpenEstimateModal(id, btn);
+        } else if (btn.classList.contains('payment')) {
+            handlePayment(id);
+        }         
+    };
+}
+
+// Tách hàm ra cho sạch code
+async function handleOpenEstimateModal(jobCardId, btn) {
+    try {
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.5';
+
+        const res = await EstimateAPI.getEstimateByJobCardId(jobCardId);
+        const estimate = (res && res.success && res.data && res.data.length > 0) ? res.data[0] : null;
+
+        if (!estimate) {
+            alert("Không tìm thấy dữ liệu báo giá!");
+            return;
+        }
+
+        const modalElement = document.getElementById('estimateModal');
+        const container = modalElement.querySelector('.modal-body');
+
+        // Render giao diện vào modal
+        jobcardUI.renderEstimateView(container, estimate);
+
+        // Hiển thị modal
+        if (typeof bootstrap !== 'undefined') {
+            new bootstrap.Modal(modalElement).show();
+        } else {
+            modalElement.style.display = 'block';
+        }
+    } catch (error) {
+        alert("Lỗi: " + error.message);
+    } finally {
+        btn.style.pointerEvents = 'auto';
+        btn.style.opacity = '1';
+    }
 }
 
 async function loadDashboardStats() {
@@ -710,3 +847,50 @@ window.closePrintModal = () => {
 window.executePrint = () => {
     window.print();
 };
+
+
+export async function handleBankTransfer() {
+    const result = await PaymentAPI.getBankTransferQr(currentInvoiceId);
+    if (result.success) {
+        // result.data chứa invoiceId, qrCodeUrl, bankName, v.v...
+        jobcardUI.showQrCode(result.data);
+    } else {
+        alert("Lỗi: " + result.message);
+    }
+}
+
+async function handlePayment(jobCardId) {
+    try {
+        // 1. Tìm Invoice tương ứng với JobCard
+        const resInvoices = await PaymentAPI.getInvoices();
+        const invoices = resInvoices.data?.pageData || []; 
+        const targetInvoice = invoices.find(inv => inv.jobCardId == jobCardId);
+
+        if (!targetInvoice) {
+            return alert("Không tìm thấy hóa đơn cho Phiếu sửa chữa này!");
+        }
+
+        const invoiceId = targetInvoice.invoiceId;
+
+        // 2. Mở Modal chọn phương thức thanh toán
+        const modalElement = document.getElementById('paymentModal');
+        const container = modalElement.querySelector('.modal-body');
+        
+        // Render giao diện chọn (Tiền mặt / Chuyển khoản)
+        jobcardUI.renderPaymentSelection(container, targetInvoice);
+
+        // Hiển thị modal
+        if (typeof bootstrap !== 'undefined') {
+            new bootstrap.Modal(modalElement).show();
+        } else {
+            modalElement.style.display = 'block';
+        }
+
+    } catch (error) {
+        console.error("Lỗi thanh toán:", error);
+        alert("Có lỗi xảy ra khi tải thông tin thanh toán.");
+    }
+}
+
+window.handleProxyApproval = handleProxyApproval;
+window.loadJobCards = loadJobCards;

@@ -1,3 +1,5 @@
+import { vehicleApi, serviceApi, jobcardApi, customerApi, appointmentApi, EstimateAPI, PaymentAPI} from './jobcard-api.js';
+
 export const jobcardUI = {
     // Thêm vào trong export const jobcardUI = { ... }
     renderDashboardLayout: (container) => {
@@ -285,7 +287,7 @@ export const jobcardUI = {
         const getStatusInfo = (status) => {
             switch (status) {
                 case 1: return { label: 'Vừa tạo', class: 'status-created' };
-                case 2: return { label: 'Chờ tiếp nhận', class: 'status-waiting' };
+                case 2: return { label: 'Chờ giao thợ', class: 'status-waiting' };
                 case 3: return { label: 'Chờ kiểm tra', class: 'status-waiting-insp' };
                 case 4: return { label: 'Đang kiểm tra', class: 'status-inspection' };
                 case 5: return { label: 'Chờ Supervisor duyệt', class: 'status-waiting-sv' };
@@ -317,6 +319,38 @@ export const jobcardUI = {
             ? item.mechanics[0].mechanicName 
             : 'Chưa phân công';
 
+            let actionButtons = `
+                <button class="btn-action view" data-id="${item.jobCardId}" title="Chi tiết">
+                    <i class="fa-solid fa-eye"></i>
+                </button>`;
+
+            if (item.status === 1) {
+                actionButtons += `
+                    <button class="btn-action edit" data-id="${item.jobCardId}" title="Chỉnh sửa">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>`;
+            }
+
+            if (item.status === 6) {
+                actionButtons += `
+                    <button class="btn-action approve-proxy" data-id="${item.jobCardId}" title="Duyệt hộ khách">
+                        <i class="fa-solid fa-user-check"></i>
+                    </button>`;
+            }
+
+            if (item.status === 8) {
+                actionButtons += `
+                    <button class="btn-action payment" data-id="${item.jobCardId}" title="Thanh toán">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                    </button>`;
+            }
+
+            actionButtons += `
+            <button class="btn-action print" 
+                onclick="showPrintPreviewFromData(${item.jobCardId})" title="In phiếu">
+                <i class="fa-solid fa-print"></i>
+            </button>`;
+
             return `
                 <tr>
                     <td>#${item.jobCardId}</td>
@@ -334,18 +368,149 @@ export const jobcardUI = {
                             ${statusInfo.label}
                         </span>
                     </td>
-                    <td class="text-center">
-                        <button class="btn-action view" data-id="${item.jobCardId}" title="Chi tiết">
-                            <i class="fa-solid fa-eye"></i>
-                        </button>
-                        <button class="btn-action print" 
-                            onclick="showPrintPreviewFromData(${item.jobCardId})" title="In phiếu">
-                            <i class="fa-solid fa-print"></i>
-                        </button>
-                    </td>
+                    <td class="text-center">${actionButtons}</td>
                 </tr>
             `;
         }).join('');
+    },
+
+    renderEstimateView: (container, estimate) => {
+        // Kiểm tra xem đây có phải phiếu báo giá bổ sung hay không (dựa trên status 5 - OnHold/Phát sinh)
+        const isAdditionalEstimate = estimate.services.some(sv => sv.status === 5) || 
+                                     estimate.spareParts.some(sp => sp.status === 5);
+
+        container.innerHTML = `
+            <div class="estimate-approval-card" style="border: 2px solid ${isAdditionalEstimate ? '#fd7e14' : '#e0e0e0'}; border-radius: 8px; padding: 15px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                    <div>
+                        <h4 style="margin: 0; color: ${isAdditionalEstimate ? '#fd7e14' : '#d32f2f'};">
+                            ${isAdditionalEstimate ? '⚠️ BÁO GIÁ BỔ SUNG' : '📋 BÁO GIÁ CHI TIẾT'} #${estimate.repairEstimateId}
+                        </h4>
+                        ${isAdditionalEstimate ? '<small style="color: #fd7e14; font-weight: bold;">(Phát hiện lỗi mới trong quá trình sửa chữa)</small>' : ''}
+                    </div>
+                    <span style="font-size: 12px; color: #666;">Ngày tạo: ${new Date(estimate.createdAt).toLocaleDateString('vi-VN')}</span>
+                </div>
+                
+                <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
+                    <i class="fas fa-info-circle"></i> Nhân viên đang thao tác duyệt hộ khách hàng:
+                </p>
+                
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 15px;">
+                    <thead>
+                        <tr style="background: #f8f9fa; text-align: left;">
+                            <th style="padding: 10px; border: 1px solid #eee; width: 40px; text-align: center;">Duyệt</th>
+                            <th style="padding: 10px; border: 1px solid #eee;">Nội dung hạng mục</th>
+                            <th style="padding: 10px; border: 1px solid #eee; text-align: right;">Đơn giá</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${estimate.services.map(sv => {
+                            const isNew = sv.status === 5;
+                            return `
+                            <tr style="${isNew ? 'background: #fff9f4;' : ''}">
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">
+                                    <input type="checkbox" checked class="chk-service" data-id="${sv.serviceId}" data-price="${sv.totalAmount}">
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #eee;">
+                                    ${sv.serviceName} 
+                                    ${isNew ? '<span style="background: #fd7e14; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">PHÁT SINH</span>' : ''}
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: right;">${sv.totalAmount.toLocaleString()}đ</td>
+                            </tr>`;
+                        }).join('')}
+
+                        ${estimate.spareParts.map(sp => {
+                            const isNew = sp.status === 5;
+                            return `
+                            <tr style="${isNew ? 'background: #fff9f4;' : ''}">
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">
+                                    <input type="checkbox" checked class="chk-sparepart" data-id="${sp.sparePartId}" data-price="${sp.totalAmount}">
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #eee;">
+                                    ${sp.sparePartName} (x${sp.quantity})
+                                    ${isNew ? '<span style="background: #fd7e14; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">MỚI</span>' : ''}
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: right;">${sp.totalAmount.toLocaleString()}đ</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+                
+                <div style="background: #fdfdfd; border: 1px dashed #ddd; padding: 15px; border-radius: 4px; margin-bottom: 15px; text-align: right;">
+                    <span style="color: #666;">Tổng chi phí duyệt thêm:</span>
+                    <strong id="live-total" style="font-size: 22px; color: ${isAdditionalEstimate ? '#fd7e14' : '#d32f2f'}; margin-left: 10px;">
+                        ${estimate.grandTotal.toLocaleString()}đ
+                    </strong>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnConfirmEstimate" class="btn-submit" style="flex: 2; background: #28a745; border: none; padding: 14px; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.3s;">
+                        <i class="fas fa-check-circle"></i> ${isAdditionalEstimate ? 'DUYỆT LÀM THÊM (HỘ KHÁCH)' : 'XÁC NHẬN SỬA CHỮA (HỘ KHÁCH)'}
+                    </button>
+                    <button id="btnRejectAll" style="flex: 1; background: #f8f9fa; border: 1px solid #ddd; padding: 14px; border-radius: 6px; color: #666; cursor: pointer; font-weight: bold;">
+                        TỪ CHỐI TẤT CẢ
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // --- LOGIC TÍNH TIỀN REALTIME ---
+        const updateRealtimeTotal = () => {
+            let total = 0;
+            container.querySelectorAll('input[type="checkbox"]:checked').forEach(chk => {
+                total += parseInt(chk.dataset.price);
+            });
+            const liveTotalEl = document.getElementById('live-total');
+            if (liveTotalEl) liveTotalEl.innerText = total.toLocaleString() + 'đ';
+        };
+
+        container.querySelectorAll('input[type="checkbox"]').forEach(chk => {
+            chk.onchange = updateRealtimeTotal;
+        });
+
+        // --- XỬ LÝ SỰ KIỆN NÚT BẤM ---
+        const btnConfirm = container.querySelector('#btnConfirmEstimate');
+        const btnReject = container.querySelector('#btnRejectAll');
+
+        if (btnConfirm) {
+            btnConfirm.onclick = async () => {
+                const selectedSVs = Array.from(container.querySelectorAll('.chk-service:checked'))
+                             .map(el => parseInt(el.dataset.id))
+                             .filter(id => !isNaN(id)); // Loại bỏ nếu id bị null/undefined
+
+                const selectedSPs = Array.from(container.querySelectorAll('.chk-sparepart:checked'))
+                             .map(el => parseInt(el.dataset.id))
+                             .filter(id => !isNaN(id));
+
+                const msg = isAdditionalEstimate 
+                    ? "Xác nhận Lễ tân duyệt hộ các hạng mục phát sinh?" 
+                    : "Xác nhận duyệt báo giá hộ khách để bắt đầu sửa chữa?";
+
+                if (!confirm(msg)) return;
+
+                // Gọi hàm handleProxyApproval đã được tối ưu cho nhân viên
+                const success = await window.handleProxyApproval(estimate.jobCardId, selectedSPs, selectedSVs);
+                if (success) {
+                    // Nếu dùng trong Modal thì đóng modal, nếu dùng trang riêng thì reload
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(document.getElementById('estimateModal'))) {
+                        bootstrap.Modal.getInstance(document.getElementById('estimateModal')).hide();
+                    }
+                    // Load lại bảng danh sách
+                    if (typeof loadJobCards === 'function') loadJobCards(document.getElementById('job-card-body'));
+                }
+            };
+        }
+
+        if (btnReject) {
+            btnReject.onclick = async () => {
+                if (confirm("Bạn có chắc chắn muốn từ chối toàn bộ các hạng mục này hộ khách hàng?")) {
+                    const success = await handleProxyApproval(estimate.jobCardId, [], []);
+                    if (success && typeof loadJobCards === 'function') {
+                        loadJobCards(document.getElementById('job-card-body'));
+                    }
+                }
+            };
+        }
     },
 
     // Render kết quả tìm kiếm khách hàng (Autocomplete)
@@ -596,7 +761,7 @@ export const jobcardUI = {
     const getStatusInfo = (status) => {
         switch (status) {
             case 1: return { label: 'Vừa tạo', class: 'status-created' };
-            case 2: return { label: 'Chờ tiếp nhận', class: 'status-waiting' };
+            case 2: return { label: 'Chờ giao thợ', class: 'status-waiting' };
             case 3: return { label: 'Chờ kiểm tra', class: 'status-waiting-insp' };
             case 4: return { label: 'Đang kiểm tra', class: 'status-inspection' };
             case 5: return { label: 'Chờ Supervisor duyệt', class: 'status-waiting-sv' };
@@ -682,5 +847,63 @@ export const jobcardUI = {
         </div>
     </div>
     `;
+    },
+
+    renderPaymentSelection: (container, invoice) => {
+        container.innerHTML = `
+            <div class="payment-container text-center">
+                <h4>Thanh toán hóa đơn #${invoice.invoiceId}</h4>
+                <p>Số tiền cần thanh toán: <b style="color:red; font-size: 20px;">${invoice.grandTotal}đ</b></p>
+                <hr>
+                <div class="row">
+                    <div class="col-6">
+                        <button id="btnPayCash" class="btn btn-success w-100 p-3">
+                            <i class="fa-solid fa-money-bill-1-wave"></i><br>TIỀN MẶT
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button id="btnPayBank" class="btn btn-primary w-100 p-3">
+                            <i class="fa-solid fa-qrcode"></i><br>CHUYỂN KHOẢN
+                        </button>
+                    </div>
+                </div>
+                <div id="qrContainer" class="mt-3" style="display:none;">
+                    </div>
+            </div>
+        `;
+
+        // --- Xử lý Tiền mặt ---
+        container.querySelector('#btnPayCash').onclick = async () => {
+            if (!confirm("Xác nhận khách đã trả tiền mặt?")) return;
+            const res = await PaymentAPI.confirmCashPayment(invoice.invoiceId);
+            if (res.success) {
+                alert("Thanh toán tiền mặt thành công!");
+                location.reload(); // Hoặc gọi loadJobCards()
+            }
+        };
+
+        // --- Xử lý Chuyển khoản ---
+        container.querySelector('#btnPayBank').onclick = async () => {
+            const res = await PaymentAPI.getBankTransferQr(invoice.invoiceId);
+            if (res.success) {
+                const qr = res.data;
+                const qrHtml = `
+                    <div class="card card-body bg-light mt-2">
+                        <h5>Quét mã để chuyển khoản</h5>
+                        <img src="${qr.qrCodeUrl}" style="max-width:250px; margin: 0 auto;">
+                        <p class="mt-2 mb-0"><b>${qr.bankName}</b></p>
+                        <p class="mb-0">STK: <b>${qr.accountNumber}</b></p>
+                        <p class="mb-0">Chủ TK: <b>${qr.accountName}</b></p>
+                        <p>Nội dung: <b style="color:blue;">${qr.transferContent}</b></p>
+                        <button class="btn btn-outline-success btn-sm" onclick="location.reload()">XÁC NHẬN ĐÃ NHẬN TIỀN</button>
+                    </div>
+                `;
+                const qrBox = container.querySelector('#qrContainer');
+                if (qrBox) {
+                    qrBox.innerHTML = qrHtml;
+                    qrBox.style.display = 'block';
+                }
+            }
+        };
     }
 };
