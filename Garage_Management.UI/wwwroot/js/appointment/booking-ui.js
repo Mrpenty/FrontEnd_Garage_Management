@@ -164,7 +164,7 @@ export const bookingUI = {
                 <label style="margin-top: 10px; display: block;">Chọn khung giờ:</label>
                 <div id="time-slots" class="time-slots-grid"></div>
                 
-                <textarea id="note" placeholder="Mô tả tình trạng xe..."></textarea>
+                <textarea id="note" maxlength="500" placeholder="Ghi chú thêm..."></textarea>
                 
                 <div class="button-group" style="margin-top: 20px;">
                     <button type="button" class="btn-back" onclick="nextStep(2)">Quay lại</button>

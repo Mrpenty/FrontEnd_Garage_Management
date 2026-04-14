@@ -82,50 +82,97 @@ export const authUi = {
     renderUserBookings: (container, appointments) => {
         if (!appointments || appointments.length === 0) {
             container.innerHTML = `
-                <div class="text-center py-5">
-                    <i class="fa-regular fa-calendar-times fa-3x text-muted mb-3"></i>
-                    <p>Bạn chưa có lịch hẹn nào.</p>
-                    <a href="/" class="btn btn-danger">Đặt lịch ngay</a>
+                <div class="text-center py-5" style="background: white; border-radius: 16px;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2648/2648000.png" width="120" class="mb-3" style="opacity: 0.5">
+                    <h5 class="text-muted">Bạn chưa có lịch hẹn nào</h5>
+                    <p class="text-secondary">Hãy để chúng tôi chăm sóc xế yêu của bạn!</p>
+                    <a href="/" class="btn btn-danger px-4" style="border-radius: 50px;">Đặt lịch ngay</a>
                 </div>`;
             return;
         }
 
         const statusTexts = {
-            1: { text: "Chờ xác nhận", class: "bg-warning" },
-            2: { text: "Đã xác nhận", class: "bg-success" },
-            3: { text: "Đang xử lý", class: "bg-info" },
-            4: { text: "Quá hạn", class: "bg-secondary" },
-            5: { text: "Đã hủy", class: "bg-secondary" },
-            6: { text: "Đã sửa xong xe", class: "bg-success" },
+            1: { text: "Chờ xác nhận", class: "status-1" },
+            2: { text: "Đã xác nhận", class: "status-2" },
+            3: { text: "Đang sửa chữa", class: "status-3" },
+            4: { text: "Quá hạn", class: "status-4" },
+            5: { text: "Đã hủy", class: "status-5" },
+            6: { text: "Hoàn thành", class: "status-6" },
         };
 
         container.innerHTML = appointments.map(apt => {
             const status = statusTexts[apt.status] || { text: "Không xác định", class: "bg-dark" };
-            const date = new Date(apt.appointmentDateTime).toLocaleString('vi-VN');
-            const services = apt.services.map(s => s.serviceName).join(', ');
-
-            const cancelBtn = apt.status === 1 
-            ? `<button class="btn btn-outline-secondary btn-sm mt-2" 
-                       onclick="handleCancelAppointment(${apt.appointmentId})">
-                <i class="fa-solid fa-xmark"></i> Hủy lịch
-               </button>` 
-            : '';
+            const date = new Date(apt.appointmentDateTime);
+            const dayStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+            const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+            
+            const servicesHtml = apt.services.map(s => `<span class="service-tag"><i class="fa-solid fa-check-circle me-1" style="font-size: 10px;"></i>${s.serviceName}</span>`).join('');
 
             return `
-                <div class="booking-card mb-3 p-3 shadow-sm border-start border-4 border-danger" style="background:white; border-radius:8px;">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h5 class="mb-1 text-danger">Mã lịch hẹn: #APT-${apt.appointmentId}</h5>
-                            <p class="mb-1"><strong><i class="fa-regular fa-clock"></i> Thời gian:</strong> ${date}</p>
-                            <p class="mb-1"><strong><i class="fa-solid fa-wrench"></i> Dịch vụ:</strong> ${services}</p>
-                            <p class="mb-0 text-muted"><em><i class="fa-solid fa-comment"></i> Ghi chú: ${apt.description || 'Không có'}</em></p>
-                            ${cancelBtn}
+                <div class="booking-card shadow-sm border-start-custom">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box me-3" style="background: #fff1f1; color: var(--primary-red); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-file-invoice fa-lg"></i>
+                            </div>
+                            <div>
+                                <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">MÃ LỊCH HẸN</span>
+                                <h5 class="mb-0" style="font-weight: 800; letter-spacing: 0.5px;">#APT-${apt.appointmentId}</h5>
+                            </div>
                         </div>
-                        <span class="badge ${status.class}" style="padding: 8px 12px; border-radius: 20px;">${status.text}</span>
+                        <span class="badge-status ${status.class}">${status.text}</span>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-6 col-md-3">
+                            <div class="info-group">
+                                <span class="info-label"><i class="fa-regular fa-calendar-days"></i> Ngày hẹn</span>
+                                <span class="info-value">${dayStr}</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="info-group">
+                                <span class="info-label"><i class="fa-regular fa-clock"></i> Giờ hẹn</span>
+                                <span class="info-value">${timeStr}</span>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="info-group">
+                                <span class="info-label"><i class="fa-solid fa-car"></i> Phương tiện</span>
+                                <span class="info-value text-truncate">${apt.customVehicleBrand || 'Xe'} - ${apt.customVehicleModel || 'Cá nhân'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="services-container">
+                        <span class="info-label"><i class="fa-solid fa-gears"></i> Nội dung bảo dưỡng / sửa chữa</span>
+                        <div class="d-flex flex-wrap">
+                            ${servicesHtml}
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mt-4">
+                        <div style="max-width: 70%;">
+                            ${apt.description ? `
+                                <span class="info-label">Ghi chú của bạn</span>
+                                <p class="mb-0 mt-1" style="font-size: 0.85rem; color: #64748b; font-style: italic; background: #f8fafc; padding: 10px; border-radius: 8px;">
+                                    "${apt.description}"
+                                </p>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="mt-3 mt-md-0 d-flex gap-2">
+                            ${apt.status === 1 ? `
+                                <button class="btn-cancel-outline" onclick="handleCancelAppointment(${apt.appointmentId})">
+                                    <i class="fa-solid fa-xmark me-1"></i> Hủy lịch
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             `;
         }).join('');
+
     },
 
     renderMyVehicles: (container, vehicles) => {

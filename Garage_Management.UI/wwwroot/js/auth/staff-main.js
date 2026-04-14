@@ -4,82 +4,90 @@ import CONFIG from '../config.js';
 
 authUi.elements.form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    authUi.renderMessage("Đang xác thực nhân viên...", true);
+
+    // 1. Lấy phần tử nút bấm để vô hiệu hóa
+    const btnSubmit = document.getElementById('btn-login');
+    
+    // 2. Sử dụng .trim() để loại bỏ khoảng trắng thừa
+    const emailValue = document.getElementById('Email').value.trim();
+    const passwordValue = document.getElementById('password').value;
 
     const request = {
-        email: document.getElementById('Email').value,
-        password: document.getElementById('password').value
+        email: emailValue,
+        password: passwordValue
     };
 
-    const result = await authApi.staffLogin(request);
+    btnSubmit.disabled = true;
+    authUi.renderMessage("Đang xác thực nhân viên...", true);
 
-    if (result.success) {
-        const userData = result.data;
-        const role = userData.role;
+    try {
+        const result = await authApi.staffLogin(request);
 
-        authUi.renderMessage("Đăng nhập thành công! Đang chuyển hướng...", true);
+        if (result.success) {
+            const userData = result.data;
+            const role = userData.role;
 
-        const tokenPayload = parseJwt(userData.accessToken);
-        const employeeId = tokenPayload.EmployeeId;
+            authUi.renderMessage("Đăng nhập thành công! Đang chuyển hướng...", true);
 
-        // 1. Lưu thông tin đăng nhập
-        localStorage.setItem('accessToken', userData.accessToken);
-        localStorage.setItem('refreshToken', userData.refreshToken);
-        localStorage.setItem('userRole', role);
-        localStorage.setItem('employeeId', employeeId);
-        localStorage.setItem('userInfo', JSON.stringify({
-            userId: userData.userId,
-            fullName: userData.fullName,
-            email: userData.email,
-        }));
-
-        // 2. Điều hướng dựa trên Role
-        let targetPage = "";
-
-        switch (role) {
-            case 'Receptionist':
-                targetPage = CONFIG.PAGES.DASHBOARD_RECEPTIONIST;
-                break;
-            case 'Supervisor':
-                targetPage = CONFIG.PAGES.DASHBOARD_SUPERVISOR;
-                break;
-            case 'Mechanic':
-                targetPage = CONFIG.PAGES.DASHBOARD_MECHANIC;
-                break;
-            case 'Stocker':
-                targetPage = CONFIG.PAGES.DASHBOARD_STOCKER;
-                break;
-            case 'Admin':
-                targetPage = CONFIG.PAGES.DASHBOARD_ADMIN;
-                break;
-            default:
-                // Nếu role không xác định, đẩy về Homepage hoặc báo lỗi
-                authUi.renderMessage("Vai trò không hợp lệ trong hệ thống nội bộ.", false);
+            // 4. Bọc parseJwt trong try-catch để an toàn
+            let employeeId = null;
+            try {
+                const tokenPayload = parseJwt(userData.accessToken);
+                employeeId = tokenPayload.EmployeeId;
+            } catch (jwtError) {
+                console.error("Lỗi giải mã Token:", jwtError);
+                authUi.renderMessage("Lỗi hệ thống: Mã xác thực không hợp lệ.", false);
+                btnSubmit.disabled = false;
                 return;
-        }
+            }
 
-        setTimeout(() => {
-            window.location.href = targetPage;
-        }, 1000);
+            // Lưu thông tin vào localStorage
+            localStorage.setItem('accessToken', userData.accessToken);
+            localStorage.setItem('refreshToken', userData.refreshToken);
+            localStorage.setItem('userRole', role);
+            localStorage.setItem('employeeId', employeeId);
+            localStorage.setItem('userInfo', JSON.stringify({
+                userId: userData.userId,
+                fullName: userData.fullName,
+                email: userData.email,
+            }));
 
-    } else {
-        authUi.renderMessage(result.message || "Thông tin không chính xác", false);
-        
-        // Nếu là lỗi phân quyền hoặc lỗi nghiêm trọng, đẩy lại về trang Login Staff
-        if (result.message && result.message.includes("không có quyền")) {
-            setTimeout(() => {
-                window.location.href = CONFIG.PAGES.STAFF_LOGIN;
-            }, 2000);
+            // Điều hướng dựa trên Role
+            let targetPage = "";
+            switch (role) {
+                case 'Receptionist': targetPage = CONFIG.PAGES.DASHBOARD_RECEPTIONIST; break;
+                case 'Supervisor': targetPage = CONFIG.PAGES.DASHBOARD_SUPERVISOR; break;
+                case 'Mechanic': targetPage = CONFIG.PAGES.DASHBOARD_MECHANIC; break;
+                case 'Stocker': targetPage = CONFIG.PAGES.DASHBOARD_STOCKER; break;
+                case 'Admin': targetPage = CONFIG.PAGES.DASHBOARD_ADMIN; break;
+                default:
+                    authUi.renderMessage("Vai trò không hợp lệ.", false);
+                    btnSubmit.disabled = false;
+                    return;
+            }
+
+            setTimeout(() => { window.location.href = targetPage; }, 1000);
+
+        } else {
+            authUi.renderMessage(result.message || "Thông tin không chính xác", false);
+            btnSubmit.disabled = false; // Kích hoạt lại nút nếu lỗi
         }
+    } catch (err) {
+        authUi.renderMessage("Lỗi kết nối máy chủ.", false);
+        btnSubmit.disabled = false;
     }
 });
 
 function parseJwt(token) {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
 
-    return JSON.parse(jsonPayload);
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        throw new Error("Token không đúng định dạng");
+    }
 }

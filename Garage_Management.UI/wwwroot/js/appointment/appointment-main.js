@@ -159,7 +159,7 @@
                 e.preventDefault();
                 const fullName = document.getElementById('newCustomerName').value.trim();
                 const nameParts = fullName.split(' ');
-                const firstName = nameParts.length > 1 ? nameParts.pop() : fullInputName;
+                const firstName = nameParts.length > 1 ? nameParts.pop() : fullName;
                 const lastName = nameParts.join(' ') || "";
                 // 1. Thu thập dữ liệu từ form
                 const customerData = {

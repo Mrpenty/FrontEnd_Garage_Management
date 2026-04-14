@@ -21,31 +21,31 @@
                 <form id="register-form">
                     <div class="input-row" style="display: flex; gap: 10px;">
                         <div class="input-group" style="flex: 1;">
-                            <label>Họ</label>
+                            <label for="lastName">Họ</label>
                             <input type="text" id="lastName" placeholder="Vd: Nguyễn" required>
                         </div>
                         <div class="input-group" style="flex: 1;">
-                            <label>Tên</label>
+                            <label for="firstName">Tên</label>
                             <input type="text" id="firstName" placeholder="Vd: An" required>
                         </div>
                     </div>
 
                     <div class="input-group">
-                        <label>Số Điện Thoại</label>
-                        <input type="text" id="reg-phone" placeholder="Nhập số điện thoại" required>
+                        <label for="reg-phone">Số Điện Thoại</label>
+                        <input type="tel" id="reg-phone" placeholder="Vd: 0912345678" maxlength="10" required>
                     </div>
 
                     <div class="input-group">
-                        <label>Mật Khẩu</label>
+                        <label for="reg-password">Mật Khẩu</label>
                         <input type="password" id="reg-password" placeholder="Tối thiểu 9 ký tự, 1 hoa, 1 số" required>
                     </div>
 
                     <div class="input-group">
-                        <label>Nhập Lại Mật Khẩu</label>
-                        <input type="password" id="confirm-password" placeholder="Nhập lại mật khẩu phía trên" required>
+                        <label for="confirm-password">Nhập Lại Mật Khẩu</label>
+                        <input type="password" id="confirm-password" placeholder="Nhập lại mật khẩu" onpaste="return false;" required>
                     </div>
 
-                    <button type="submit" class="btn-submit">ĐĂNG KÝ NGAY</button>
+                    <button type="submit" id="btn-register" class="btn-submit">ĐĂNG KÝ NGAY</button>
                 </form>
 
                 <div class="auth-footer" style="justify-content: center; border: none;">

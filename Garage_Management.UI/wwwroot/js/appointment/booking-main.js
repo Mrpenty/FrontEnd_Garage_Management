@@ -38,17 +38,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initEvents() {
-    // Lắng nghe thay đổi hãng xe
     document.getElementById("vehicleBrand").addEventListener("change", handleBrandChange);
-
-    // Form submit
     document.getElementById("booking-form").addEventListener("submit", handleFormSubmit);
-
-    // Gán hàm vào window cho HTML onclick
     window.handleVehicleStep = handleVehicleStep;
     window.nextStep = nextStep;
     window.toggleVehicleSource = toggleVehicleSource;
-
     window.toggleCustomInput = function(type) {
         const select = document.getElementById(`vehicle${type}`);
         const input = document.getElementById(`custom${type}`);
@@ -66,6 +60,33 @@ function initEvents() {
             select.classList.remove('hidden');
         }
     };
+
+    function setupStep3Events() {
+    const chkOthers = document.getElementById("bookForOthers");
+    const plateInput = document.getElementById("licensePlate");
+    const noteArea = document.getElementById("note");
+
+    if (chkOthers) {
+        chkOthers.addEventListener("change", (e) => {
+            if (!e.target.checked) {
+                // --- YÊU CẦU 3: Khôi phục lại biển số nếu bỏ tích đặt hộ ---
+                if (bookingState.licensePlate) {
+                    plateInput.value = bookingState.licensePlate;
+                    plateInput.readOnly = true; 
+                }
+            } else {
+                // Nếu đặt hộ thì cho phép nhập mới
+                plateInput.value = "";
+                plateInput.readOnly = false;
+            }
+        });
+    }
+
+    // --- YÊU CẦU 5: Max Length cho Textarea ---
+    if (noteArea) {
+        noteArea.setAttribute("maxlength", "500");
+    }
+}
 }
 
 // --- Logic functions ---
@@ -276,7 +297,7 @@ function nextStep(step) {
         
         // TRUYỀN THÊM bookingState VÀO ĐÂY
         bookingUI.renderBookingForm(formContainer, userInfo, bookingState); 
-
+        setupStep3Events();
         const slotContainer = document.getElementById("time-slots");
         bookingUI.renderTimeSlots(slotContainer, TIME_SLOTS);
     }
@@ -288,12 +309,28 @@ function nextStep(step) {
 
 async function handleFormSubmit(e) {
     e.preventDefault();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+
     const isBookForOthers = document.getElementById("bookForOthers")?.checked || false;
     const date = document.getElementById("appointmentDate").value;
     const timeSlot = document.querySelector('input[name="time-slot"]:checked')?.value;
     const isLogged = !!getCustomerId();
     const rawLicensePlate = document.getElementById("licensePlate").value.trim();
+    const noteArea = document.getElementById("note");
     const plateRegex = /^[0-9]{2}[A-Z]{1,2}-[0-9]{3}\.[0-9]{2}$/;
+    if (date) {
+        const selectedDate = new Date(date);
+        selectedDate.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (selectedDate < today) {
+            alert("Ngày hẹn không được trong quá khứ!");
+            return;
+        }
+    }
+
     if (!date || !timeSlot) {
         alert("Vui lòng chọn đầy đủ ngày và giờ hẹn!");
         return;
@@ -317,7 +354,8 @@ async function handleFormSubmit(e) {
     }
 
     const cleanLicensePlate = rawLicensePlate;
-
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang xử lý...';
    // Xử lý thời gian chuẩn ISO
     const dateObj = new Date(`${date}T${timeSlot}:00`);
 
@@ -330,7 +368,7 @@ async function handleFormSubmit(e) {
         CustomVehicleBrand: bookingState.brandName,
         CustomVehicleModel: bookingState.modelName,
         LicensePlate: cleanLicensePlate,
-        Description: document.getElementById("note").value.trim(),
+        Description: noteArea.value.trim().substring(0, 500),
         Status: 1
     };
 
@@ -339,7 +377,6 @@ async function handleFormSubmit(e) {
         // TH1: Đăng nhập đặt cho mình
         payload.CustomerId = getCustomerId();
         payload.VehicleId = bookingState.vehicleId || null; 
-        // BE yêu cầu CustomerId thì FirstName/LastName/Phone nên để null hoặc bỏ qua tùy DTO
         payload.FirstName = null;
         payload.LastName = null;
         payload.Phone = null;
@@ -373,9 +410,13 @@ async function handleFormSubmit(e) {
             nextStep(4);
         } else {
             alert("Lỗi: " + (result.message || "Không thể đặt lịch"));
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
         }
     } catch (err) {
         alert("Lỗi hệ thống: " + err.message);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
     }
 }
 

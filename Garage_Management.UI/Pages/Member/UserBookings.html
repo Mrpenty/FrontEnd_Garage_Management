@@ -6,23 +6,93 @@
     <link rel="stylesheet" href="../../wwwroot/css/homepage.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<!-- Để tạm sau này tách css sau -->
 <style>
     .booking-card {
-        transition: transform 0.2s;
-        border-radius: 12px !important;
+        transition: all 0.3s ease;
+        border: none !important;
+        border-radius: 16px !important;
+        background: #f5f2f2;
+        padding: 24px !important; /* Tăng padding tổng thể */
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
     }
-    .booking-card:hover {
-        transform: translateY(-3px);
+
+    /* Hiệu ứng đường kẻ dọc dày hơn một chút để phân tách */
+    .border-start-custom {
+        border-left: 5px solid var(--primary-red) !important;
     }
-    .badge {
-        font-weight: 500;
+
+    /* Tạo khoảng cách giữa các cột thông tin */
+    .info-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px; /* Khoảng cách giữa Label và Value */
+    }
+
+    .info-label {
+        color: #94a3b8; /* Màu xám nhẹ hiện đại */
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding-top: 10px;
+    }
+
+    .info-value {
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    /* Tách biệt phần Dịch vụ */
+    .services-container {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px dashed #e2e8f0;
+    }
+
+    .service-tag {
+        display: inline-block;
+        background: #f1f5f9;
+        color: #475569;
+        padding: 5px 12px;
+        border-radius: 8px;
         font-size: 0.85rem;
+        margin-right: 8px;
+        margin-top: 8px;
+        border: 1px solid #e2e8f0;
     }
-    .bg-warning { background-color: #ffc107 !important; color: #000; }
-    .bg-success { background-color: #28a745 !important; color: #fff; }
-    .bg-info { background-color: #17a2b8 !important; color: #fff; }
-    .bg-secondary { background-color: #6c757d !important; color: #fff; }
+
+    /* Nút hủy kiểu mới, tinh tế hơn */
+    .btn-cancel-outline {
+        background: #fff;
+        color: #ef4444;
+        border: 1px solid #fee2e2;
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+
+    .btn-cancel-outline:hover {
+        background: #fef2f2;
+        border-color: #ef4444;
+    }
+
+    /* Badge trạng thái bo tròn cực đại */
+    .badge-status {
+        padding: 10px;
+        border-radius: 100px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        background-color: #94a3b8;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
 </style>
 <body>
     <header id="header-placeholder"></header>
