@@ -60,33 +60,6 @@ function initEvents() {
             select.classList.remove('hidden');
         }
     };
-
-    function setupStep3Events() {
-    const chkOthers = document.getElementById("bookForOthers");
-    const plateInput = document.getElementById("licensePlate");
-    const noteArea = document.getElementById("note");
-
-    if (chkOthers) {
-        chkOthers.addEventListener("change", (e) => {
-            if (!e.target.checked) {
-                // --- YÊU CẦU 3: Khôi phục lại biển số nếu bỏ tích đặt hộ ---
-                if (bookingState.licensePlate) {
-                    plateInput.value = bookingState.licensePlate;
-                    plateInput.readOnly = true; 
-                }
-            } else {
-                // Nếu đặt hộ thì cho phép nhập mới
-                plateInput.value = "";
-                plateInput.readOnly = false;
-            }
-        });
-    }
-
-    // --- YÊU CẦU 5: Max Length cho Textarea ---
-    if (noteArea) {
-        noteArea.setAttribute("maxlength", "500");
-    }
-}
 }
 
 // --- Logic functions ---
@@ -306,6 +279,32 @@ function nextStep(step) {
     bookingUI.updateStepBar(step);
 }
 
+function setupStep3Events() {
+        const chkOthers = document.getElementById("bookForOthers");
+        const plateInput = document.getElementById("licensePlate");
+        const noteArea = document.getElementById("note");
+
+        if (chkOthers) {
+            chkOthers.addEventListener("change", (e) => {
+                if (!e.target.checked) {
+                    // --- YÊU CẦU 3: Khôi phục lại biển số nếu bỏ tích đặt hộ ---
+                    if (bookingState.licensePlate) {
+                        plateInput.value = bookingState.licensePlate;
+                        plateInput.readOnly = true; 
+                    }
+                } else {
+                    // Nếu đặt hộ thì cho phép nhập mới
+                    plateInput.value = "";
+                    plateInput.readOnly = false;
+                }
+            });
+        }
+
+        // --- YÊU CẦU 5: Max Length cho Textarea ---
+        if (noteArea) {
+            noteArea.setAttribute("maxlength", "500");
+        }
+    }
 
 async function handleFormSubmit(e) {
     e.preventDefault();
@@ -389,6 +388,8 @@ async function handleFormSubmit(e) {
         // TH3: Đăng nhập nhưng đặt hộ bạn bè
         payload.CustomerId = null; // Gửi null để BE hiểu là khách mới
         payload.VehicleId = null;
+        payload.CustomVehicleBrand = null;
+        payload.CustomVehicleModel = null;
         payload.FirstName = document.getElementById("firstName").value.trim();
         payload.LastName = document.getElementById("lastName").value.trim();
         payload.Phone = document.getElementById("phone").value.trim();
@@ -400,6 +401,8 @@ async function handleFormSubmit(e) {
         payload.FirstName = document.getElementById("firstName").value.trim();
         payload.LastName = document.getElementById("lastName").value.trim();
         payload.Phone = document.getElementById("phone").value.trim();
+        payload.CustomVehicleBrand = null;
+        payload.CustomVehicleModel = null;
     }
 
     console.log("Payload gửi đi:", payload);

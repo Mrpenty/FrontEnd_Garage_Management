@@ -367,9 +367,9 @@ function initVehicleLogic(elements) {
 
         // 2. Kiểm tra biển số (VD: 30A-12345 hoặc 29-F1 123.45)
         // Regex này chấp nhận các định dạng biển số phổ biến
-        const plateRegex = /^[0-9]{2}[A-Z0-9]{1,2}[- ]?[0-9]{4,5}(\.[0-9]{1,2})?$/;
+        const plateRegex = /^[0-9]{2}[A-Z]{1,2}-[0-9]{3}\.[0-9]{2}$/;
         if (!plateRegex.test(licensePlate)) {
-            return alert("Biển số xe không hợp lệ! (VD: 30A12345 hoặc 29F1-12345)");
+            return alert("Biển số xe không hợp lệ! (VD: 30AB-123.45)");
         }
 
         // 3. Kiểm tra năm sản xuất

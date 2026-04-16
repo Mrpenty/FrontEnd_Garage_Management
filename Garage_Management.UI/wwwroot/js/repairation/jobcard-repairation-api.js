@@ -108,6 +108,15 @@ export const repairApi = {
             body: JSON.stringify({ workBayId: parseInt(id) })
         });
         return response.ok;
+    },
+
+    createInvoice: async (invoiceRequest) => {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/Invoices`, {
+            method: 'POST',
+            headers: repairApi.getAuthHeader(),
+            body: JSON.stringify(invoiceRequest)
+        });
+        return response.ok;
     }
 
 };

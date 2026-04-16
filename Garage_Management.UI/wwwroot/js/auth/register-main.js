@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
             lastName: document.getElementById('lastName').value.trim(),
             phoneNumber: document.getElementById('reg-phone').value.trim(),
             password: document.getElementById('reg-password').value,
-            confirmPassword: document.getElementById('confirm-password').value
         };
 
         // --- VALIDATION PHÍA CLIENT ---
@@ -34,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3. Kiểm tra Mật khẩu nhập lại
-        if (data.password !== data.confirmPassword) {
+        if (data.password !== document.getElementById('confirm-password').value) {
             authUi.renderMessage("Mật khẩu nhập lại không khớp!", false);
             return; 
         }
