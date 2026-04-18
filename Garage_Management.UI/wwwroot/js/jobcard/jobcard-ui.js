@@ -374,6 +374,56 @@ export const jobcardUI = {
         }).join('');
     },
 
+    renderEditJobCardModal: (container, item, supervisors) => {
+        const list = Array.isArray(supervisors) ? supervisors : [];
+        
+        // Tìm phần tử cha (modal-content) để chèn header/footer nếu cần, 
+        // nhưng để đơn giản, ta cứ render cấu trúc form chuẩn vào modal-body
+        container.innerHTML = `
+            <div class="edit-form-header" style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h4 style="margin:0; color: #1e293b;">Chỉnh sửa Phiếu #${item.jobCardId}</h4>
+            </div>
+            
+            <form id="editJobCardForm">
+                <div class="mb-4">
+                    <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 8px;">Người quản lý (Supervisor)</label>
+                    <select id="editSupervisorId" required>
+                        <option value="">-- Chọn người phụ trách --</option>
+                        ${list.map(u => {
+                            const id = u.userId || u.staffId || u.id;
+                            const name = u.fullName || u.userName || "Không rõ tên";
+                            return `<option value="${id}" ${id == item.supervisorId ? 'selected' : ''}>${name}</option>`;
+                        }).join('')}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 8px;">Ghi chú sửa chữa</label>
+                    <textarea id="editNote" rows="4" placeholder="Nhập ghi chú chi tiết...">${item.note || ''}</textarea>
+                </div>
+
+                <div class="modal-footer" style="padding: 16px 0 0 0; border-top: 1px solid #edf2f7; margin-top: 20px;">
+                    <button type="button" class="btn-cancel" id="btnCancelEdit" 
+                            style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569;">Hủy bỏ</button>
+                    <button type="submit" class="btn-primary" 
+                            style="background: #2563eb; color: white; border: none;">Lưu thay đổi</button>
+                </div>
+            </form>
+        `;
+
+        // Gán sự kiện nút Hủy
+        setTimeout(() => {
+            const btnCancel = document.getElementById('btnCancelEdit');
+            if (btnCancel) {
+                btnCancel.onclick = () => {
+                    const modal = btnCancel.closest('.modal');
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                };
+            }
+        }, 0);
+    },
+
     renderEstimateView: (container, estimate) => {
         // Kiểm tra xem đây có phải phiếu báo giá bổ sung hay không (dựa trên status 5 - OnHold/Phát sinh)
         const isAdditionalEstimate = estimate.services.some(sv => sv.status === 5) || 

@@ -350,10 +350,9 @@ export const PaymentAPI = {
     },
 
     confirmCashPayment: async (invoiceId) => {
-        const response = await fetch(`${PAYMENT_URL}/cash-confirm`, {
+        const response = await fetch(`${PAYMENT_URL}/cash-payment?invoiceId=${invoiceId}`, {
             method: 'POST',
             headers: PaymentAPI.getAuthHeader(),
-            body: JSON.stringify({ invoiceId: invoiceId })
         });
         return await response.json();
     },

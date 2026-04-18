@@ -601,6 +601,24 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
         box-shadow: none; padding: 0;
     }
     .modal { background: none !important; }
+    table {
+        border-collapse: collapse !important;
+    }
+    th, td {
+        border: 1px solid #000 !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
+
+/* Style cho container hiển thị trong Modal preview */
+#printablePaper {
+    background: #fff;
+    width: 210mm; /* Chuẩn A4 */
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 50px !important;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    box-sizing: border-box;
 }
 
 /* Container chứa các badge xe */
@@ -804,3 +822,60 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
     background: #e1f5fe; color: #0288d1;
     padding: 2px 8px; border-radius: 4px; font-size: 12px;
 }
+
+/* report.css */
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+
+.rp { font-family: 'Be Vietnam Pro', sans-serif; background: #f1f5f9; min-height: 100vh; padding: 20px; }
+
+/* Header */
+.rp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.rp-title { display: flex; align-items: center; gap: 10px; }
+.rp-title .dot { width: 8px; height: 8px; background: #2563eb; border-radius: 50%; }
+.rp-title h4 { font-size: 15px; font-weight: 600; color: #0f172a; letter-spacing: -.2px; }
+.badge-time { font-size: 11px; color: #64748b; background: #fff; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 20px; font-weight: 500; }
+
+/* Stat cards */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.stat-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; position: relative; overflow: hidden; }
+.stat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 17px; }
+.stat-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.stat-value { font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -.5px; line-height: 1; }
+.stat-sub { font-size: 11px; color: #94a3b8; margin-top: 5px; }
+.stat-accent { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; }
+
+.ic-blue  { background: #eff6ff; } .ac-blue  { background: #2563eb; }
+.ic-green { background: #f0fdf4; } .ac-green { background: #16a34a; }
+.ic-amber { background: #fffbeb; } .ac-amber { background: #d97706; }
+.ic-red   { background: #fef2f2; } .ac-red   { background: #dc2626; }
+
+/* Bottom grid */
+.bottom-grid { display: grid; grid-template-columns: 320px 1fr; gap: 12px; }
+.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+.card-head { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+.card-head h6 { font-size: 13px; font-weight: 600; color: #0f172a; }
+.card-sub { font-size: 11px; color: #94a3b8; }
+.card-body { padding: 16px; }
+
+/* Donut */
+.chart-wrap { position: relative; width: 160px; height: 160px; margin: 0 auto 16px; }
+#statusChart { width: 160px !important; height: 160px !important; }
+.chart-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+.chart-total { font-size: 24px; font-weight: 700; color: #0f172a; line-height: 1; }
+.chart-label { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+
+/* Status list */
+.status-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border-radius: 8px; margin-bottom: 5px; background: #f8fafc; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; display: inline-block; flex-shrink: 0; }
+.status-name { font-size: 12px; color: #334155; font-weight: 500; }
+.status-count { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+
+/* Services */
+.svc-item { margin-bottom: 13px; }
+.svc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.svc-name { font-size: 12px; color: #334155; font-weight: 500; }
+.svc-count { font-size: 12px; font-weight: 600; color: #64748b; }
+.svc-bar { height: 5px; background: #f1f5f9; border-radius: 10px; overflow: hidden; }
+.svc-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, #2563eb, #60a5fa); transition: width .8s cubic-bezier(.4,0,.2,1); }
+
+.empty-state { color: #94a3b8; font-size: 12px; text-align: center; padding: 30px 0; }
