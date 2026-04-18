@@ -60,15 +60,15 @@ export const CustomerAPI = {
             body: JSON.stringify(customerData)
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            try {
-                return JSON.parse(errorText);
-            } catch {
-                return { success: false, message: `Lỗi ${response.status}: ${errorText}` };
-            }
+        let data;
+
+        try {
+            data = await response.json();
+        } catch {
+            return { success: false, message: "Server trả về không hợp lệ" };
         }
-        return await response.json();
+
+        return data;
     },
 
     // Tạo xe mới

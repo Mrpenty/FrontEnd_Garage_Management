@@ -355,12 +355,10 @@ async function handleFormSubmit(e) {
     const cleanLicensePlate = rawLicensePlate;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang xử lý...';
-   // Xử lý thời gian chuẩn ISO
-    const dateObj = new Date(`${date}T${timeSlot}:00`);
 
     // Tạo Payload với KEY viết hoa chữ cái đầu (PascalCase) để khớp tuyệt đối với C# DTO
     const payload = {
-        AppointmentDateTime: dateObj.toISOString(),
+        AppointmentDateTime: `${date}T${timeSlot}:00`,
         ServiceIds: (bookingState.services || []).map(id => Number(id)),
         SparePartsIds: (bookingState.parts || []).map(id => Number(id)),
         VehicleModelId: bookingState.modelId ? Number(bookingState.modelId) : null,

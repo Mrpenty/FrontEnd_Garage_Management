@@ -207,16 +207,13 @@ export const appointmentUI = {
         }
 
         tbody.innerHTML = items.map(item => {
-            const date = new Date(item.appointmentDateTime).toLocaleString('vi-VN', {
-                hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit'
-            });
 
             const fullName = item.customer 
             ? `${item.customer.lastName || ''} ${item.customer.firstName || ''}`.trim()
             : `${item.lastName ?? ''} ${item.firstName ?? ''}`.trim();
 
             const phone = item.customer?.phoneNumber ?? item.phone ?? 'N/A';
-            const appointmentDate = new Date(item.appointmentDateTime);
+            const appointmentDate = item.appointmentDateTime
             const now = new Date();
             // Logic hiển thị nút bấm theo trạng thái
             let actionButtons = '';
@@ -247,7 +244,7 @@ export const appointmentUI = {
 
             return `
             <tr>
-                <td><strong>${date}</strong></td>
+                <td><strong>${appointmentDate}</strong></td>
                 <td>${fullName || 'Khách vãng lai'}</td>
                 <td>${phone}</td>
                 <td><small>${item.services?.map(s => s.serviceName).join(', ') || 'N/A'}</small></td>

@@ -160,7 +160,7 @@ export async function initCustomerModule() {
                 // Load lại danh sách để thấy khách mới
                 loadCustomers(); 
             } else {
-                alert("Lỗi: " + (res.message || "Không thể tạo khách hàng"));
+                alert(res.message);
             }
         } catch (err) {
             alert("Đã xảy ra lỗi hệ thống.");
