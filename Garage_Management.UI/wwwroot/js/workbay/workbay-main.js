@@ -1,4 +1,6 @@
 import { workbayApi } from './workbay-api.js';
+import { repairExecution } from '../repairation/jobcard-repairation-main.js';
+import { repairApi } from '../repairation/jobcard-repairation-api.js';
 
 let globalWorkbays = [];
 
@@ -121,7 +123,10 @@ async function refreshData() {
                     }
                 }
 
-                const statusClass = wb.status === 1 ? 'empty' : 'active';
+                // Workbay trống khi: BE đã set status = 1, HOẶC không có jobcard active nào.
+                // Fallback cards.length === 0 để phòng trường hợp releaseWorkbay không reset wb.status ở BE.
+                const isEmpty = wb.status === 1 || cards.length === 0;
+                const statusClass = isEmpty ? 'empty' : 'active';
                 const hasJob = displayJob != null;
 
                 const mechanicNames = (displayJob?.mechanics && displayJob.mechanics.length > 0)
@@ -455,6 +460,278 @@ function renderEstimateUI(est, title, color, servicesToShow = []) {
     `;
 }
 
+// Tra workbay id đang chứa jobCard từ globalWorkbays (fallback cho trường hợp
+// getJobCardDetails không trả workbay id). Dùng trước khi gọi finalizeRepair.
+function findWorkbayIdForJob(jobCardId) {
+    for (const wb of globalWorkbays || []) {
+        const cards = Array.isArray(wb.jobCards) ? wb.jobCards : [];
+        if (cards.some(j => j.jobCardId === jobCardId || j.jobCardId == jobCardId)) {
+            return wb.id ?? wb.workBayId ?? wb.workbayId;
+        }
+    }
+    return null;
+}
+
+// Inject workbay id vào detail trước khi finalize, đảm bảo release luôn chạy.
+function prepareDetailForFinalize(detail, jobCardId) {
+    const existingWbId = detail.workBayId
+        ?? detail.workbayId
+        ?? detail.workBay?.id
+        ?? detail.workbay?.id;
+    if (!existingWbId) {
+        const wbId = findWorkbayIdForJob(jobCardId);
+        if (wbId != null) {
+            detail.workBayId = wbId;
+            detail.workbayId = wbId;
+        }
+    }
+    return detail;
+}
+
+// Supervisor finalize hộ → gọi updateMechanicStatus cho TỪNG mechanic với mechanicId
+// tường minh (vì BE endpoint mặc định tra theo token, không khớp với supervisor).
+async function releaseAllMechanicsForSupervisor(detail, jobCardId) {
+    const mechanics = Array.isArray(detail?.mechanics) ? detail.mechanics : [];
+    if (mechanics.length === 0) {
+        console.warn("[releaseAllMechanics] detail.mechanics rỗng, bỏ qua.");
+        return;
+    }
+    await Promise.all(mechanics.map(m => {
+        const id = m.mechanicId ?? m.employeeId ?? m.id;
+        if (id == null) {
+            console.warn("[releaseAllMechanics] mechanic không có id, bỏ qua", m);
+            return Promise.resolve(false);
+        }
+        return repairApi.updateMechanicStatus(jobCardId, 3, id);
+    }));
+}
+
+// Tính progress và tìm target khi supervisor xác nhận task/service.
+// overrideTaskIds: Set các jobCardServiceTaskId được coi như status 3 (đã xong).
+function computeProgress(detail, overrideTaskIds) {
+    const overrides = overrideTaskIds instanceof Set ? overrideTaskIds : new Set(overrideTaskIds || []);
+    let totalTasks = 0;
+    let completedTasks = 0;
+
+    (detail.services || []).forEach(svc => {
+        if (parseInt(svc.status) === 4) return;
+        const hasTasks = svc.serviceTasks && svc.serviceTasks.length > 0;
+        if (hasTasks) {
+            svc.serviceTasks.forEach(t => {
+                totalTasks++;
+                const s = overrides.has(t.jobCardServiceTaskId) ? 3 : parseInt(t.status);
+                if (s === 3) completedTasks++;
+            });
+        } else {
+            totalTasks++;
+            const s = overrides.has(svc.jobCardServiceId) ? 3 : parseInt(svc.status);
+            if (s === 3) completedTasks++;
+        }
+    });
+
+    return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+}
+
+// Supervisor cập nhật 1 task. Giống handleTaskAction của mechanic nhưng re-render modal thay vì reload.
+window.supervisorHandleTaskAction = async (jobCardId, taskName, currentStatus, nextStatus, serviceStatus) => {
+    if (parseInt(serviceStatus) === 5) {
+        return Swal.fire('Thông báo', 'Hạng mục này đang tạm dừng!', 'warning');
+    }
+    if (!confirm(`Xác nhận cập nhật: ${taskName}?`)) return;
+
+    try {
+        const detail = await repairApi.getJobCardDetails(jobCardId);
+        if (!detail || !detail.services) throw new Error("Không lấy được chi tiết phiếu.");
+
+        let targetServiceId = null;
+        let targetTaskId = null;
+        detail.services.forEach(svc => {
+            (svc.serviceTasks || []).forEach(t => {
+                if (t.taskName === taskName && targetTaskId === null) {
+                    targetServiceId = svc.jobCardServiceId;
+                    targetTaskId = t.jobCardServiceTaskId;
+                }
+            });
+        });
+        if (targetTaskId === null) throw new Error("Không tìm thấy task.");
+
+        const targetNextStatus = parseInt(nextStatus);
+        const overrides = targetNextStatus === 3 ? new Set([targetTaskId]) : new Set();
+        const progress = computeProgress(detail, overrides);
+
+        const request = {
+            statusJobCard: (progress === 100) ? 8 : 7,
+            progressPercentage: progress,
+            progressNotes: `Supervisor cập nhật: ${taskName}`,
+            serviceUpdates: [{
+                jobCardServiceId: targetServiceId,
+                statusService: parseInt(serviceStatus)
+            }],
+            serviceTaskUpdates: [{
+                jobCardServiceTaskId: targetTaskId,
+                statusServiceTask: targetNextStatus
+            }]
+        };
+
+        const ok = await repairApi.updateProgress(jobCardId, request);
+        if (!ok) throw new Error("Cập nhật tiến độ thất bại.");
+
+        if (progress === 100) {
+            await releaseAllMechanicsForSupervisor(detail, jobCardId);
+            await repairExecution.finalizeRepair(jobCardId, prepareDetailForFinalize(detail, jobCardId));
+        } else {
+            await window.viewJobDetail(jobCardId);
+            await refreshData();
+        }
+    } catch (error) {
+        console.error("Supervisor task action lỗi:", error);
+        Swal.fire('Lỗi', error.message || 'Có lỗi khi cập nhật.', 'error');
+    }
+};
+
+// Supervisor xác nhận hoàn thành TOÀN BỘ service (set mọi task còn lại → 3, service → 3).
+window.supervisorConfirmService = async (jobCardId, serviceId, serviceName) => {
+    if (!confirm(`Xác nhận hoàn thành toàn bộ hạng mục: ${serviceName}?`)) return;
+
+    try {
+        const detail = await repairApi.getJobCardDetails(jobCardId);
+        if (!detail || !detail.services) throw new Error("Không lấy được chi tiết phiếu.");
+
+        const target = detail.services.find(s => s.jobCardServiceId == serviceId);
+        if (!target) throw new Error("Không tìm thấy hạng mục.");
+        if (parseInt(target.status) === 5) {
+            return Swal.fire('Thông báo', 'Hạng mục đang tạm dừng, không thể hoàn thành.', 'warning');
+        }
+
+        const pendingTasks = (target.serviceTasks || []).filter(t => parseInt(t.status) !== 3);
+        const taskUpdates = pendingTasks.map(t => ({
+            jobCardServiceTaskId: t.jobCardServiceTaskId,
+            statusServiceTask: 3
+        }));
+
+        const overrides = new Set(pendingTasks.map(t => t.jobCardServiceTaskId));
+        if (!target.serviceTasks || target.serviceTasks.length === 0) {
+            overrides.add(target.jobCardServiceId);
+        }
+        const progress = computeProgress(detail, overrides);
+
+        const request = {
+            statusJobCard: (progress === 100) ? 8 : 7,
+            progressPercentage: progress,
+            progressNotes: `Supervisor hoàn thành hạng mục: ${serviceName}`,
+            serviceUpdates: [{
+                jobCardServiceId: parseInt(serviceId),
+                statusService: 3
+            }],
+            serviceTaskUpdates: taskUpdates
+        };
+
+        const ok = await repairApi.updateProgress(jobCardId, request);
+        if (!ok) throw new Error("Cập nhật tiến độ thất bại.");
+
+        await repairApi.updateJobCardServiceStatus(jobCardId, serviceId, 3);
+
+        if (progress === 100) {
+            await releaseAllMechanicsForSupervisor(detail, jobCardId);
+            await repairExecution.finalizeRepair(jobCardId, prepareDetailForFinalize(detail, jobCardId));
+        } else {
+            await window.viewJobDetail(jobCardId);
+            await refreshData();
+        }
+    } catch (error) {
+        console.error("Supervisor confirm service lỗi:", error);
+        Swal.fire('Lỗi', error.message || 'Có lỗi khi hoàn thành hạng mục.', 'error');
+    }
+};
+
+// Render panel "Đang sửa chữa" cho supervisor: danh sách task có thể xác nhận + nút báo cáo phát sinh.
+// Dùng shape BE từ workbayApi.getJobCardDetail: service.status, service.jobCardServiceId,
+// task.jobCardServiceTaskId, task.status, task.taskName.
+function renderRepairExecutionPanel(job) {
+    const isJobOnHold = job.status === 12;
+    const services = Array.isArray(job.services) ? job.services : [];
+
+    // Hiện mọi service không bị huỷ (status 4). Đồng bộ với computeProgress để supervisor
+    // không bị "che" service chưa bắt đầu (status 1) khiến tiến độ không bao giờ lên 100%.
+    const visibleServices = services.filter(s => parseInt(s.status) !== 4);
+
+    let servicesHtml = '';
+    visibleServices.forEach(service => {
+        const serviceStatus = parseInt(service.status);
+        const isServiceOnHold = serviceStatus === 5;
+        const isServiceDone = serviceStatus === 3;
+        const isDisabled = isJobOnHold || isServiceOnHold || isServiceDone;
+        const tasks = Array.isArray(service.serviceTasks) ? service.serviceTasks : [];
+        const estimateMin = service.totalEstimateMinute != null ? `${service.totalEstimateMinute}p` : '';
+        const serviceDisplayName = service.serviceName || service.description || `#${service.jobCardServiceId}`;
+        const serviceNameSafe = serviceDisplayName.replace(/'/g, "\\'");
+
+        const lockBanner = (isJobOnHold || isServiceOnHold) ? `
+            <div style="background:#fff3cd; color:#856404; padding:8px; border-radius:4px; font-size:0.75rem; margin-bottom:8px; border:1px solid #ffeeba;">
+                <i class="fa-solid fa-lock"></i> ${isJobOnHold ? 'Phiếu chờ duyệt phát sinh.' : 'Hạng mục đang tạm dừng.'} Không thể thao tác.
+            </div>` : '';
+
+        const doneBadge = isServiceDone ? `
+            <div style="background:#d1fae5; color:#065f46; padding:6px 8px; border-radius:4px; font-size:0.75rem; margin-bottom:8px; border:1px solid #6ee7b7;">
+                <i class="fa-solid fa-circle-check"></i> Hạng mục đã hoàn thành.
+            </div>` : '';
+
+        const tasksHtml = tasks.map(task => {
+            const taskStatus = parseInt(task.status);
+            const btnClass = taskStatus === 2 ? 'btn-secondary' : (taskStatus === 3 ? 'btn-secondary' : 'btn-outline-secondary');
+            const btnText = taskStatus === 2 ? 'Đang làm...' : (taskStatus === 3 ? 'Đã xong' : 'Bắt đầu');
+            const nextStatus = taskStatus === 2 ? 3 : (taskStatus === 3 ? 1 : 2);
+            const taskNameSafe = (task.taskName || '').replace(/'/g, "\\'");
+
+            return `
+                <li style="font-size:0.85rem; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; background:#fff; padding:8px; border-radius:4px; border:1px solid #eee;">
+                    <span style="color:#444; font-weight:500;">${task.taskName || ''}</span>
+                    <button class="${btnClass} task-action-btn"
+                        ${isDisabled ? 'disabled' : ''}
+                        onclick="window.supervisorHandleTaskAction(${job.jobCardId}, '${taskNameSafe}', ${taskStatus}, ${nextStatus}, ${serviceStatus})">
+                        ${btnText}
+                    </button>
+                </li>`;
+        }).join('');
+
+        const confirmServiceBtn = (!isDisabled) ? `
+            <button style="background:#10b981; color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer;"
+                onclick="window.supervisorConfirmService(${job.jobCardId}, ${service.jobCardServiceId}, '${serviceNameSafe}')">
+                <i class="fa-solid fa-check-double"></i> Xong hạng mục
+            </button>` : '';
+
+        servicesHtml += `
+            <div class="service-block" style="margin-bottom:15px; opacity:${isDisabled ? '0.6' : '1'};">
+                <div style="font-weight:bold; color:#e63946; border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                    <span><i class="fa-solid fa-wrench"></i> ${serviceDisplayName}</span>
+                    <span style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:0.8rem; color:#888;">${estimateMin}</span>
+                        ${confirmServiceBtn}
+                    </span>
+                </div>
+                ${lockBanner}
+                ${doneBadge}
+                <ul style="list-style:none; padding-left:5px; margin:0;">
+                    ${tasksHtml}
+                </ul>
+            </div>`;
+    });
+
+    const emptyHtml = `<p style="font-size:0.9rem; color:#888;">Không có dịch vụ nào đang thực hiện.</p>`;
+
+    return `
+        <div style="border:2px dashed #4f46e5; border-radius:8px; padding:15px; background:#fafaff;">
+            <div style="font-weight:bold; color:#4f46e5; margin-bottom:10px;">
+                <i class="fa-solid fa-list-check"></i> HẠNG MỤC ĐANG THỰC HIỆN
+            </div>
+            ${servicesHtml || emptyHtml}
+            <button class="btn-primary" style="width:100%; margin-top:10px; background:#be123c; border:none; padding:10px; border-radius:8px; color:#fff; font-weight:bold; cursor:pointer;"
+                onclick="window.openNewFaultPopup(${job.jobCardId}, 6)">
+                <i class="fa-solid fa-file-medical"></i> LẬP BÁO CÁO PHÁT SINH
+            </button>
+        </div>`;
+}
+
 // Hàm tách riêng để xử lý nút bấm cho đỡ rối
 async function handleActionZone(job, actionZone, allWorkbays) {
     if (job.status === 2) {
@@ -503,12 +780,15 @@ async function handleActionZone(job, actionZone, allWorkbays) {
                 <p style="margin-bottom:10px; font-weight:bold; color:#9f1239;">
                     <i class="fas fa-tools"></i> PHÁT SINH LỖI MỚI KHI ĐANG SỬA
                 </p>
-                <button class="btn-primary" onclick="window.approveExtraJob(${job.jobCardId})" 
+                <button class="btn-primary" onclick="window.approveExtraJob(${job.jobCardId})"
                         style="width:100%; background:#be123c; height:50px; font-size:1.1rem; border:none;">
                     <i class="fas fa-paper-plane"></i> DUYỆT & GỬI BÁO GIÁ PHÁT SINH
                 </button>
             </div>
         `;
+    } else if (job.status === 7) {
+        actionZone.style.display = "block";
+        actionZone.innerHTML = renderRepairExecutionPanel(job);
     }
     else {
         actionZone.style.display = "none";

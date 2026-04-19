@@ -123,7 +123,7 @@ window.renderPartList = () => {
         </tr>
     `).join('');
 };
-
+//Thêm phụ tùng vào 
 window.addPartRow = () => {
     const select = $('#select-sparepart'); // Dùng jQuery cho đồng bộ với Select2
     const qtyInput = document.getElementById('input-qty');

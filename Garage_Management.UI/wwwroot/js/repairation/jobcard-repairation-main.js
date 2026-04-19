@@ -5,7 +5,7 @@ export const repairExecution = {
         services: [],
         parts: []
     },
- 
+    //Cập nhật tiến độ từng task
     handleTaskAction: async (jobCardId, taskId, currentStatus, nextStatus, taskName, jobCardStatus, serviceStatus, jobRaw) => {
         if (jobCardStatus === 12) return Swal.fire('Thông báo', 'Phiếu đang có lỗi phát sinh chờ duyệt!', 'warning');
         if (serviceStatus === 5) return Swal.fire('Thông báo', 'Hạng mục này đang tạm dừng!', 'warning');
@@ -66,7 +66,7 @@ export const repairExecution = {
                 progressNotes: `Cập nhật: ${taskName}`,
                 serviceUpdates: [{
                     jobCardServiceId: finalParentServiceId,
-                    statusService: parseInt(serviceStatus)
+                    statusService: parseInt(serviceStatus) //chuyển status service là tự động hoàn thành
                 }],
                 serviceTaskUpdates: [{
                     jobCardServiceTaskId: finalTaskUpdateId,
@@ -90,8 +90,11 @@ export const repairExecution = {
             alert("Có lỗi xảy ra khi cập nhật tiến độ.");
         }
     },
-
-    openNewFaultPopup: async (jobCardId) => {
+    //mở báo cáo phát sinh.
+    // newJobCardStatus: status jobcard sẽ set sau khi submit.
+    //   12 (default) = mechanic gửi, chờ supervisor duyệt.
+    //   6 = supervisor gửi trực tiếp, bỏ qua duyệt supervisor, đẩy thẳng sang chờ khách duyệt.
+    openNewFaultPopup: async (jobCardId, newJobCardStatus = 12) => {
         repairExecution.tempData.services = [];
         repairExecution.tempData.parts = [];
         try {
@@ -177,10 +180,11 @@ export const repairExecution = {
                 if (result.isConfirmed) {
                     // Gọi hàm submit đã viết ở bước trước
                     repairExecution.submitNewFault(
-                        jobCardId, 
-                        repairExecution.tempData.services, 
-                        repairExecution.tempData.parts, 
-                        result.value.note
+                        jobCardId,
+                        repairExecution.tempData.services,
+                        repairExecution.tempData.parts,
+                        result.value.note,
+                        newJobCardStatus
                     );
                 }
             });
@@ -207,7 +211,7 @@ export const repairExecution = {
         `).join('');
     },
 
-    submitNewFault: async (jobCardId, selectedServices, selectedParts, note) => {
+    submitNewFault: async (jobCardId, selectedServices, selectedParts, note, newJobCardStatus = 12) => {
         if (!note) return alert("Vui lòng nhập ghi chú lỗi!");
         if (selectedServices.length === 0 && selectedParts.length === 0) {
             return alert("Vui lòng chọn ít nhất 1 dịch vụ hoặc linh kiện phát sinh!");
@@ -218,15 +222,17 @@ export const repairExecution = {
             const estimateData = {
                 jobCardId: jobCardId,
                 note: note,
-                services: selectedServices, 
-                spareParts: selectedParts   
+                services: selectedServices,
+                spareParts: selectedParts
             };
 
             const postOk = await repairApi.submitRepairEstimate(estimateData);
             if (!postOk) throw new Error("Lỗi khi tạo báo giá phát sinh");
 
-            // BƯỚC 2: PATCH JobCard Status -> 12 (FoundNewFault)
-            await repairApi.updateJobCardStatus(jobCardId, 12);
+            // BƯỚC 2: PATCH JobCard Status -> newJobCardStatus
+            //   12 (default, mechanic) = chờ supervisor duyệt
+            //   6 (supervisor tự gửi)  = bỏ qua duyệt supervisor, chờ khách duyệt
+            await repairApi.updateJobCardStatus(jobCardId, newJobCardStatus);
 
             // BƯỚC 3: Lấy danh sách Service hiện tại của JobCard để chuyển sang OnHold
             // Gọi API: GET JobCards/{id} hoặc API chuyên biệt lấy Services
@@ -276,9 +282,18 @@ export const repairExecution = {
             await repairApi.updateMechanicStatus(jobCardId, 3);
 
             // D. Giải phóng WorkBay (Đưa xe ra khỏi vị trí sửa chữa)
-            if (detailResult.workbayId) {
-                const released = await repairApi.releaseWorkbay(detailResult.workbayId);
+            // BE có thể trả về field tên khác casing, fallback nhiều key để chắc chắn.
+            const wbId = detailResult.workBayId
+                ?? detailResult.workbayId
+                ?? detailResult.workBay?.id
+                ?? detailResult.workbay?.id
+                ?? detailResult.workBay?.workBayId
+                ?? detailResult.workbay?.workbayId;
+            if (wbId) {
+                const released = await repairApi.releaseWorkbay(wbId);
                 if (!released) console.warn("Cảnh báo: Không thể giải phóng khoang tự động.");
+            } else {
+                console.warn("Cảnh báo: JobCard detail không có workbay id, bỏ qua bước giải phóng.", detailResult);
             }
 
             //E. Tạo hóa đơn thanh toán

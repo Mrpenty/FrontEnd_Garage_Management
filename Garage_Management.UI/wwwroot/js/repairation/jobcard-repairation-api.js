@@ -54,13 +54,20 @@ export const repairApi = {
         return response.ok;
     },
 
-    // Patch trạng thái của bảng JobCardMechanic (Phân công)
-    updateMechanicStatus: async (jobCardId, status) => {
+    // Patch trạng thái của bảng JobCardMechanic (Phân công).
+    // mechanicId: tùy chọn — truyền khi caller không phải là chính mechanic đó (vd supervisor
+    // finalize hộ). BE có thể dùng field này để tra đúng record thay vì dựa vào JWT.
+    updateMechanicStatus: async (jobCardId, status, mechanicId = null) => {
+        const body = mechanicId != null
+            ? { status: status, mechanicId: parseInt(mechanicId) }
+            : { status: status };
         const response = await fetch(`${CONFIG.API_BASE_URL}/JobCardMechanics/${jobCardId}/mechanic/status`, {
             method: 'PATCH',
             headers: repairApi.getAuthHeader(),
-            body: JSON.stringify( {status: status})
+            body: JSON.stringify(body)
         });
+        const bodyText = await response.text().catch(() => '');
+        console.log(`[updateMechanicStatus] jobCardId=${jobCardId} mechanicId=${mechanicId ?? '(token)'} status=${status} httpStatus=${response.status} ok=${response.ok}`, bodyText);
         return response.ok;
     },
 
@@ -107,6 +114,8 @@ export const repairApi = {
             headers: repairApi.getAuthHeader(),
             body: JSON.stringify({ workBayId: parseInt(id) })
         });
+        const bodyText = await response.text().catch(() => '');
+        console.log(`[releaseWorkbay] workBayId=${id} status=${response.status} ok=${response.ok}`, bodyText);
         return response.ok;
     },
 
