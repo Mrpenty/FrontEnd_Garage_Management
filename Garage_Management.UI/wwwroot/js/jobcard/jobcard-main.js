@@ -229,8 +229,67 @@ function initTableActions(tbody) {
             handleOpenEstimateModal(id, btn);
         } else if (btn.classList.contains('payment')) {
             handlePayment(id);
-        }         
+        } else if (btn.classList.contains('edit')) {
+            handleEditJobCard(id);
+        }    
     };
+}
+
+async function handleEditJobCard(jobCardId) {
+    try {
+        const [resJC, resSV] = await Promise.all([
+            jobcardApi.getById(jobCardId),
+            jobcardApi.getSupervisors()
+        ]);
+
+        const data = resJC.success ? resJC.data : resJC;
+        const supervisors = resSV.data?.pageData || [];
+
+        const modalElement = document.getElementById('editModal');
+        const container = modalElement.querySelector('.modal-body');
+
+        // 1. Render giao diện vào modal-body
+        jobcardUI.renderEditJobCardModal(container, data, supervisors);
+
+        // 2. Hiển thị Modal theo CSS của bạn (Thêm class .show)
+        modalElement.classList.add('show');
+        modalElement.style.display = 'flex'; // Ép kiểu hiển thị flex theo CSS của bạn
+
+        // 3. Xử lý đóng modal khi bấm ra ngoài vùng xám (tùy chọn)
+        modalElement.onclick = (e) => {
+            if (e.target === modalElement) {
+                modalElement.classList.remove('show');
+                modalElement.style.display = 'none';
+            }
+        };
+
+        // 4. Xử lý Submit Form
+        const form = modalElement.querySelector('#editJobCardForm');
+        if (form) {
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                
+                const updateData = {
+                    note: document.getElementById('editNote').value,
+                    supervisorId: parseInt(document.getElementById('editSupervisorId').value),
+                    endDate: data.endDate
+                };
+
+                const resUpdate = await jobcardApi.update(jobCardId, updateData);
+                if (resUpdate) {
+                    alert("Cập nhật thành công!");
+                    modalElement.classList.remove('show');
+                    modalElement.style.display = 'none';
+                    // Load lại danh sách (đảm bảo hàm này có tồn tại trong scope của bạn)
+                    if (typeof initJobCardModule === 'function') initJobCardModule();
+                }
+            };
+        }
+
+    } catch (error) {
+        console.error("Lỗi edit jobcard:", error);
+        alert("Không thể mở form chỉnh sửa");
+    }
 }
 
 // Tách hàm ra cho sạch code
@@ -743,9 +802,21 @@ window.showPrintPreviewFromData = async (input) => {
     }
 
     if (!data || !data.jobCardId) return alert("Không có dữ liệu!");
-
+    let mainTitle = "Phiếu Sửa Chữa";
+    const s = data.status;
+    if (s >= 1 && s <= 3) {
+        mainTitle = "Phiếu Tiếp Nhận Xe";
+    } else if (s >= 4 && s <= 6) {
+        mainTitle = "Phiếu Kiểm Tra Kỹ Thuật";
+    } else if (s === 8) {
+        mainTitle = "Hóa Đơn Thanh Toán"; // Hoặc "Phiếu Báo Giá & Quyết Toán"
+    } else if (s === 9) {
+        mainTitle = "Phiếu Xuất Xưởng";
+    }
     const paper = document.getElementById('printablePaper');
-    
+    const vehicle = (data.vehicles && data.vehicles.length > 0) ? data.vehicles[0] : {};
+    const licensePlate = vehicle.licensePlate || 'N/A';
+    const vehicleInfo = vehicle.brand ? `${vehicle.brand} ${vehicle.model || ''}` : 'N/A';
     // Tính toán dữ liệu dịch vụ và tổng tiền
     let servicesHtml = '';
     let totalAmount = 0;
@@ -757,7 +828,7 @@ window.showPrintPreviewFromData = async (input) => {
                 <tr>
                     <td style="text-align:center">${index + 1}</td>
                     <td>
-                        <strong>${srv.serviceName || 'Dịch vụ #' + srv.serviceId}</strong><br>
+                        <strong>Tiền công ${srv.serviceName || 'Dịch vụ #' + srv.serviceId}</strong><br>
                         <small style="color: #666;">${srv.description || ''}</small>
                     </td>
                     <td style="text-align:right">${(srv.price || 0).toLocaleString('vi-VN')} đ</td>
@@ -765,69 +836,87 @@ window.showPrintPreviewFromData = async (input) => {
         });
     }
 
+    if (data.spareParts && data.spareParts.length > 0) {
+        data.spareParts.forEach((sp, index) => {
+            const subTotal = (sp.totalAmount || 0);
+            totalAmount += subTotal;
+            servicesHtml += `
+                <tr>
+                    <td style="border: 1px solid #000; text-align:center; padding: 5px;">P${index + 1}</td>
+                    <td style="border: 1px solid #000; padding: 5px;">
+                        (Phụ tùng) ${sp.sparePartName} x${sp.quantity}
+                    </td>
+                    <td style="border: 1px solid #000; text-align:right; padding: 5px;">
+                        ${subTotal.toLocaleString('vi-VN')} đ
+                    </td>
+                </tr>`;
+        });
+    }
+
     paper.innerHTML = `
-        <div style="font-family: 'Times New Roman', serif; color: #000; line-height: 1.4;">
-            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 5px;">
+        <div style="font-family: 'Times New Roman', serif; color: #000; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px;">
                 <div>
-                    <h3 style="margin:0">GARAGE PRO SERVICE</h3>
-                    <p style="margin:0; font-size: 12px;">Đ/C: Số 123 Đường Định Công, Hà Nội</p>
+                    <h2 style="margin:0">MGMS</h2>
+                    <p style="margin:0; font-size: 13px;">Hệ thống quản lý Garage thông minh</p>
                 </div>
                 <div style="text-align: right">
                     <strong>Mã phiếu: JC-${data.jobCardId}</strong><br>
-                    <small>Ngày: ${new Date(data.startDate).toLocaleDateString('vi-VN')}</small>
+                    <small>In ngày: ${new Date().toLocaleDateString('vi-VN')}</small>
                 </div>
             </div>
 
-            <h2 style="text-align: center; text-transform: uppercase; margin: 20px 0;">Phiếu Tiếp Nhận & Sửa Chữa</h2>
+            <h2 style="text-align: center; text-transform: uppercase; margin: 30px 0 10px 0;">${mainTitle}</h2>
+            <p style="text-align: center; margin-bottom: 30px;"><i>Ngày lập phiếu: ${new Date(data.startDate).toLocaleString('vi-VN')}</i></p>
 
-            <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
+            <table style="width: 100%; margin-bottom: 20px; font-size: 15px;">
                 <tr>
-                    <td width="15%"><strong>Khách hàng:</strong></td>
-                    <td width="35%">${data.customerName || 'Mã KH: ' + data.customerId}</td>
-                    <td width="15%"><strong>Biển số:</strong></td>
-                    <td width="35%"><strong>${data.licensePlate || 'Xe ID: ' + data.vehicleId}</strong></td>
+                    <td width="18%"><strong>Khách hàng:</strong></td>
+                    <td width="32%">${data.customerName || 'N/A'}</td>
+                    <td width="18%"><strong>Biển số xe:</strong></td>
+                    <td width="32%"><strong style="font-size: 1.1em;">${licensePlate}</strong></td>
                 </tr>
                 <tr>
-                    <td><strong>Cố vấn:</strong></td>
-                    <td>${data.supervisorName || 'ID: ' + data.supervisorId}</td>
-                    <td><strong>Trạng thái:</strong></td>
-                    <td>${data.status === 8 ? 'Chờ thanh toán' : 'Đang xử lý'}</td>
-                </tr>
-                <tr>
-                    <td><strong>Ghi chú:</strong></td>
-                    <td colspan="3">${data.note || 'Không có'}</td>
+                    <td><strong>Số điện thoại:</strong></td>
+                    <td>${data.customerPhone || 'N/A'}</td>
+                    <td><strong>Dòng xe:</strong></td>
+                    <td>${vehicleInfo}</td>
                 </tr>
             </table>
 
-            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                 <thead>
-                    <tr style="background: #eee;">
-                        <th style="border: 1px solid #000; padding: 5px;">STT</th>
-                        <th style="border: 1px solid #000; padding: 5px;">Nội dung công việc</th>
-                        <th style="border: 1px solid #000; padding: 5px;">Thành tiền</th>
+                    <tr style="background: #f2f2f2;">
+                        <th style="border: 1px solid #000; padding: 8px; width: 50px;">STT</th>
+                        <th style="border: 1px solid #000; padding: 8px;">Nội dung công việc / Vật tư</th>
+                        <th style="border: 1px solid #000; padding: 8px; width: 150px;">Thành tiền</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${servicesHtml || '<tr><td colspan="3" style="text-align:center">Chưa có dịch vụ</td></tr>'}
+                    ${servicesHtml || '<tr><td colspan="3" style="text-align:center; border: 1px solid #000; padding: 10px;">Chưa có nội dung thực hiện</td></tr>'}
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: right;"><strong>TỔNG CỘNG:</strong></td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: right; font-weight: bold;">
+                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;"><strong>TỔNG CỘNG THANH TOÁN:</strong></td>
+                        <td style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold; font-size: 16px;">
                             ${totalAmount.toLocaleString('vi-VN')} đ
                         </td>
                     </tr>
                 </tfoot>
             </table>
 
-            <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; text-align: center;">
+            <div style="margin-top: 50px; display: grid; grid-template-columns: 1fr 1fr; text-align: center;">
                 <div>
-                    <strong>KHÁCH HÀNG</strong><br><br><br><br>
-                    <span>(Ký và ghi rõ họ tên)</span>
+                    <strong>KHÁCH HÀNG</strong><br>
+                    <small>(Ký và ghi rõ họ tên)</small>
+                    <br><br><br><br>
+                    <span>${data.customerName || '..........................'}</span>
                 </div>
                 <div>
-                    <strong>CỐ VẤN DỊCH VỤ</strong><br><br><br><br>
-                    <span>${data.mechanics?.[0]?.mechanicName || 'Người tiếp nhận'}</span>
+                    <strong>XÁC NHẬN CỐ VẤN</strong><br>
+                    <small>(Ký và ghi rõ họ tên)</small>
+                    <br><br><br><br>
+                    <span>${data.mechanics?.[0]?.mechanicName || 'Người lập phiếu'}</span>
                 </div>
             </div>
         </div>

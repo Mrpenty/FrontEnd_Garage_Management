@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../../wwwroot/css/homepage.css">
     <link rel="stylesheet" href="../../wwwroot/css/receptionist-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -31,7 +32,7 @@
                     <li id="menu-customers"> 
                         <a href="#"><i class="fa-solid fa-users"></i> Khách hàng</a>
                     </li>
-                    <li>
+                    <li id="menu-reports">
                         <a href="#"><i class="fa-solid fa-chart-line"></i> Báo cáo</a>
                     </li>
                 </ul>
@@ -77,23 +78,31 @@
         </div>
     </div>
     <div id="paymentModal" class="modal fade" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Thanh toán</h5>
-                <button type="button" class="btn-close close-modal" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body"> 
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thanh toán</h5>
+                    <button type="button" class="btn-close close-modal" data-bs-dismiss="modal"></button>
                 </div>
+                <div class="modal-body"> 
+                    </div>
+            </div>
+        </div>  
+    </div>
+    <div id="editModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body p-0"></div> 
+            </div>
         </div>
     </div>
-</div>
     <script type="module">
         import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
         import CONFIG from '../../wwwroot/js/config.js';
         import { initJobCardModule } from '../../wwwroot/js/jobcard/jobcard-main.js';
         import { initAppointmentModule } from '../../wwwroot/js/appointment/appointment-main.js';
         import { initCustomerModule } from '../../wwwroot/js/user/customer-main.js';
+        import { initReportModule } from '../../wwwroot/js/report/report-main.js';
 
         // 1. Kiểm tra quyền
         authGuard.authorize('Receptionist'); 
@@ -107,6 +116,7 @@
         const menuGarage = document.getElementById('menu-garage');
         const menuApt = document.getElementById('menu-appointment');
         const menuCust = document.getElementById('menu-customers');
+        const menuReports = document.getElementById('menu-reports');
 
         function clearActiveMenu() {
             document.querySelectorAll('.sidebar-nav li').forEach(li => li.classList.remove('active'));
@@ -134,6 +144,14 @@
             clearActiveMenu();
             menuCust.classList.add('active');
             initCustomerModule(); // Gọi hàm khởi tạo module khách hàng
+        };
+
+        menuReports.onclick = (e) => {
+            e.preventDefault();
+            if(menuReports.classList.contains('active')) return;
+            clearActiveMenu();
+            menuReports.classList.add('active');
+            initReportModule(); // Gọi module báo cáo
         };
 
         // 4. Đăng xuất
