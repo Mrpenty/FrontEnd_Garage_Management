@@ -33,6 +33,7 @@ export const jobcardUI = {
                             </tr>
                         </thead>
                         <tbody id="job-card-body"></tbody>
+                        <div id="jobcard-pagination" class="mt-3"></div>
                     </table>
                 </div>
             </div>
@@ -138,7 +139,10 @@ export const jobcardUI = {
                             </div>
                         </form>
                         <div class="modal-footer">
-                                <button type="submit" form="createJobCardForm" class="btn-primary">Xác nhận tạo JobCard</button>
+                            <button type="button" id="btnResetJobCardForm" class="btn-cancel">
+                                <i class="fa-solid fa-rotate-left"></i> Làm mới form
+                            </button>
+                            <button type="submit" form="createJobCardForm" class="btn-primary">Xác nhận tạo JobCard</button>
                         </div>
                     </div>
                 </div>

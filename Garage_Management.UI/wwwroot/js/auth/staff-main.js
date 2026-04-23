@@ -59,6 +59,7 @@ authUi.elements.form.addEventListener('submit', async (e) => {
                 case 'Supervisor': targetPage = CONFIG.PAGES.DASHBOARD_SUPERVISOR; break;
                 case 'Mechanic': targetPage = CONFIG.PAGES.DASHBOARD_MECHANIC; break;
                 case 'Stocker': targetPage = CONFIG.PAGES.DASHBOARD_STOCKER; break;
+                case 'Accountant': targetPage = CONFIG.PAGES.DASHBOARD_ACCOUNTANT; break;
                 case 'Admin': targetPage = CONFIG.PAGES.DASHBOARD_ADMIN; break;
                 default:
                     authUi.renderMessage("Vai trò không hợp lệ.", false);

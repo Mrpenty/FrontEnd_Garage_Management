@@ -3,6 +3,7 @@ import { jobcardUI } from './jobcard-ui.js';
 
 // --- State Management (Dùng để lưu trữ tạm thời khi tạo JobCard) ---
 let selectedServices = [];
+let selectedSpareParts = [];
 let allModels = [];
 let currentAppointmentId = null;
 
@@ -38,7 +39,8 @@ export async function initJobCardModule() {
         appointmentResult: document.getElementById('appointmentResult'),
         sparePartsDisplay: document.getElementById('appointmentSpareParts'),
         jobCardNote: document.getElementById('jobCardNote'),
-        selectSupervisor: document.getElementById('selectSupervisor')
+        selectSupervisor: document.getElementById('selectSupervisor'),
+        btnResetForm: document.getElementById('btnResetJobCardForm')
     };
     // 3. Khởi tạo các Logic sự kiện
     initModalEvents(elements);
@@ -49,10 +51,17 @@ export async function initJobCardModule() {
     initJobCardSubmit(elements);
     initCustomerLogic(elements);
     // 4. Tải dữ liệu ban đầu cho Dashboard
-    loadDashboardStats(); // Hàm tải các số liệu "Xe đang làm", "Doanh thu"...
     loadJobCards(elements.jobCardBody);
     loadSupervisor(elements.selectSupervisor); // Đổ dữ liệu vào select supervisor
     loadServiceList(elements.selectService);
+    resetJobCardForm(elements) ;
+
+    // Thêm vào trong hàm khởi tạo của bạn
+    elements.btnResetForm?.addEventListener('click', () => {
+        if (confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu đang nhập không?")) {
+            resetJobCardForm(elements);
+        }
+    });
 }
 
 // --- CHI TIẾT CÁC HÀM LOGIC ---
@@ -324,11 +333,6 @@ async function handleOpenEstimateModal(jobCardId, btn) {
         btn.style.pointerEvents = 'auto';
         btn.style.opacity = '1';
     }
-}
-
-async function loadDashboardStats() {
-    // Gọi API để lấy số liệu thống kê và cập nhật vào các ID: stat-working, stat-today...
-    // Phần này bạn có thể bổ sung tùy theo API backend của bạn
 }
 
 function initModalEvents(elements) {
@@ -617,13 +621,28 @@ async function applyAppointmentData(apt, elements) {
             description: s.description
         }));
         renderServiceTable(elements);
+    } else {
+        selectedServices = []; // Reset nếu lịch hẹn trống
+        renderServiceTable(elements);
     }
 
     // Đổ danh sách phụ tùng
-    if (elements.sparePartsDisplay) {
-        const spareParts = apt.spareParts || apt.appointmentSpareParts || [];
-        jobcardUI.renderReadOnlySpareParts(elements.sparePartsDisplay, spareParts);
+    const rawSpareParts = apt.spareParts || apt.appointmentSpareParts || [];
+    
+    if (rawSpareParts.length > 0) {
+        selectedSpareParts = rawSpareParts.map(p => ({
+            id: p.sparePartId,
+            name: p.partName,
+            code: p.partCode,
+            quantity: p.quantity || 1, // Lấy quantity từ lịch hẹn
+            unit: p.unit || "Cái",
+            price: p.sellingPrice || 0
+        }));
+    } else {
+        selectedSpareParts = [];
     }
+
+    jobcardUI.renderReadOnlySpareParts(elements.sparePartsDisplay, selectedSpareParts);
     
     elements.appointmentResult.innerHTML = `<div class="info-alert success">Đã áp dụng lịch hẹn ngày ${new Date(apt.appointmentDateTime).toLocaleString()}</div>`;
 }
@@ -979,6 +998,36 @@ async function handlePayment(jobCardId) {
         console.error("Lỗi thanh toán:", error);
         alert("Có lỗi xảy ra khi tải thông tin thanh toán.");
     }
+}
+
+function resetJobCardForm(elements) {
+    // 1. Reset các trường input thô (text, textarea, hidden)
+    elements.createJobCardForm.reset();
+    elements.selectedCustomerId.value = "";
+    elements.checkPhoneInput.value = "";
+    
+    // 2. Reset các biến global quản lý dữ liệu
+    selectedServices = [];
+    currentAppointmentId = null;
+    if (typeof selectedSpareParts !== 'undefined') selectedSpareParts = [];
+
+    // 3. Reset các thư viện bên thứ 3 (Select2)
+    $(elements.selectVehicle).val(null).trigger('change').prop('disabled', true);
+    $(elements.selectService).val(null).trigger('change');
+    $(elements.selectSupervisor).val(null).trigger('change');
+
+    // 4. Reset giao diện các bảng và thông báo
+    elements.appointmentResult.innerHTML = "";
+    elements.appointmentResult.style.display = "none";
+    
+    if (elements.sparePartsDisplay) {
+        elements.sparePartsDisplay.innerHTML = '<p class="text-muted small"><i>Chưa chọn lịch hẹn...</i></p>';
+    }
+
+    // 5. Render lại bảng dịch vụ (sẽ hiện hàng "Chưa có dịch vụ nào")
+    renderServiceTable(elements);
+    
+    console.log("Form đã được làm mới hoàn toàn.");
 }
 
 window.handleProxyApproval = handleProxyApproval;

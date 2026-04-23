@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Khoang Sửa Xe - MGMS</title>
+    <link rel="stylesheet" href="../../wwwroot/css/supervisor-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="supervisor-container">
+        <header class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <h1 class="brand-title">Hệ thống Quản lý</h1>
+                    <p class="user-welcome">Quản lý Khoang Sửa Xe (Workbay)</p>
+                </div>
+                <button id="btn-staff-logout" class="btn-logout">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </button>
+            </div>
+
+            <nav class="header-navigation">
+                <a href="../Dashboard/SupervisorDashboard.html" class="nav-btn">
+                    <i class="fas fa-tools"></i> Quản lý công việc
+                </a>
+                <a href="ServiceManagement.html" class="nav-btn">
+                    <i class="fas fa-concierge-bell"></i> Quản lý dịch vụ
+                </a>
+                <a href="VehicleManagement.html" class="nav-btn">
+                    <i class="fas fa-car-side"></i> Quản lý phương tiện
+                </a>
+                <a href="WorkbayManagement.html" class="nav-btn active">
+                    <i class="fas fa-warehouse"></i> Quản lý khoang sửa xe
+                </a>
+                <a href="Statistics.html" class="nav-btn">
+                    <i class="fas fa-chart-bar"></i> Thống kê
+                </a>
+            </nav>
+        </header>
+
+        <section class="section-box">
+            <div class="section-header-flex">
+                <h2 class="section-title">Danh sách Khoang sửa xe</h2>
+                <button class="btn-detail-inner" onclick="openAddWorkbayModal()" style="background-color: #28a745; color: white;">
+                    <i class="fas fa-plus"></i> Thêm khoang mới
+                </button>
+            </div>
+            
+            <div class="table-responsive" style="margin-top: 20px;">
+                <table class="queue-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên Khoang</th>
+                            <th>Ghi chú</th>
+                            <th>Trạng thái</th>
+                            <th>Công việc hiện tại</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workbay-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div id="workbay-modal" class="modal">
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-header">
+                <h2 id="modal-workbay-title">Thêm Khoang Mới</h2>
+                <span class="close-modal" onclick="closeWorkbayModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="workbay-form">
+                    <input type="hidden" id="wb-id">
+                    <div style="margin-bottom: 15px;">
+                        <label>Tên khoang:</label>
+                        <input type="text" id="wb-name" class="search-box" style="width: 100%;" required>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label>Ghi chú:</label>
+                        <textarea id="wb-note" class="search-box" style="width: 100%; height: 80px;"></textarea>
+                    </div>
+                    <div id="status-group" style="margin-bottom: 15px; display: none;">
+                        <label>Trạng thái:</label>
+                        <select id="wb-status" class="search-box" style="width: 100%;">
+                            <option value="0">Trống (Available)</option>
+                            <option value="1">Đang bận (Occupied)</option>
+                            <option value="2">Bảo trì (Maintenance)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="nav-btn active" style="width: 100%; border: none;">Lưu thông tin</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../../wwwroot/js/workbay/workbay-management-main.js"></script>
+</body>
+</html>

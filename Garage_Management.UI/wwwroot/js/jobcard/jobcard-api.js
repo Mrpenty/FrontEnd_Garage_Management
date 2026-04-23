@@ -80,7 +80,7 @@ export const jobcardApi = {
 
 export const serviceApi = {
     getServices: async () => {
-        const res = await fetch(`${SERVICE_URL}?page=1&pageSize=10`, { 
+        const res = await fetch(`${SERVICE_URL}?pageSize=1000`, { 
             headers: getHeaders() 
         });
         if (!res.ok) throw new Error("Không thể tải danh sách dịch vụ");

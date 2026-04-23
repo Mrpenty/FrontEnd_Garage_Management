@@ -3,6 +3,8 @@ import { repairExecution } from '../repairation/jobcard-repairation-main.js';
 import { repairApi } from '../repairation/jobcard-repairation-api.js';
 
 let globalWorkbays = [];
+let currentPendingPage = 1;
+const ITEMS_PER_PAGE = 3;
 
 async function refreshData() {
     const supervisorId = localStorage.getItem('employeeId');
@@ -19,6 +21,7 @@ async function refreshData() {
 
         globalWorkbays = workbays;
 
+        currentPendingPage = 1; // Reset về trang 1 khi refresh
         renderPendingJobs(jobs, workbays);
         renderWorkbayGrid(workbays);
     } catch (err) {
@@ -26,82 +29,136 @@ async function refreshData() {
     }
 }
 
-// Hàm render danh sách JobCard
-        function renderPendingJobs(jobs, allWorkbays) {
-            const listContainer = document.getElementById('pending-jobs-list');
-            const pendingJobs = jobs.filter(job => job.status === 1);
+// Hàm render danh sách JobCard với phân trang
+function renderPendingJobs(jobs, allWorkbays) {
+    const listContainer = document.getElementById('pending-jobs-list');
+    const pendingJobs = jobs.filter(job => job.status === 1);
 
-            if (pendingJobs.length === 0) {
-                listContainer.innerHTML = '<p class="empty-msg">Không có xe mới chờ điều phối.</p>';
-                return;
+    if (pendingJobs.length === 0) {
+        listContainer.innerHTML = '<p class="empty-msg">Không có xe mới chờ điều phối.</p>';
+        return;
+    }
+
+    const now = new Date();
+    const totalPages = Math.ceil(pendingJobs.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPendingPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const paginatedJobs = pendingJobs.slice(startIndex, endIndex);
+
+    // Chuẩn bị dữ liệu Dropdown
+    const wbOptions = allWorkbays.map(wb => {
+        const cards = wb.jobCards || [];
+        const activeJobsInWb = cards.filter(job => 
+            [1, 2, 3, 4, 5, 6, 7, 12].includes(job.status)
+        );
+        const count = activeJobsInWb.length;
+        return `<option value="${wb.id}">${wb.name} (${count} xe đang chờ)</option>`;
+    }).join('');
+
+    let html = paginatedJobs.map(job => {
+        const customerName = job.customer 
+            ? `${job.customer.lastName} ${job.customer.firstName}` 
+            : 'Khách vãng lai';
+        const plate = job.vehicle ? job.vehicle.licensePlate : 'N/A';
+        const serviceSummary = job.services && job.services.length > 0
+            ? job.services.map(s => s.serviceName).join(', ')
+            : 'Chưa chọn dịch vụ';
+        const totalTime = job.totalEstimateMinute || 0;
+
+        let priorityClass = '';
+        let appointmentInfo = '';
+        if (job.appointmentId && job.startDate) {
+            const appointmentDate = new Date(job.startDate);
+            const diff = (appointmentDate - now) / (1000 * 60);
+            if (diff <= 0) {
+                priorityClass = 'priority-urgent';
+                appointmentInfo = `<span class="badge-appt">ĐẾN GIỜ HẸN</span>`;
+            } else if (diff <= 60) {
+                priorityClass = 'priority-upcoming';
+                appointmentInfo = `<span class="badge-appt">SẮP ĐẾN HẸN</span>`;
             }
-
-            const now = new Date();
-
-            // Chuẩn bị dữ liệu Dropdown: Tất cả Workbay + Số lượng Job hiện có trong mỗi Workbay
-            const wbOptions = allWorkbays.map(wb => {
-                const cards = wb.jobCards || [];
-                const activeJobsInWb = cards.filter(job => 
-                    [1, 2, 3, 4, 5, 6, 7, 12].includes(job.status)
-                );
-                const count = activeJobsInWb.length;
-                return `<option value="${wb.id}">${wb.name} (${count} xe đang chờ)</option>`;
-            }).join('');
-
-            listContainer.innerHTML = pendingJobs.map(job => {
-                const customerName = job.customer 
-                ? `${job.customer.lastName} ${job.customer.firstName}` 
-                : 'Khách vãng lai';
-                const plate = job.vehicle ? job.vehicle.licensePlate : 'N/A';
-                const serviceSummary = job.services && job.services.length > 0
-                ? job.services.map(s => s.serviceName).join(', ')
-                : 'Chưa chọn dịch vụ';
-            // Tính toán thời gian dự kiến
-                const totalTime = job.totalEstimateMinute || 0;
-
-                // Logic highlight giờ hẹn (giữ nguyên từ bản trước)
-                let priorityClass = '';
-                let appointmentInfo = '';
-                if (job.appointmentId && job.startDate) {
-                    const appointmentDate = new Date(job.startDate);
-                    const diff = (appointmentDate - now) / (1000 * 60);
-                    if (diff <= 0) {
-                        priorityClass = 'priority-urgent';
-                        appointmentInfo = `<span class="badge-appt">ĐẾN GIỜ HẸN</span>`;
-                    } else if (diff <= 60) {
-                        priorityClass = 'priority-upcoming';
-                        appointmentInfo = `<span class="badge-appt">SẮP ĐẾN HẸN</span>`;
-                    }
-                }
-
-                return `
-                    <div class="job-item">
-                        <div class="job-info">
-                            <div class="job-row-top">
-                                <span class="job-id">#JC-${job.jobCardId}</span>
-                                <span class="job-time-est"><i class="far fa-clock"></i> ${totalTime} phút</span>
-                            </div>
-                            <div class="job-row-main">
-                                <span class="car-plate"><i class="fas fa-motorcycle"></i> ${plate}</span>
-                                <span class="customer-name"><i class="fas fa-user"></i> ${customerName}</span>
-                            </div>
-                            <div class="job-row-services">
-                                <i class="fas fa-tools"></i> <strong>Yêu cầu:</strong> ${serviceSummary}
-                            </div>
-                            ${job.note ? `<div class="job-note"><em>* Ghi chú: ${job.note}</em></div>` : ''}
-                        </div>
-                        <div class="assign-action">
-                            <select class="select-wb-dropdown" onchange="window.handleAssign(${job.jobCardId}, this.value)">
-                                <option value="">Điều phối vào khoang...</option>
-                                ${wbOptions}
-                            </select>
-                        </div>
-                    </div>
-                `;
-            }).join('');
         }
 
-        // Hàm render lưới Workbay
+        return `
+            <div class="job-item">
+                <div class="job-info">
+                    <div class="job-row-top">
+                        <span class="job-id">#JC-${job.jobCardId}</span>
+                        <span class="job-time-est"><i class="far fa-clock"></i> ${totalTime} phút</span>
+                    </div>
+                    <div class="job-row-main">
+                        <span class="car-plate"><i class="fas fa-motorcycle"></i> ${plate}</span>
+                        <span class="customer-name"><i class="fas fa-user"></i> ${customerName}</span>
+                    </div>
+                    <div class="job-row-services">
+                        <i class="fas fa-tools"></i> <strong>Yêu cầu:</strong> ${serviceSummary}
+                    </div>
+                    ${job.note ? `<div class="job-note"><em>* Ghi chú: ${job.note}</em></div>` : ''}
+                </div>
+                <div class="assign-action">
+                    <select class="select-wb-dropdown" onchange="window.handleAssign(${job.jobCardId}, this.value)">
+                        <option value="">Điều phối vào khoang...</option>
+                        ${wbOptions}
+                    </select>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Thêm phần Pagination
+    if (totalPages > 1) {
+        html += `
+            <div class="pagination-container" style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:20px; padding-top:15px; border-top:1px solid #e2e8f0;">
+                <button class="btn-pagination" onclick="window.changePendingPage(1)" ${currentPendingPage === 1 ? 'disabled' : ''} style="padding:8px 12px; border-radius:4px; border:1px solid #cbd5e1; background:#fff; cursor:pointer; font-weight:500;">
+                    <i class="fas fa-chevron-left"></i> Đầu
+                </button>
+                <button class="btn-pagination" onclick="window.changePendingPage(${currentPendingPage - 1})" ${currentPendingPage === 1 ? 'disabled' : ''} style="padding:8px 12px; border-radius:4px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                
+                <div style="display:flex; gap:5px; align-items:center;">
+                    ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
+                        <button class="btn-pagination" onclick="window.changePendingPage(${page})" style="padding:6px 12px; border-radius:4px; border:1px solid #cbd5e1; background:${currentPendingPage === page ? '#4f46e5' : '#fff'}; color:${currentPendingPage === page ? '#fff' : '#1e293b'}; cursor:pointer; font-weight:${currentPendingPage === page ? 'bold' : 'normal'};">
+                            ${page}
+                        </button>
+                    `).join('')}
+                </div>
+                
+                <button class="btn-pagination" onclick="window.changePendingPage(${currentPendingPage + 1})" ${currentPendingPage === totalPages ? 'disabled' : ''} style="padding:8px 12px; border-radius:4px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button class="btn-pagination" onclick="window.changePendingPage(${totalPages})" ${currentPendingPage === totalPages ? 'disabled' : ''} style="padding:8px 12px; border-radius:4px; border:1px solid #cbd5e1; background:#fff; cursor:pointer; font-weight:500;">
+                    Cuối <i class="fas fa-chevron-right"></i>
+                </button>
+                
+                <span style="margin-left:15px; color:#64748b; font-size:0.9rem;">
+                    Trang <strong>${currentPendingPage}</strong> / ${totalPages} (${pendingJobs.length} xe)
+                </span>
+            </div>
+        `;
+    }
+
+    listContainer.innerHTML = html;
+}
+
+// Hàm thay đổi trang
+window.changePendingPage = (newPage) => {
+    currentPendingPage = newPage;
+    // Lấy dữ liệu từ localStorage để re-render
+    const supervisorId = localStorage.getItem('employeeId');
+    if (supervisorId) {
+        Promise.all([
+            workbayApi.getJobsBySupervisor(supervisorId),
+            workbayApi.getAllWorkbays()
+        ]).then(([jobsRes, wbsRes]) => {
+            const jobs = Array.isArray(jobsRes) ? jobsRes : (jobsRes.data || []);
+            const workbays = Array.isArray(wbsRes) ? wbsRes : (wbsRes.data || []);
+            renderPendingJobs(jobs, workbays);
+        });
+    }
+};
+
+// Hàm render lưới Workbay
         function renderWorkbayGrid(workbays) {
             const grid = document.getElementById('workbay-grid');
             const statusTextMap = {
@@ -234,7 +291,7 @@ window.viewWbQueue = async (wbId) => {
     
     // Hiện modal và thông báo đang tải
     modal.style.display = "block";
-    tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center">Đang tải dữ liệu...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center">Đang tải dữ liệu...</td></tr>';
 
     try {
         const res = await workbayApi.getJobCardsByWorkBay(wbId);
@@ -246,7 +303,7 @@ window.viewWbQueue = async (wbId) => {
         modalTitle.innerHTML = `<i class="fas fa-warehouse"></i> Hàng đợi: ${wbData.name}`;
 
         if (jobCards.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center">Không có xe nào trong hàng đợi.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center">Không có xe nào trong hàng đợi.</td></tr>';
             return;
         }
 
@@ -269,6 +326,22 @@ window.viewWbQueue = async (wbId) => {
             const time = new Date(job.startDate).toLocaleTimeString('vi-VN', {
                 hour: '2-digit', minute: '2-digit'
             });
+
+            // Render nút hành động tùy theo status
+            let actionBtn = '';
+            if (job.status === 2) {
+                // Status 2: Hiện nút "Giao thợ"
+                actionBtn = `<button class="btn-edit-small" style="background:#4f46e5; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.8rem;" 
+                    onclick="window.openMechanicAssignModal(${job.jobCardId})">
+                    <i class="fas fa-user-check"></i> Giao thợ
+                </button>`;
+            } else if (job.status === 3) {
+                // Status 3: Hiện nút "Sửa xe này"
+                actionBtn = `<button class="btn-edit-small" style="background:#10b981; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.8rem;"
+                    onclick="window.startInspectionFromQueue(${job.jobCardId})">
+                    <i class="fas fa-tools"></i> Sửa xe này
+                </button>`;
+            } 
 
             return `
                 <tr>
@@ -297,12 +370,15 @@ window.viewWbQueue = async (wbId) => {
                         <span class="badge-status s-${job.status}">${statusTextMap[job.status] || 'N/A'}</span>
                         <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px"><i class="far fa-clock"></i> ${time}</div>
                     </td>
+                    <td style="text-align:center;">
+                        ${actionBtn}
+                    </td>
                 </tr>
             `;
         }).join('');
 
     } catch (error) {
-        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red">Lỗi: ${error.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Lỗi: ${error.message}</td></tr>`;
     }
 };
 
@@ -916,4 +992,153 @@ window.moveJob = async (currentIndex, direction, workBayId) => {
     } catch (error) {
         alert("Không thể thay đổi thứ tự: " + error.message);
     }
+};
+
+// Hàm mở modal giao thợ cho Queue
+window.openMechanicAssignModal = async (jobCardId) => {
+    const confirmAssign = confirm(`Bạn muốn giao lệnh #JC-${jobCardId} cho thợ nào?`);
+    if (!confirmAssign) return;
+
+    try {
+        const res = await workbayApi.getMechanics();
+        const mechanics = res.data || res;
+        const busyMechanics = getBusyMechanics(globalWorkbays);
+
+        // Tạo modal tạm thời để chọn mechanic
+        const modalHtml = `
+            <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:9999; background:#fff; padding:20px; border-radius:8px; box-shadow:0 10px 40px rgba(0,0,0,0.3); min-width:400px;">
+                <h3 style="margin-top:0; color:#1e293b;">Chọn thợ</h3>
+                <select id="temp-select-mechanic" class="form-group" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:15px;">
+                    <option value="">-- Chọn Mechanic --</option>
+                    ${mechanics.map(m => {
+                        const isBusy = busyMechanics.has(m.employeeId || m.id);
+                        const statusText = isBusy ? ' (⚠️ Đang bận)' : ' (✅ Rảnh)';
+                        const style = isBusy ? 'color: #be123c;' : 'color: #10b981;';
+                        return `<option value="${m.employeeId || m.id}" data-busy="${isBusy}" style="${style}">
+                            ${m.fullName}${statusText}
+                        </option>`;
+                    }).join('')}
+                </select>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="window.confirmMechanicAssignFromQueue(${jobCardId})" style="flex:1; background:#4f46e5; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">
+                        <i class="fas fa-check"></i> Xác nhận
+                    </button>
+                    <button onclick="window.closeTempModal()" style="flex:1; background:#94a3b8; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">
+                        <i class="fas fa-times"></i> Hủy
+                    </button>
+                </div>
+            </div>
+            <div id="temp-modal-backdrop" onclick="window.closeTempModal()" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9998;"></div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        window.tempModalId = 'temp-select-mechanic';
+    } catch (e) {
+        alert("Không lấy được danh sách thợ.");
+    }
+};
+
+window.confirmMechanicAssignFromQueue = async (jobCardId) => {
+    const selectElem = document.getElementById('temp-select-mechanic');
+    const mechId = selectElem.value;
+    
+    if (!mechId) {
+        alert("Vui lòng chọn thợ!");
+        return;
+    }
+
+    try {
+        await workbayApi.assignMechanic(jobCardId, mechId, "Supervisor phân công từ hàng đợi");
+        alert("Đã giao việc thành công!");
+        window.closeTempModal();
+        // Reload lại hàng đợi
+        const modal = document.getElementById('queue-modal');
+        if (modal && modal.style.display === 'block') {
+            const wbId = window.currentWbId;
+            if (wbId) await window.viewWbQueue(wbId);
+        }
+        await refreshData();
+    } catch (error) {
+        alert("Lỗi: " + error.message);
+    }
+};
+
+window.startInspectionFromQueue = async (jobCardId) => {
+    try {
+        // 1. Lấy thông tin mechanic
+        const detail = await workbayApi.getJobCardDetail(jobCardId);
+        
+        if (!detail.mechanics || detail.mechanics.length === 0) {
+            Swal.fire("Thông báo", "JobCard chưa có thợ được giao!", "warning");
+            return;
+        }
+
+        const mechanic = detail.mechanics[0];
+        const mechanicId = mechanic.mechanicId || mechanic.employeeId || mechanic.id;
+
+        if (!mechanicId) {
+            Swal.fire("Lỗi", "Không tìm thấy ID của thợ!", "error");
+            return;
+        }
+
+        // 2. Xác nhận
+        const result = await Swal.fire({
+            title: 'Xác nhận?',
+            text: `Bắt đầu kiểm tra xe với thợ ${mechanic.mechanicName || 'được phân công'}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Đồng ý',
+            cancelButtonText: 'Hủy'
+        });
+
+        if (!result.isConfirmed) return;
+
+        // 3. Gọi API startInspection
+        // Lưu ý: Nếu hàm startInspection trong workbayApi sử dụng axios hoặc fetch, 
+        // nó cần được xử lý để trả về data ngay cả khi status là 400.
+        const res = await workbayApi.startInspection(jobCardId, mechanicId);
+        
+        // KIỂM TRA LỖI Ở ĐÂY: 
+        // Backend của bạn trả về Success: true/false trong body của ApiResponse
+        if (res && res.success) {
+            await Swal.fire("Thành công", res.message || "Đã bắt đầu kiểm tra!", "success");
+            
+            // Đóng modal chi tiết nếu có
+            if (typeof window.closeTempModal === 'function') window.closeTempModal();
+            
+            // Reload lại hàng đợi (Queue)
+            const modal = document.getElementById('queue-modal');
+            if (modal && modal.style.display === 'block') {
+                const wbId = window.currentWbId;
+                if (wbId) await window.viewWbQueue(wbId);
+            }
+            
+            // Reload data trang chủ (Grid)
+            if (typeof refreshData === 'function') await refreshData();
+        } else {
+            // Trường hợp backend trả về success: false (BadRequest)
+            const errorMsg = res && res.message ? res.message : "Bắt đầu kiểm tra thất bại.";
+            Swal.fire("Không thể thực hiện", errorMsg, "error");
+        }
+
+    } catch (error) {
+        // Trường hợp lỗi kết nối hoặc lỗi code JS
+        console.error("Inspection Error:", error);
+        Swal.fire("Lỗi hệ thống", error.message || "Không thể kết nối đến máy chủ", "error");
+    }
+};
+
+window.closeTempModal = () => {
+    const backdrop = document.getElementById('temp-modal-backdrop');
+    const selectElem = document.getElementById('temp-select-mechanic');
+    
+    if (backdrop) backdrop.remove();
+    if (selectElem) selectElem.parentElement.remove();
+};
+
+// Lưu workbay id hiện tại khi mở queue modal
+const originalViewWbQueue = window.viewWbQueue;
+window.viewWbQueue = async (wbId) => {
+    window.currentWbId = wbId;
+    return originalViewWbQueue.call(this, wbId);
 };
