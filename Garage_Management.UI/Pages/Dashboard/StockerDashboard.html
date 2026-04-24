@@ -31,6 +31,9 @@
                     <li class="nav-item">
                         <button class="nav-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions">Lịch sử Giao dịch</button>
                     </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="stockcheck-tab" data-bs-toggle="tab" data-bs-target="#stockcheck">Kiểm kê kho</button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -99,14 +102,172 @@
                                         <th>Ghi chú</th>
                                     </tr>
                                 </thead>
-                                <tbody id="transactionTableBody"></tbody>                              
+                                <tbody id="transactionTableBody"></tbody>
                              </table>
                              <div class="card-footer bg-white d-flex justify-content-between align-items-center">
                                     <small class="text-muted">Hiển thị 10 phụ tùng mỗi trang</small>
                                     <div id="transPagination"></div>
                              </div>
                         </div>
-                    </div>                 
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="stockcheck">
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Phiên kiểm kê kho</h5>
+                        <button id="btnOpenStockCheck" class="btn btn-success btn-sm">
+                            <i class="bi bi-plus-circle"></i> Tạo phiếu kiểm kê mới
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-2">
+                            Đếm số lượng thực tế tại kho, so với tồn kho hệ thống rồi ghi nhận chênh lệch hàng loạt.
+                            Sau khi tạo phiếu, hệ thống sẽ tự điều chỉnh tồn kho và ghi lịch sử giao dịch theo mã phiếu.
+                        </p>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label small text-muted mb-1">Tra cứu phiếu theo mã (VD: KK-20260423111635)</label>
+                                <input type="text" id="scLookupCode" class="form-control form-control-sm" placeholder="KK-yyyyMMddHHmmss">
+                            </div>
+                            <div class="col-md-2">
+                                <button id="btnLookupStockCheck" class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="bi bi-search"></i> Tra cứu
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="stockCheckLookupResult" class="mb-3"></div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="bi bi-list-ul me-2"></i>Danh sách các phiên đã kiểm kê</h6>
+                        <button id="btnRefreshSessions" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <input type="text" id="scSessionsSearch" class="form-control form-control-sm" placeholder="Tìm theo mã phiếu...">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="date" id="scSessionsFrom" class="form-control form-control-sm" title="Từ ngày">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="date" id="scSessionsTo" class="form-control form-control-sm" title="Đến ngày">
+                            </div>
+                            <div class="col-md-2">
+                                <button id="btnApplySessionsFilter" class="btn btn-primary btn-sm w-100">
+                                    <i class="bi bi-funnel"></i> Lọc
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mã phiếu</th>
+                                        <th>Ngày kiểm</th>
+                                        <th class="text-center">Điều chỉnh</th>
+                                        <th class="text-center">Thiếu</th>
+                                        <th class="text-center">Thừa</th>
+                                        <th class="text-center">Chi nhánh</th>
+                                        <th class="text-center">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sessionsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                        <small class="text-muted" id="scSessionsMeta"></small>
+                        <div id="sessionsPagination"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="stockCheckCreateModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clipboard-check me-2"></i>Tạo phiếu kiểm kê kho</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Ngày kiểm kê</label>
+                            <input type="datetime-local" id="scCheckDate" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Phạm vi</label>
+                            <select id="scScope" class="form-select">
+                                <option value="FULL">Toàn bộ (FULL)</option>
+                                <option value="PARTIAL">Một phần (PARTIAL)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tìm phụ tùng</label>
+                            <input type="text" id="scSearch" class="form-control" placeholder="Tên hoặc mã PT...">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="scOnlyDiscrepancies">
+                                <label class="form-check-label small" for="scOnlyDiscrepancies">
+                                    Chỉ mục có chênh lệch
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info small mb-2 py-2">
+                        <i class="bi bi-info-circle"></i>
+                        Bỏ trống ô "Thực tế" nếu không kiểm mục đó. Chỉ mục có chênh lệch (≠ tồn hệ thống) mới được ghi nhận, và <strong>bắt buộc nhập lý do</strong>.
+                    </div>
+                    <div class="table-responsive" style="max-height: 50vh;">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Mã PT</th>
+                                    <th>Tên</th>
+                                    <th class="text-center">Hệ thống</th>
+                                    <th class="text-center">Thực tế</th>
+                                    <th class="text-center">Chênh lệch</th>
+                                    <th>Lý do</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stockCheckRows"></tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted" id="scSnapshotMeta"></small>
+                        <div id="scSnapshotPagination"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" id="btnSubmitStockCheck" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> Tạo phiếu kiểm kê
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="stockCheckResultModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Kết quả kiểm kê</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="stockCheckResultBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 </div>
             </div>
         </div>
@@ -228,6 +389,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="../../wwwroot/js/inventory/inventory-main.js"></script>
-    
+    <script type="module" src="../../wwwroot/js/stockcheck/stockcheck-main.js"></script>
+
 </body>
 </html>

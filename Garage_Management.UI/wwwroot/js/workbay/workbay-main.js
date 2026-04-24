@@ -6,6 +6,10 @@ let globalWorkbays = [];
 let currentPendingPage = 1;
 const ITEMS_PER_PAGE = 3;
 
+// State riêng cho modal supervisor nhập báo giá hộ mechanic (tránh đè biến module khác).
+let supervisorSelectedParts = [];
+let supervisorSelectedServices = [];
+
 async function refreshData() {
     const supervisorId = localStorage.getItem('employeeId');
     if (!supervisorId) return;
@@ -865,6 +869,18 @@ async function handleActionZone(job, actionZone, allWorkbays) {
     } else if (job.status === 7) {
         actionZone.style.display = "block";
         actionZone.innerHTML = renderRepairExecutionPanel(job);
+    } else if (job.status === 4) {
+        actionZone.style.display = "block";
+        actionZone.innerHTML = `
+            <div style="text-align:center; padding:12px; border:2px dashed #4f46e5; background:#f5f3ff; border-radius:8px;">
+                <p style="margin-bottom:10px; font-weight:bold; color:#4338ca;">
+                    <i class="fa-solid fa-clipboard-check"></i> XE ĐANG ĐƯỢC KIỂM TRA
+                </p>
+                <button class="btn-primary" onclick="window.openSupervisorEstimateModal(${job.jobCardId})"
+                        style="width:100%; padding:10px; font-size:1rem;">
+                    <i class="fa-solid fa-clipboard-list"></i> NHẬP BÁO GIÁ HỘ THỢ
+                </button>
+            </div>`;
     }
     else {
         actionZone.style.display = "none";
@@ -1141,4 +1157,288 @@ const originalViewWbQueue = window.viewWbQueue;
 window.viewWbQueue = async (wbId) => {
     window.currentWbId = wbId;
     return originalViewWbQueue.call(this, wbId);
+};
+
+// =====================================================================
+// SUPERVISOR nhập báo giá kiểm tra hộ mechanic (status 4 → submit → 6).
+// Tái dùng endpoints của module repairation (repairApi). Luồng:
+//  - Load inventories + services, render form có id trùng inspection template
+//    (select-service, select-sparepart, input-qty, estimate-note, *-body).
+//  - Submit: submitRepairEstimate → updateJobCardStatus(jobCardId, 6)
+//    (skip 5 vì chính supervisor đã duyệt khi nhập).
+//  - "Không tìm thấy lỗi": status 11 + updateMechanicStatus(mechanicId, 3).
+// =====================================================================
+
+function renderSupervisorServiceList() {
+    const body = document.getElementById('estimate-services-body');
+    if (!body) return;
+    body.innerHTML = supervisorSelectedServices.map((s, idx) => `
+        <tr>
+            <td>${s.name}</td>
+            <td style="text-align:right;">
+                <button class="btn-secondary" onclick="window.removeSupervisorService(${idx})">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderSupervisorPartList() {
+    const body = document.getElementById('estimate-parts-body');
+    if (!body) return;
+    body.innerHTML = supervisorSelectedParts.map((p, idx) => `
+        <tr>
+            <td style="font-weight:500;">${p.name}</td>
+            <td style="text-align:center;">
+                <span class="badge-task">${p.quantity}</span>
+            </td>
+            <td style="text-align:right;">
+                <button class="btn-secondary" onclick="window.removeSupervisorPart(${idx})">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+window.addSupervisorServiceRow = () => {
+    const select = $('#select-service');
+    const serviceId = parseInt(select.val());
+    if (!serviceId) return;
+    const serviceName = select.find('option:selected').text();
+    if (supervisorSelectedServices.find(s => s.serviceId === serviceId)) {
+        alert("Dịch vụ này đã có trong danh sách");
+        return;
+    }
+    supervisorSelectedServices.push({ serviceId, name: serviceName });
+    renderSupervisorServiceList();
+    select.val(null).trigger('change');
+};
+
+window.removeSupervisorService = (idx) => {
+    supervisorSelectedServices.splice(idx, 1);
+    renderSupervisorServiceList();
+};
+
+window.addSupervisorPartRow = () => {
+    const select = $('#select-sparepart');
+    const qtyInput = document.getElementById('input-qty');
+    const qty = parseInt(qtyInput.value);
+    const partId = parseInt(select.val());
+    if (!partId || qty <= 0) {
+        alert("Vui lòng chọn linh kiện và nhập số lượng hợp lệ!");
+        return;
+    }
+    const partName = select.find('option:selected').text();
+    const existing = supervisorSelectedParts.find(p => p.sparePartId === partId);
+    if (existing) {
+        existing.quantity += qty;
+    } else {
+        supervisorSelectedParts.push({ sparePartId: partId, quantity: qty, name: partName });
+    }
+    renderSupervisorPartList();
+    qtyInput.value = 1;
+    select.val(null).trigger('change');
+};
+
+window.removeSupervisorPart = (idx) => {
+    supervisorSelectedParts.splice(idx, 1);
+    renderSupervisorPartList();
+};
+
+window.openSupervisorEstimateModal = async (jobCardId) => {
+    supervisorSelectedParts = [];
+    supervisorSelectedServices = [];
+
+    const modal = document.getElementById('supervisor-estimate-modal');
+    const body = document.getElementById('supervisor-estimate-body');
+
+    body.innerHTML = `<div style="text-align:center; padding:30px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...</div>`;
+    modal.style.display = "block";
+
+    try {
+        const [inventories, services] = await Promise.all([
+            repairApi.getInventories(),
+            repairApi.getServices()
+        ]);
+
+        const inventoryOptions = (inventories || []).map(item =>
+            `<option value="${item.sparePartId}" data-price="${item.sellingPrice}">
+                [${item.partCode}] ${item.partName} - Tồn: ${item.quantity}
+            </option>`
+        ).join('');
+
+        body.innerHTML = `
+            <div style="padding:5px 10px;">
+                <label style="font-weight:bold; color:#475569; font-size:0.9rem;">DỊCH VỤ THỰC HIỆN</label>
+                <div style="display:flex; gap:10px; margin:8px 0 10px 0;">
+                    <select id="select-service" style="flex:1;"></select>
+                    <button class="btn-primary" onclick="window.addSupervisorServiceRow()" style="padding:0 15px;">+</button>
+                </div>
+                <table class="table-estimate" style="width:100%; margin-bottom:15px;">
+                    <thead>
+                        <tr><th style="text-align:left;">Tên dịch vụ</th><th></th></tr>
+                    </thead>
+                    <tbody id="estimate-services-body"></tbody>
+                </table>
+
+                <label style="font-weight:bold; color:#475569; font-size:0.9rem;">THÊM LINH KIỆN THAY THẾ (NẾU CÓ)</label>
+                <div style="display:flex; gap:5px; margin:8px 0 10px 0;">
+                    <select id="select-sparepart" style="flex:1;">${inventoryOptions}</select>
+                    <input type="number" id="input-qty" value="1" min="1" style="width:70px;">
+                    <button class="btn-primary" onclick="window.addSupervisorPartRow()" style="padding:0 15px;">+</button>
+                </div>
+                <table class="table-estimate" style="width:100%; margin-bottom:15px;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Linh kiện</th>
+                            <th>SL</th>
+                            <th style="text-align:right;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="estimate-parts-body"></tbody>
+                </table>
+
+                <label style="font-weight:bold; color:#475569; font-size:0.9rem;">GHI CHÚ KIỂM TRA CHI TIẾT</label>
+                <textarea id="estimate-note" placeholder="Ví dụ: Má phanh mòn cần thay..."
+                    style="width:100%; height:80px; margin-top:8px; padding:8px; box-sizing:border-box;"></textarea>
+
+                <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+                    <button class="btn-primary" style="width:100%; padding:12px;"
+                            onclick="window.supervisorSubmitEstimate(${jobCardId})">
+                        <i class="fa-solid fa-paper-plane"></i> Gửi báo giá (chuyển sang chờ khách duyệt)
+                    </button>
+                    <button style="width:100%; padding:10px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:500;"
+                            onclick="window.supervisorNoFaultFound(${jobCardId})">
+                        <i class="fa-solid fa-magnifying-glass-minus"></i> Không tìm thấy lỗi
+                    </button>
+                </div>
+            </div>
+        `;
+
+        $('#select-service').select2({
+            data: (services || []).map(s => ({ id: s.serviceId, text: s.serviceName })),
+            placeholder: "Chọn dịch vụ...",
+            width: '100%',
+            allowClear: true,
+            dropdownParent: $('#supervisor-estimate-modal')
+        }).val(null).trigger('change');
+
+        $('#select-sparepart').select2({
+            placeholder: "Chọn linh kiện...",
+            width: '100%',
+            allowClear: true,
+            dropdownParent: $('#supervisor-estimate-modal')
+        }).val(null).trigger('change');
+
+        renderSupervisorServiceList();
+        renderSupervisorPartList();
+    } catch (err) {
+        console.error("Lỗi load supervisor estimate modal:", err);
+        body.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Lỗi: ${err.message}</div>`;
+    }
+};
+
+window.closeSupervisorEstimateModal = () => {
+    const modal = document.getElementById('supervisor-estimate-modal');
+    if (modal) modal.style.display = "none";
+    supervisorSelectedParts = [];
+    supervisorSelectedServices = [];
+};
+
+window.supervisorSubmitEstimate = async (jobCardId) => {
+    const note = document.getElementById('estimate-note')?.value || "";
+
+    if (supervisorSelectedServices.length === 0) {
+        alert("Vui lòng chọn ít nhất một dịch vụ thực hiện.");
+        return;
+    }
+    if (!note.trim() || note.trim().length < 10) {
+        alert("Vui lòng nhập ghi chú kiểm tra chi tiết (tối thiểu 10 ký tự).");
+        return;
+    }
+    if (!confirm("Xác nhận gửi báo giá? Báo giá sẽ được chuyển thẳng sang trạng thái chờ khách duyệt.")) return;
+
+    const request = {
+        jobCardId: jobCardId,
+        note: note,
+        services: supervisorSelectedServices.map(s => ({
+            serviceId: s.serviceId,
+            quantity: 1
+        })),
+        spareParts: supervisorSelectedParts.map(p => ({
+            sparePartId: p.sparePartId,
+            quantity: p.quantity
+        }))
+    };
+
+    try {
+        Swal.fire({ title: 'Đang xử lý...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+
+        const okSubmit = await repairApi.submitRepairEstimate(request);
+        if (!okSubmit) throw new Error("Gửi báo giá thất bại.");
+
+        // Skip status 5 (chờ supervisor duyệt) — nhảy thẳng 6 (chờ khách duyệt) vì chính supervisor lập.
+        const okStatus = await workbayApi.updateJobCardStatus(jobCardId, 6);
+        if (!okStatus) throw new Error("Gửi báo giá thành công nhưng cập nhật trạng thái thất bại.");
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Đã gửi báo giá',
+            text: 'Đã chuyển sang chờ khách hàng duyệt.',
+            timer: 2000
+        });
+
+        window.closeSupervisorEstimateModal();
+        window.closeJobDetailModal();
+        await refreshData();
+    } catch (error) {
+        console.error("Supervisor submit estimate lỗi:", error);
+        Swal.fire('Lỗi', error.message || 'Có lỗi khi gửi báo giá.', 'error');
+    }
+};
+
+window.supervisorNoFaultFound = async (jobCardId) => {
+    const note = document.getElementById('estimate-note')?.value || "";
+    if (!note.trim() || note.trim().length < 5) {
+        alert("Vui lòng ghi chú ngắn gọn tình trạng xe vào ô Ghi chú.");
+        document.getElementById('estimate-note')?.focus();
+        return;
+    }
+    if (!confirm("Xác nhận kết thúc kiểm tra: Không tìm thấy lỗi phát sinh?")) return;
+
+    try {
+        Swal.fire({ title: 'Đang xử lý...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+
+        // Lấy mechanicId tường minh — endpoint updateMechanicStatus BE tra theo token, supervisor
+        // không khớp record nên phải truyền id (giống releaseAllMechanicsForSupervisor).
+        const detail = await workbayApi.getJobCardDetail(jobCardId);
+        const mechanic = (detail?.mechanics || [])[0];
+        const mechanicId = mechanic?.mechanicId ?? mechanic?.employeeId ?? mechanic?.id ?? null;
+
+        const [okJob, okMech] = await Promise.all([
+            workbayApi.updateJobCardStatus(jobCardId, 11),
+            mechanicId != null
+                ? repairApi.updateMechanicStatus(jobCardId, 3, mechanicId)
+                : Promise.resolve(false)
+        ]);
+
+        if (!okJob) throw new Error("Cập nhật trạng thái JobCard thất bại.");
+        if (!okMech) console.warn("[supervisorNoFaultFound] Không cập nhật được mechanic status (bỏ qua).");
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Đã hoàn tất',
+            text: 'Ghi nhận không có lỗi. Xe sẽ được chuyển về trạng thái chờ bàn giao.',
+            timer: 2000
+        });
+
+        window.closeSupervisorEstimateModal();
+        window.closeJobDetailModal();
+        await refreshData();
+    } catch (error) {
+        console.error("Supervisor no-fault-found lỗi:", error);
+        Swal.fire('Lỗi', error.message || 'Có lỗi khi xử lý.', 'error');
+    }
 };

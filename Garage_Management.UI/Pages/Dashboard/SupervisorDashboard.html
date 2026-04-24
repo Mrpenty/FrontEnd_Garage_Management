@@ -148,6 +148,15 @@
             <div id="jd-action-zone"></div> </div>
         </div>
     </div>
+    <div id="supervisor-estimate-modal" class="modal">
+        <div class="modal-content" style="width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-clipboard-list"></i> Nhập báo giá hộ Thợ</h2>
+                <span class="close-modal" onclick="window.closeSupervisorEstimateModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="supervisor-estimate-body"></div>
+        </div>
+    </div>
     <script type="module" src="../../wwwroot/js/workbay/workbay-main.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
