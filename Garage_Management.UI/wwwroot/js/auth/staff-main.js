@@ -45,6 +45,8 @@ authUi.elements.form.addEventListener('submit', async (e) => {
             localStorage.setItem('accessToken', userData.accessToken);
             localStorage.setItem('refreshToken', userData.refreshToken);
             localStorage.setItem('userRole', role);
+            localStorage.setItem('branchId', userData.branchId);
+            localStorage.setItem('branchName', userData.branchName);
             localStorage.setItem('employeeId', employeeId);
             localStorage.setItem('userInfo', JSON.stringify({
                 userId: userData.userId,

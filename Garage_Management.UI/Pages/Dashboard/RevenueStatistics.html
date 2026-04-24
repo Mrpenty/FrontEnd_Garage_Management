@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống kê Doanh thu - MGMS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">
+    <link rel="stylesheet" href="../../wwwroot/css/accountant-dashboard.css">
+</head>
+<body class="bg-light">
+    <!-- Accountant Navigation Header -->
+    <nav class="navbar navbar-dark accountant-navbar mb-4">
+        <div class="container-fluid">
+            <div class="accountant-nav-container">
+                <div class="accountant-brand">
+                    <i class="fas fa-calculator"></i>
+                    MGMS - Kế toán
+                </div>
+                
+                <ul class="accountant-nav-menu">
+                    <li class="accountant-nav-item">
+                        <a href="AccountantDashboard.html" class="accountant-nav-link" data-page="AccountantDashboard.html">
+                            <i class="fas fa-file-invoice"></i>
+                            Danh sách hóa đơn
+                        </a>
+                    </li>
+                    <li class="accountant-nav-item">
+                        <a href="AddSparePartPrice.html" class="accountant-nav-link" data-page="AddSparePartPrice.html">
+                            <i class="fas fa-tools"></i>
+                            Giá phụ tùng
+                        </a>
+                    </li>
+                    <li class="accountant-nav-item">
+                        <a href="AddServicePrice.html" class="accountant-nav-link" data-page="AddServicePrice.html">
+                            <i class="fas fa-wrench"></i>
+                            Giá dịch vụ
+                        </a>
+                    </li>
+                    <li class="accountant-nav-item">
+                        <a href="RevenueStatistics.html" class="accountant-nav-link active" data-page="RevenueStatistics.html">
+                            <i class="fas fa-chart-bar"></i>
+                            Thống kê doanh thu
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="accountant-user-section">
+                    <span id="user-display-name">Xin chào, Khách!</span>
+                    <button id="btn-logout-header" class="btn">
+                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container accountant-container">
+        <div class="form-section shadow-sm p-3 mb-4 bg-white rounded">
+            <h4><i class="fas fa-filter"></i> Bộ lọc thời gian</h4>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="startDate" class="form-label">Từ ngày</label>
+                    <input type="date" id="startDate" class="form-control">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="endDate" class="form-label">Đến ngày</label>
+                    <input type="date" id="endDate" class="form-control">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button id="btnFilter" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Xem thống kê
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary mb-3 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title">Tổng Doanh thu</h6>
+                        <h3 id="totalRevenue">0 VNĐ</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success mb-3 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title">Doanh thu Dịch vụ</h6>
+                        <h3 id="paidAmount">0 VNĐ</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info mb-3 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title">Doanh thu Phụ tùng</h6>
+                        <h3 id="unpaidAmount">0 VNĐ</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-secondary mb-3 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title">Tổng hóa đơn</h6>
+                        <h3 id="totalInvoices">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Cơ cấu Doanh thu</h5>
+                    </div>
+                    <div class="card-body" style="height: 350px;">
+                        <canvas id="revenueStructureChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-table"></i> Báo cáo theo Chi nhánh</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Chi nhánh</th>
+                                <th class="text-center">Số lượng hóa đơn</th>
+                                <th class="text-end">Doanh thu dịch vụ</th>
+                                <th class="text-end">Doanh thu phụ tùng</th>
+                                <th class="text-end">Tổng doanh thu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="revenueTableBody">
+                            <tr><td colspan="5" class="text-center text-muted">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <script type="module">
+        import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
+        import { RevenueStatisticsAPI } from '../../wwwroot/js/payment/revenue-statistics-api.js';
+        import { RevenueStatisticsUI } from '../../wwwroot/js/payment/revenue-statistics-ui.js';
+
+        authGuard.authorize('Accountant');
+
+        let mainChart = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setMonth(startDate.getMonth() - 1);
+            
+            document.getElementById('startDate').valueAsDate = startDate;
+            document.getElementById('endDate').valueAsDate = endDate;
+            
+            loadRevenueStatistics();
+        });
+
+        document.getElementById('btnFilter').addEventListener('click', loadRevenueStatistics);
+
+        async function loadRevenueStatistics() {
+            try {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+
+                const result = await RevenueStatisticsAPI.getRevenueStatistics(startDate, endDate);
+                
+                if (result.success) {
+                    // 1. Cập nhật các con số
+                    RevenueStatisticsUI.updateStatisticsCards(result.data);
+                    
+                    // 2. Cập nhật bảng (truyền data đã được process)
+                    RevenueStatisticsUI.renderRevenueTable(result.data);
+                    
+                    // 3. Cập nhật biểu đồ cơ cấu doanh thu
+                    updateRevenueChart(result.data);
+                } else {
+                    alert(result.message || 'Không tìm thấy dữ liệu cho khoảng thời gian này');
+                }
+            } catch (error) {
+                console.error('Lỗi UI:', error);
+            }
+        }
+
+        function updateRevenueChart(data) {
+            const ctx = document.getElementById('revenueStructureChart').getContext('2d');
+            
+            if (mainChart) {
+                mainChart.destroy();
+            }
+
+            mainChart = new Chart(ctx, {
+                type: 'bar', // Dùng biểu đồ cột cho rõ ràng
+                data: {
+                    labels: ['Dịch vụ', 'Phụ tùng'],
+                    datasets: [{
+                        label: 'Doanh thu (VNĐ)',
+                        data: [data.serviceTotal, data.sparePartTotal],
+                        backgroundColor: ['#28a745', '#17a2b8'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

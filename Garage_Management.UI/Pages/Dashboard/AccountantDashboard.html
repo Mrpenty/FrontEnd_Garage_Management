@@ -6,26 +6,62 @@
     <title>Accountant Dashboard - MGMS</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .qr-container { text-align: center; padding: 20px; border: 1px dashed #ccc; }
-        #qrCodeImage { max-width: 250px; margin-bottom: 15px; }
-        .status-paid { color: green; font-weight: bold; }
-        .status-unpaid { color: red; font-weight: bold; }
-    </style>
+    <link rel="stylesheet" href="../../wwwroot/css/accountant-dashboard.css">
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-dark bg-dark mb-4">
-        <div class="container">
-            <span class="navbar-brand">MGMS - Quản lý Thanh toán</span>
+    <!-- Accountant Navigation Header -->
+    <nav class="navbar navbar-dark accountant-navbar mb-4">
+        <div class="container-fluid">
+            <div class="accountant-nav-container">
+                <div class="accountant-brand">
+                    <i class="fas fa-calculator"></i>
+                    MGMS
+                </div>
+                <!-- cho ra giữa cho tôi -->
+                <ul class="accountant-nav-menu" style="padding: 100px auto;">
+                    <li class="accountant-nav-item">
+                        <a href="AccountantDashboard.html" class="accountant-nav-link active" data-page="AccountantDashboard.html">
+                            <i class="fas fa-file-invoice"></i>
+                            Danh sách hóa đơn
+                        </a>
+                    </li>
+                    <li class="accountant-nav-item">
+                        <a href="AddSparePartPrice.html" class="accountant-nav-link" data-page="AddSparePartPrice.html">
+                            <i class="fas fa-tools"></i>
+                            Giá phụ tùng
+                        </a>
+                    </li>
+                    <li class="accountant-nav-item">
+                        <a href="AddServicePrice.html" class="accountant-nav-link" data-page="AddServicePrice.html">
+                            <i class="fas fa-wrench"></i>
+                            Giá dịch vụ
+                        </a>
+                    </li>
+                    <li class="accountant-nav-item">
+                        <a href="RevenueStatistics.html" class="accountant-nav-link" data-page="RevenueStatistics.html">
+                            <i class="fas fa-chart-bar"></i>
+                            Thống kê doanh thu
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="accountant-user-section">
+                    <span id="user-display-name">Xin chào, Khách!</span>
+                    <button id="btn-logout-header" class="btn">
+                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                    </button>
+                </div>
+            </div>
         </div>
     </nav>
 
-    <div class="container">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">Danh sách Hóa đơn cần thanh toán</h5>
+    <!-- Main Content -->
+    <div class="container accountant-container">
+        <div class="accountant-card shadow-sm">
+            <div class="accountant-card-header">
+                <h5><i class="fas fa-list"></i> Danh sách Hóa đơn</h5>
             </div>
-            <div class="card-body">
+            <div class="accountant-card-body">
                 <table class="table table-hover">
                     <thead>
                         <tr>
@@ -33,64 +69,51 @@
                             <th>Khách hàng</th>
                             <th>Tổng tiền</th>
                             <th>Trạng thái</th>
-                            <th>Thao tác</th>
+                            <th>Thanh toán lúc</th>
                         </tr>
                     </thead>
                     <tbody id="invoiceTableBody">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Thanh toán Hóa đơn #<span id="modalInvoiceId"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="invoiceDetailContent" class="mb-4 p-3 bg-light rounded border shadow-sm small">
-                        Đang tải chi tiết...
-                    </div>
-                    <div id="paymentOptions">
-                        <p>Chọn phương thức thanh toán:</p>
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary btn-lg" onclick="handleCashPayment()">
-                                <i class="fa-solid fa-money-bill-1-wave"></i> Thanh toán tiền mặt
-                            </button>
-                            <button class="btn btn-outline-success btn-lg" onclick="handleBankTransfer()">
-                                <i class="fa-solid fa-qrcode"></i> Chuyển khoản VietQR
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="qrSection" class="qr-container d-none">
-                        <h6>Quét mã để thanh toán</h6>
-                        <img id="qrCodeImage" src="" alt="QR Code">
-                        <div class="text-start small">
-                            <p><strong>Ngân hàng:</strong> <span id="bankName"></span></p>
-                            <p><strong>Số TK:</strong> <span id="accNumber"></span></p>
-                            <p><strong>Chủ TK:</strong> <span id="accName"></span></p>
-                            <p><strong>Nội dung:</strong> <code id="transContent"></code></p>
-                        </div>
-                        <div class="alert alert-info py-2 mt-2 small">
-                            Hệ thống sẽ tự động cập nhật sau khi nhận được tiền.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module" src="../../wwwroot/js/payment/payment-main.js"></script>
     <script type="module">
-        import { openPaymentModal, handleCashPayment, handleBankTransfer } from '../../wwwroot/js/payment/payment-main.js';
-        window.openPaymentModal = openPaymentModal;
-        window.handleCashPayment = handleCashPayment;
-        window.handleBankTransfer = handleBankTransfer;
+        import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
+        import { PaymentAPI } from '../../wwwroot/js/payment/payment-api.js';
+        import { PaymentUI } from '../../wwwroot/js/payment/payment-ui.js';
+        import { initAccountantNavigation, updateHeaderUI } from '../../wwwroot/js/payment/accountant-nav.js';
+
+        // Kiểm tra quyền Accountant
+        authGuard.authorize('Accountant');
+
+        // Khởi tạo navigation
+        initAccountantNavigation();
+        updateHeaderUI();
+
+        // Load invoices khi trang được tải
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadInvoices();
+        });
+
+        async function loadInvoices() {
+            try {
+                const result = await PaymentAPI.getInvoices();
+                if (result.success) {
+                    PaymentUI.renderInvoices(result);
+                } else {
+                    console.error("API trả về lỗi:", result.message);
+                    document.getElementById('invoiceTableBody').innerHTML = 
+                        '<tr><td colspan="5" class="text-center text-danger">Lỗi khi tải dữ liệu</td></tr>';
+                }
+            } catch (error) {
+                console.error("Lỗi kết nối API:", error);
+                document.getElementById('invoiceTableBody').innerHTML = 
+                    '<tr><td colspan="5" class="text-center text-danger">Lỗi kết nối</td></tr>';
+            }
+        }
     </script>
 </body>
 </html>

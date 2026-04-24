@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Giá Phụ tùng - MGMS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../wwwroot/css/accountant-dashboard.css">
+</head>
+<body class="bg-light">
+    <!-- Accountant Navigation Header -->
+    <nav class="navbar navbar-dark accountant-navbar mb-4">
+        <div class="container-fluid">
+            <div class="accountant-nav-container">
+                <div class="accountant-brand">
+                    <i class="fas fa-calculator"></i>
+                    MGMS - Kế toán
+                </div>
+                
+                <ul class="accountant-nav-menu">
+                    <li class="accountant-nav-item">
+                        <a href="AccountantDashboard.html" class="accountant-nav-link" data-page="AccountantDashboard.html">
+                            <i class="fas fa-file-invoice"></i>
+                            Danh sách hóa đơn
+                        </a>
+                    </li>
+                    <li class="accountant-nav-item">
+                        <a href="AddSparePartPrice.html" class="accountant-nav-link active" data-page="AddSparePartPrice.html">
+                            <i class="fas fa-tools"></i>
+                            Giá phụ tùng
+                        </a>
+                    </li>
+                    <li class="accountant-nav-item">
+                        <a href="AddServicePrice.html" class="accountant-nav-link" data-page="AddServicePrice.html">
+                            <i class="fas fa-wrench"></i>
+                            Giá dịch vụ
+                        </a>
+                    </li>
+                    <li class="accountant-nav-item">
+                        <a href="RevenueStatistics.html" class="accountant-nav-link" data-page="RevenueStatistics.html">
+                            <i class="fas fa-chart-bar"></i>
+                            Thống kê doanh thu
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="accountant-user-section">
+                    <span id="user-display-name">Xin chào, Khách!</span>
+                    <button id="btn-logout-header" class="btn">
+                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container accountant-container">
+        <!-- Add/Edit Spare Part Price Form -->
+        <div class="form-section">
+            <h4><i class="fas fa-plus-circle"></i> Thêm/Chỉnh sửa Giá Phụ tùng</h4>
+            
+            <div id="alert-message"></div>
+            
+            <form id="sparepartPriceForm">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="sparePartSelect" class="form-label">Chọn Phụ tùng</label>
+                        <select id="sparePartSelect" class="form-control" required>
+                            <option value="">-- Chọn phụ tùng --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="sparePartPrice" class="form-label">Giá (VNĐ)</label>
+                        <input type="number" id="sparePartPrice" class="form-control" placeholder="0" min="0" step="1000" required>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="sparepartCost" class="form-label">Giá vốn (VNĐ)</label>
+                        <input type="number" id="sparepartCost" class="form-control" placeholder="0" min="0" step="1000" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="sparepartQuantity" class="form-label">Số lượng tồn kho</label>
+                        <input type="number" id="sparepartQuantity" class="form-control" placeholder="0" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="sparepartDescription" class="form-label">Mô tả</label>
+                    <textarea id="sparepartDescription" class="form-control" rows="3" placeholder="Nhập mô tả phụ tùng"></textarea>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary-custom">
+                        <i class="fas fa-save"></i> Lưu
+                    </button>
+                    <button type="reset" class="btn btn-secondary-custom">
+                        <i class="fas fa-redo"></i> Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Spare Parts Price List -->
+        <div class="accountant-card shadow-sm">
+            <div class="accountant-card-header">
+                <h5><i class="fas fa-list"></i> Danh sách Giá Phụ tùng</h5>
+            </div>
+            <div class="accountant-card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Mã PT</th>
+                                <th>Tên phụ tùng</th>
+                                <th>Giá bán</th>
+                                <th>Giá vốn</th>
+                                <th>Tồn kho</th>
+                                <th>Lợi nhuận</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sparepartTableBody">
+                            <tr><td colspan="7" class="text-center text-muted">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+             <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
+                            <div id="paginationInfo" class="text-muted small">Hiển thị 0 - 0 của 0 phụ tùng</div>
+                            <nav><ul class="pagination pagination-sm mb-0" id="paginationControls"></ul></nav>
+                        </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
+        import { initAccountantNavigation, updateHeaderUI } from '../../wwwroot/js/payment/accountant-nav.js';
+        import { SparePartPriceAPI } from '../../wwwroot/js/payment/sparepart-price-api.js';
+        import { SparePartPriceUI } from '../../wwwroot/js/payment/sparepart-price-ui.js';
+
+        // Kiểm tra quyền Accountant
+        authGuard.authorize('Accountant');
+
+        // Khởi tạo navigation
+        initAccountantNavigation();
+        updateHeaderUI();
+
+        let currentPage = 1;
+    let partsCache = []; // Lưu trữ dữ liệu gốc
+
+    function showAlert(message, type) {
+        const alertDiv = document.getElementById('alert-message');
+        alertDiv.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show">
+            <i class="fas fa-info-circle"></i> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+    }
+
+    async function loadSparePartsData(page = 1) {
+        try {
+            currentPage = page;
+            const result = await SparePartPriceAPI.getSpareParts(page, 10);
+            if (result.success) {
+                partsCache = result.data.pageData;
+                if (page === 1) SparePartPriceUI.populateSparePartSelect(result.data);
+                SparePartPriceUI.renderSparePartPrices(result.data);
+                SparePartPriceUI.renderPagination(result.data, loadSparePartsData);
+            }
+        } catch (error) {
+            showAlert('Lỗi tải dữ liệu', 'danger');
+        }
+    }
+
+    // Khi chọn phụ tùng: Tự điền giá bán hiện tại
+    document.getElementById('sparePartSelect').addEventListener('change', (e) => {
+        const part = partsCache.find(p => p.sparePartId == e.target.value);
+        if (part) {
+            document.getElementById('sparePartPrice').value = part.sellingPrice;
+        }
+    });
+
+    // Khi Lưu: Giữ nguyên các trường cũ, chỉ đổi giá
+    document.getElementById('sparepartPriceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const partId = document.getElementById('sparePartSelect').value;
+        const newPrice = parseFloat(document.getElementById('sparePartPrice').value);
+        
+        // Tìm dữ liệu gốc trong cache
+        const originalPart = partsCache.find(p => p.sparePartId == partId);
+        if (!originalPart) return showAlert('Vui lòng chọn phụ tùng', 'warning');
+
+        // Tạo object gửi đi: Giữ nguyên mọi thứ, chỉ thay sellingPrice
+        const updatePayload = {
+            partCode: originalPart.partCode,
+            partName: originalPart.partName,
+            unit: originalPart.unit,
+            categoryId: originalPart.categoryId,
+            sparePartBrandId: originalPart.sparePartBrandId,
+            minQuantity: originalPart.minQuantity,
+            lastPurchasePrice: originalPart.lastPurchasePrice,
+            sellingPrice: newPrice // Chỉ giá này thay đổi
+        };
+
+        const result = await SparePartPriceAPI.updateSparePartPrice(partId, updatePayload);
+        if (result.success) {
+            showAlert('Cập nhật giá bán thành công!', 'success');
+            loadSparePartsData(currentPage);
+        } else {
+            showAlert(result.message || 'Lỗi cập nhật', 'danger');
+        }
+    });
+
+    window.editSparePart = (id) => {
+        const select = document.getElementById('sparePartSelect');
+        select.value = id;
+        select.dispatchEvent(new Event('change'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    document.addEventListener('DOMContentLoaded', () => loadSparePartsData(1));
+    </script>
+</body>
+</html>
