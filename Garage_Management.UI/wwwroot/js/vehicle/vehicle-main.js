@@ -96,7 +96,7 @@ function renderTableHeader() {
 function renderTableBody(data) {
     const body = document.getElementById('vehicle-table-body');
     body.innerHTML = data.map(item => {
-        const id = item.brandId || item.modelId || item.vehicleTypeId;
+        const id = item.modelId || item.brandId || item.vehicleTypeId;
         const name = item.brandName || item.modelName || item.typeName;
         const statusClass = item.isActive ? 'status-active' : 'status-inactive';
 

@@ -76,6 +76,19 @@ export const jobcardApi = {
         // Vì BE trả về NoContent (204) nên không cần .json() nếu thành công
         return response.ok; 
     },
+
+    update: async (jobCardId, payload) => {
+        const response = await fetch(`${JOBCARD_URL}/${jobCardId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            return { success: false, message: errorData.message || "Lỗi Server" };
+        }
+        return { success: true };
+    }
 }
 
 export const serviceApi = {

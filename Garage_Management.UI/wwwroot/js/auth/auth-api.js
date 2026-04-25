@@ -7,6 +7,12 @@ const VEHICLE_URL = `${CONFIG.API_BASE_URL}/Vehiclies`;
 const MODEL_URL = `${CONFIG.API_BASE_URL}/VehicleModels`;
 const JOBCARD_URL = `${CONFIG.API_BASE_URL}/JobCards`;
 
+const getHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+});
+
+
 export const authApi = {
     //API gửi thông tin đăng nhập
     async login(loginRequest) {
@@ -107,10 +113,7 @@ export const customerApi = {
         try {
             const response = await fetch(`${USER_URL}/profile`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                headers: getHeaders()
             });
 
             if (response.status === 401) {
@@ -190,7 +193,7 @@ export const customerApi = {
 export const EstimateAPI = {
     // Lấy báo giá theo JobCardId
     getByJobCard: async (jcId) => {
-        const res = await fetch(`${CONFIG.API_BASE_URL}/RepairEstimates/job-cards/${jcId}`, { headers: { 'Content-Type': 'application/json' } });
+        const res = await fetch(`${CONFIG.API_BASE_URL}/RepairEstimates/job-cards/${jcId}`, { headers: getHeaders() });
         return await res.json();
     },
 

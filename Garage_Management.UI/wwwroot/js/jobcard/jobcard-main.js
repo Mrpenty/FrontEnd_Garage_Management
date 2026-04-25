@@ -278,19 +278,71 @@ async function handleEditJobCard(jobCardId) {
             form.onsubmit = async (e) => {
                 e.preventDefault();
                 
-                const updateData = {
-                    note: document.getElementById('editNote').value,
-                    supervisorId: parseInt(document.getElementById('editSupervisorId').value),
-                    endDate: data.endDate
-                };
+                // 4.1 VALIDATION - Kiểm tra note
+                const noteElement = document.getElementById('editNote');
+                const noteValue = noteElement.value.trim();
+                
+                // Kiểm tra note không được rỗng
+                if (!noteValue) {
+                    alert("⚠️ Vui lòng nhập ghi chú sửa chữa!");
+                    noteElement.focus();
+                    return;
+                }
+                
+                // Kiểm tra note không quá 500 ký tự
+                if (noteValue.length > 500) {
+                    alert("⚠️ Ghi chú không được vượt quá 500 ký tự! (Hiện tại: " + noteValue.length + " ký tự)");
+                    return;
+                }
+                
+                // Kiểm tra supervisor được chọn
+                const supervisorId = parseInt(document.getElementById('editSupervisorId').value);
+                if (!supervisorId || supervisorId <= 0) {
+                    alert("⚠️ Vui lòng chọn người phụ trách!");
+                    return;
+                }
+                
+                // 4.2 DISABLE BUTTON - Ngăn spam request
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerText;
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+                submitBtn.innerText = "⏳ Đang lưu...";
+                
+                try {
+                    const updateData = {
+                        note: noteValue,
+                        supervisorId: supervisorId,
+                        endDate: data.endDate
+                    };
 
-                const resUpdate = await jobcardApi.update(jobCardId, updateData);
-                if (resUpdate) {
-                    alert("Cập nhật thành công!");
-                    modalElement.classList.remove('show');
-                    modalElement.style.display = 'none';
-                    // Load lại danh sách (đảm bảo hàm này có tồn tại trong scope của bạn)
-                    if (typeof initJobCardModule === 'function') initJobCardModule();
+                    const resUpdate = await jobcardApi.update(jobCardId, updateData);
+                    
+                    if (resUpdate && resUpdate.success !== false) {
+                        alert("✅ Cập nhật JobCard thành công!");
+                        modalElement.classList.remove('show');
+                        modalElement.style.display = 'none';
+                        // Load lại danh sách
+                        if (typeof initJobCardModule === 'function') initJobCardModule();
+                    } else {
+                        // 4.3 ERROR HANDLING - Xử lý lỗi từ server
+                        const errorMsg = resUpdate?.message || "Cập nhật thất bại";
+                        alert("❌ Lỗi: " + errorMsg);
+                        console.error("Update failed:", resUpdate);
+                    }
+                } catch (error) {
+                    // 4.3 ERROR HANDLING - Xử lý lỗi network/exception
+                    console.error("Lỗi cập nhật JobCard:", error);
+                    const errorMessage = 
+                        error?.response?.data?.message ||
+                        error?.message ||
+                        "Có lỗi xảy ra khi kết nối máy chủ";
+                    alert("❌ Lỗi hệ thống: " + errorMessage);
+                } finally {
+                    // 4.4 RE-ENABLE BUTTON
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                    submitBtn.innerText = originalBtnText;
                 }
             };
         }
@@ -425,19 +477,27 @@ function initVehicleLogic(elements) {
 
         // 1. Kiểm tra chọn Hãng và Dòng xe
         if (!brandId || !modelId) {
-            return alert("Vui lòng chọn đầy đủ Hãng xe và Dòng xe!");
+            return alert("⚠️ Vui lòng chọn đầy đủ Hãng xe và Dòng xe!");
         }
 
         // 2. Kiểm tra biển số (VD: 30A-12345 hoặc 29-F1 123.45)
-        // Regex này chấp nhận các định dạng biển số phổ biến
         const plateRegex = /^[0-9]{2}[A-Z]{1,2}-[0-9]{3}\.[0-9]{2}$/;
         if (!plateRegex.test(licensePlate)) {
-            return alert("Biển số xe không hợp lệ! (VD: 30AB-123.45)");
+            return alert("⚠️ Biển số xe không hợp lệ! (VD: 30AB-123.45)");
         }
 
         // 3. Kiểm tra năm sản xuất
         if (isNaN(year) || year < 1980 || year > currentYear + 1) {
-            return alert(`Năm sản xuất phải từ 1980 đến ${currentYear + 1}`);
+            return alert(`⚠️ Năm sản xuất phải từ 1980 đến ${currentYear + 1}`);
+        }
+
+        // --- DISABLE SUBMIT BUTTON ---
+        const submitBtn = elements.createVehicleForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn?.innerText || "Lưu Xe";
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+            submitBtn.innerText = "⏳ Đang lưu...";
         }
 
         const payload = {
@@ -449,18 +509,36 @@ function initVehicleLogic(elements) {
             year: year
         };
 
-        const res = await vehicleApi.create(payload);
-        if (res.success) {
-            alert("Thêm xe thành công!");
-            elements.modalAddVehicle.style.display = 'none';
-            elements.createVehicleForm.reset();
-            
-            // Reload dropdown xe
-            const vRes = await vehicleApi.getByCustomer(payload.customerId);
-            jobcardUI.renderVehicleSelect(elements.selectVehicle, vRes.data.pageData || vRes.data);
-            elements.selectVehicle.value = res.data.vehicleId;
-        } else {
-        alert("Lỗi: " + (res.message || "Biển số xe này đã tồn tại trên hệ thống!"));
+        try {
+            const res = await vehicleApi.create(payload);
+            if (res.success) {
+                alert("✅ Thêm xe thành công!");
+                elements.modalAddVehicle.style.display = 'none';
+                elements.createVehicleForm.reset();
+                
+                // Reload dropdown xe
+                const vRes = await vehicleApi.getByCustomer(payload.customerId);
+                jobcardUI.renderVehicleSelect(elements.selectVehicle, vRes.data.pageData || vRes.data);
+                elements.selectVehicle.value = res.data.vehicleId;
+            } else {
+                const errorMsg = res?.message || "Biển số xe này có thể đã tồn tại trên hệ thống!";
+                alert("❌ Lỗi: " + errorMsg);
+                console.error("Add vehicle failed:", res);
+            }
+        } catch (error) {
+            console.error("Lỗi thêm xe:", error);
+            const message = 
+                error?.response?.data?.message ||
+                error?.message ||
+                "Có lỗi xảy ra khi kết nối máy chủ.";
+            alert("❌ Lỗi hệ thống: " + message);
+        } finally {
+            // --- RE-ENABLE SUBMIT BUTTON ---
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.innerText = originalBtnText;
+            }
         }
     });
 }
@@ -717,27 +795,49 @@ function initCustomerLogic(elements) {
 function initJobCardSubmit(elements) {
     elements.createJobCardForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (selectedServices.length === 0) return alert("Vui lòng chọn ít nhất 1 dịch vụ!");
+        
+        // --- VALIDATION BLOCK ---
+        if (selectedServices.length === 0) return alert("⚠️ Vui lòng chọn ít nhất 1 dịch vụ!");
+        
         const customerId = elements.selectedCustomerId.value;
         const vehicleId = elements.selectVehicle.value;
         const supervisorId = elements.selectSupervisor.value;
-        if (!customerId) return alert("Vui lòng chọn khách hàng!");
-        if (!vehicleId) return alert("Vui lòng chọn xe!");
-        if (!supervisorId) return alert("Vui lòng chỉ định Supervisor (Bắt buộc)!");
+        const noteValue = elements.jobCardNote.value.trim();
+        
+        if (!customerId) return alert("⚠️ Vui lòng chọn khách hàng!");
+        if (!vehicleId) return alert("⚠️ Vui lòng chọn xe!");
+        if (!supervisorId) return alert("⚠️ Vui lòng chỉ định Supervisor (Bắt buộc)!");
+        
+        // Validate note - không được rỗng và max 500 chars
+        if (!noteValue) {
+            return alert("⚠️ Vui lòng nhập ghi chú về tình trạng xe!");
+        }
+        if (noteValue.length > 500) {
+            return alert("⚠️ Ghi chú không được vượt quá 500 ký tự! (Hiện tại: " + noteValue.length + " ký tự)");
+        }
 
-        const customerIdNum = Number(elements.selectedCustomerId.value);
-        const vehicleIdNum = Number(elements.selectVehicle.value);
-        const supervisorIdNum = Number(elements.selectSupervisor.value);
+        const customerIdNum = Number(customerId);
+        const vehicleIdNum = Number(vehicleId);
+        const supervisorIdNum = Number(supervisorId);
         const appointmentIdNum = Number(currentAppointmentId);
 
-        if (!Number.isFinite(customerIdNum) || customerIdNum <= 0) return alert("CustomerId không hợp lệ!");
-        if (!Number.isFinite(vehicleIdNum) || vehicleIdNum <= 0) return alert("VehicleId không hợp lệ!");
-        if (!Number.isFinite(supervisorIdNum) || supervisorIdNum <= 0) return alert("SupervisorId không hợp lệ!");
+        if (!Number.isFinite(customerIdNum) || customerIdNum <= 0) return alert("❌ CustomerId không hợp lệ!");
+        if (!Number.isFinite(vehicleIdNum) || vehicleIdNum <= 0) return alert("❌ VehicleId không hợp lệ!");
+        if (!Number.isFinite(supervisorIdNum) || supervisorIdNum <= 0) return alert("❌ SupervisorId không hợp lệ!");
+
+        // --- DISABLE SUBMIT BUTTON ---
+        const submitBtn = elements.createJobCardForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn?.innerText || "Xác nhận tạo JobCard";
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+            submitBtn.innerText = "⏳ Đang xử lý...";
+        }
 
         const payloadJobCard = {
             CustomerId: customerIdNum,
             VehicleId: vehicleIdNum,
-            Note: elements.jobCardNote.value,
+            Note: noteValue,
             SupervisorId: supervisorIdNum
         };
 
@@ -770,7 +870,7 @@ function initJobCardSubmit(elements) {
                                 status: 3, // Chuyển sang trạng thái đã tiếp nhận (hoặc 3 tùy BE)
                                 updatedBy: 1, // Thay bằng ID user đang đăng nhập nếu có
                                 // Các trường dưới đây nên giữ nguyên từ object apt cũ hoặc truyền từ form
-                                description: elements.jobCardNote.value 
+                                description: noteValue
                             };
                             await Promise.all([
                                 appointmentApi.update(currentAppointmentId, updateAptPayload),
@@ -782,7 +882,7 @@ function initJobCardSubmit(elements) {
                             // Không alert lỗi này để tránh làm gián đoạn trải nghiệm vì JobCard đã tạo xong
                         }
                     }
-                    alert("Tạo JobCard và thêm dịch vụ thành công!");                 
+                    alert("✅ Tạo JobCard và thêm dịch vụ thành công!");                 
                     // --- Reset giao diện ---
                     elements.modalJobCard.style.display = 'none';
                     elements.createJobCardForm.reset();
@@ -794,18 +894,31 @@ function initJobCardSubmit(elements) {
                     renderServiceTable(elements); // Xóa bảng dịch vụ trên UI
                     loadJobCards(elements.jobCardBody); // Reload danh sách chính
                 } else {
-                    alert("JobCard đã tạo (ID: " + newJobCardId + ") nhưng có lỗi khi thêm dịch vụ.");
+                    alert("⚠️ JobCard đã tạo (ID: " + newJobCardId + ") nhưng có lỗi khi thêm dịch vụ.");
                 }
             } else {
-                alert("Lỗi từ hệ thống: " + (res.message || "Không nhận được ID từ máy chủ"));            }
+                // Error handling khi không tạo được JobCard
+                const errorMsg = res?.message || "Không nhận được ID từ máy chủ";
+                alert("❌ Lỗi: " + errorMsg);
+                console.error("Create jobcard failed:", res);
+            }
         } catch (error) {
             console.error("Lỗi Submit:", error);
 
+            // Improved error handling
             const message =
-                error.response?.data?.message ||
-                error.response?.data ||
+                error?.response?.data?.message ||
+                error?.response?.data ||
+                error?.message ||
                 "Đã xảy ra lỗi khi kết nối máy chủ.";
-            alert(message);
+            alert("❌ Lỗi hệ thống: " + message);
+        } finally {
+            // --- RE-ENABLE SUBMIT BUTTON ---
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.innerText = originalBtnText;
+            }
         }
     });
 }

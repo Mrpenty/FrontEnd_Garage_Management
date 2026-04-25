@@ -896,27 +896,77 @@ window.doAssignMechanic = async (jobCardId) => {
     const selectedOption = selectElem.options[selectElem.selectedIndex];
     const mechId = selectElem.value;
     
-    if(!mechId) {
-        alert("Vui lòng chọn thợ!");
+    if (!mechId) {
+        alert("⚠️ Vui lòng chọn thợ!");
         return;
     }
     
-    // Bạn có thể lấy tên thợ để confirm cho chắc
     const mechName = selectedOption.text.split(' (')[0];
     const isBusy = selectedOption.getAttribute('data-busy') === 'true';
 
     const confirmMsg = isBusy 
-        ? `Thợ ${mechName} đang bận công việc ở khoang khác, bạn chắc chắn muốn giao cho thợ này không?`
+        ? `⚠️ Thợ ${mechName} đang bận công việc ở khoang khác, bạn chắc chắn muốn giao cho thợ này không?`
         : `Xác nhận giao lệnh #JC-${jobCardId} cho thợ ${mechName}?`;
 
-    if(confirm(confirmMsg)) {
-        try {
-            await workbayApi.assignMechanic(jobCardId, mechId, "Supervisor phân công");
-            alert("Đã giao việc thành công!");
-            window.closeJobDetailModal();
-            await refreshData(); 
-        } catch (error) {
-            alert("Lỗi: " + error.message);
+    if (!confirm(confirmMsg)) return;
+
+    // --- DISABLE BUTTON & SELECT ---
+    const btn = document.querySelector(`#jd-action-zone button`);
+    const originalBtnText = btn?.innerText || "GIAO VIỆC";
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+    }
+    
+    if (selectElem) {
+        selectElem.disabled = true;
+        selectElem.style.opacity = '0.6';
+    }
+
+    try {
+        const res = await workbayApi.assignMechanic(jobCardId, mechId, "Supervisor phân công");
+        
+        // // Kiểm tra response.success từ API
+        // if (!res || res.success === false) {
+        //     const errorMsg = res?.message || "Giao việc thất bại";
+        //     throw new Error(errorMsg);
+        // }
+
+        Swal.fire({
+            icon: 'success',
+            title: '✅ Giao việc thành công',
+            text: `Lệnh #JC-${jobCardId} đã được giao cho thợ ${mechName}`,
+            timer: 2000
+        });
+
+        window.closeJobDetailModal();
+        await refreshData(); 
+    } catch (error) {
+        console.error("Lỗi giao việc:", error);
+        
+        const errorMessage = 
+            error?.response?.data?.message ||
+            error?.response?.data ||
+            error?.message ||
+            "Có lỗi khi giao việc. Vui lòng thử lại.";
+        
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Lỗi giao việc',
+            text: errorMessage
+        });
+    } finally {
+        // Re-enable button & select
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = originalBtnText;
+        }
+        if (selectElem) {
+            selectElem.disabled = false;
+            selectElem.style.opacity = '1';
         }
     }
 };
@@ -928,24 +978,53 @@ window.approveJob = async (jobCardId) => {
     if (!isConfirm) return;
 
     const btn = document.querySelector(`#jd-action-zone button`);
-    const originalBtnHtml = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ĐANG XỬ LÝ...`;
+    const originalBtnHtml = btn?.innerHTML || "PHÊ DUYỆT LỆNH SỬA CHỮA";
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ĐANG XỬ LÝ...`;
+    }
 
     try {
         const res = await workbayApi.updateJobCardStatus(jobCardId, 6);
-        if (res.success || res) {
-            alert("Phê duyệt thành công! Lệnh đã được chuyển sang trạng thái 'Chờ khách duyệt'.");
-            window.closeJobDetailModal();
-            await refreshData(); 
-        } else {
-            throw new Error(res.message || "Phê duyệt thất bại.");
+        
+        // Kiểm tra response.success từ API
+        if (!res || res.success === false) {
+            const errorMsg = res?.message || "Phê duyệt thất bại";
+            throw new Error(errorMsg);
         }
+
+        Swal.fire({
+            icon: 'success',
+            title: '✅ Phê duyệt thành công',
+            text: "Lệnh đã được chuyển sang trạng thái 'Chờ khách hàng duyệt'.",
+            timer: 2000
+        });
+
+        window.closeJobDetailModal();
+        await refreshData(); 
     } catch (error) {
-        alert("Lỗi khi phê duyệt: " + error.message);
-        // Khôi phục nút nếu lỗi
-        btn.disabled = false;
-        btn.innerHTML = originalBtnHtml;
+        console.error("Lỗi phê duyệt:", error);
+        
+        const errorMessage = 
+            error?.response?.data?.message ||
+            error?.response?.data ||
+            error?.message ||
+            "Có lỗi khi phê duyệt. Vui lòng thử lại.";
+        
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Lỗi phê duyệt',
+            text: errorMessage
+        });
+    } finally {
+        // Re-enable button
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = originalBtnHtml;
+        }
     }
 }
 
@@ -953,17 +1032,62 @@ window.approveJob = async (jobCardId) => {
 window.approveExtraJob = async (jobCardId) => {
     if (!confirm("Xác nhận duyệt các hạng mục PHÁT SINH và gửi thông báo cho khách hàng?")) return;
 
+    const btn = document.querySelector(`#jd-action-zone button[onclick*="approveExtraJob"]`);
+    const originalBtnHtml = btn?.innerHTML || "DUYỆT & GỬI BÁO GIÁ PHÁT SINH";
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ĐANG XỬ LÝ...`;
+    }
+
     try {
+        Swal.fire({ 
+            title: 'Đang xử lý...', 
+            didOpen: () => Swal.showLoading(), 
+            allowOutsideClick: false 
+        });
+
         // Giả sử quy trình vẫn là đẩy về 6 (Chờ khách duyệt) 
         // Nhưng Backend sẽ biết đây là duyệt cho phần phát sinh dựa vào status hiện tại là 12
-        const res = await workbayApi.updateJobCardStatus(jobCardId, 6); 
-        if (res) {
-            alert("Đã gửi báo giá phát sinh cho khách thành công!");
-            window.closeJobDetailModal();
-            await refreshData();
+        const res = await workbayApi.updateJobCardStatus(jobCardId, 6);
+        
+        // Kiểm tra response.success từ API
+        if (!res || res.success === false) {
+            const errorMsg = res?.message || "Duyệt phát sinh thất bại";
+            throw new Error(errorMsg);
         }
+
+        await Swal.fire({
+            icon: 'success',
+            title: '✅ Đã duyệt & gửi',
+            text: "Báo giá phát sinh đã được gửi cho khách hàng.",
+            timer: 2000
+        });
+
+        window.closeJobDetailModal();
+        await refreshData();
     } catch (error) {
-        alert("Lỗi: " + error.message);
+        console.error("Lỗi duyệt phát sinh:", error);
+        
+        const errorMessage = 
+            error?.response?.data?.message ||
+            error?.response?.data ||
+            error?.message ||
+            "Có lỗi khi duyệt phát sinh. Vui lòng thử lại.";
+        
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Lỗi duyệt',
+            text: errorMessage
+        });
+    } finally {
+        // Re-enable button
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = originalBtnHtml;
+        }
     }
 };
 
@@ -1059,23 +1183,80 @@ window.confirmMechanicAssignFromQueue = async (jobCardId) => {
     const mechId = selectElem.value;
     
     if (!mechId) {
-        alert("Vui lòng chọn thợ!");
+        alert("⚠️ Vui lòng chọn thợ!");
         return;
     }
 
+    // --- DISABLE BUTTON & SELECT ---
+    const confirmBtn = document.querySelector(`button:has-text("Xác nhận")`);
+    const btnConfirm = Array.from(document.querySelectorAll('button')).find(btn => 
+        btn.textContent.includes('Xác nhận') && btn.parentElement?.querySelector('#temp-select-mechanic')
+    ) || document.querySelector('button[onclick*="confirmMechanicAssignFromQueue"]');
+    
+    const originalBtnText = btnConfirm?.innerText || "Xác nhận";
+    
+    if (btnConfirm) {
+        btnConfirm.disabled = true;
+        btnConfirm.style.opacity = '0.6';
+        btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang giao...';
+    }
+    
+    if (selectElem) {
+        selectElem.disabled = true;
+        selectElem.style.opacity = '0.6';
+    }
+
     try {
-        await workbayApi.assignMechanic(jobCardId, mechId, "Supervisor phân công từ hàng đợi");
-        alert("Đã giao việc thành công!");
+        const res = await workbayApi.assignMechanic(jobCardId, mechId, "Supervisor phân công từ hàng đợi");
+        
+        // Kiểm tra response.success từ API
+        if (!res || res.success === false) {
+            const errorMsg = res?.message || "Giao việc thất bại";
+            throw new Error(errorMsg);
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: '✅ Giao việc thành công',
+            text: `Lệnh #JC-${jobCardId} đã được giao cho thợ.`,
+            timer: 1500
+        });
+
         window.closeTempModal();
+        
         // Reload lại hàng đợi
         const modal = document.getElementById('queue-modal');
         if (modal && modal.style.display === 'block') {
             const wbId = window.currentWbId;
             if (wbId) await window.viewWbQueue(wbId);
         }
+        
         await refreshData();
     } catch (error) {
-        alert("Lỗi: " + error.message);
+        console.error("Lỗi giao việc từ hàng đợi:", error);
+        
+        const errorMessage = 
+            error?.response?.data?.message ||
+            error?.response?.data ||
+            error?.message ||
+            "Có lỗi khi giao việc. Vui lòng thử lại.";
+        
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Lỗi giao việc',
+            text: errorMessage
+        });
+    } finally {
+        // Re-enable button & select
+        if (btnConfirm) {
+            btnConfirm.disabled = false;
+            btnConfirm.style.opacity = '1';
+            btnConfirm.innerHTML = originalBtnText;
+        }
+        if (selectElem) {
+            selectElem.disabled = false;
+            selectElem.style.opacity = '1';
+        }
     }
 };
 
@@ -1348,16 +1529,26 @@ window.closeSupervisorEstimateModal = () => {
 };
 
 window.supervisorSubmitEstimate = async (jobCardId) => {
-    const note = document.getElementById('estimate-note')?.value || "";
+    const noteElement = document.getElementById('estimate-note');
+    const note = noteElement?.value.trim() || "";
 
+    // --- VALIDATION BLOCK ---
     if (supervisorSelectedServices.length === 0) {
-        alert("Vui lòng chọn ít nhất một dịch vụ thực hiện.");
+        alert("⚠️ Vui lòng chọn ít nhất một dịch vụ thực hiện.");
         return;
     }
-    if (!note.trim() || note.trim().length < 10) {
-        alert("Vui lòng nhập ghi chú kiểm tra chi tiết (tối thiểu 10 ký tự).");
+    
+    if (!note || note.length < 10) {
+        alert("⚠️ Vui lòng nhập ghi chú kiểm tra chi tiết (tối thiểu 10 ký tự).");
+        noteElement?.focus();
         return;
     }
+    
+    if (note.length > 1000) {
+        alert("⚠️ Ghi chú không được vượt quá 1000 ký tự! (Hiện tại: " + note.length + " ký tự)");
+        return;
+    }
+    
     if (!confirm("Xác nhận gửi báo giá? Báo giá sẽ được chuyển thẳng sang trạng thái chờ khách duyệt.")) return;
 
     const request = {
@@ -1373,19 +1564,45 @@ window.supervisorSubmitEstimate = async (jobCardId) => {
         }))
     };
 
+    // --- DISABLE BUTTON ---
+    const btnSubmit = Array.from(document.querySelectorAll('button')).find(btn => 
+        btn.textContent.includes('Gửi báo giá') && btn.closest('#supervisor-estimate-modal')
+    );
+    const originalBtnText = btnSubmit?.innerText || "Gửi báo giá";
+    
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.style.opacity = '0.6';
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi...';
+    }
+
     try {
-        Swal.fire({ title: 'Đang xử lý...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+        Swal.fire({ 
+            title: 'Đang xử lý...', 
+            didOpen: () => Swal.showLoading(), 
+            allowOutsideClick: false 
+        });
 
-        const okSubmit = await repairApi.submitRepairEstimate(request);
-        if (!okSubmit) throw new Error("Gửi báo giá thất bại.");
+        // 1. GỬI BÁO GIÁ - Xử lý response từ API
+        const responseSubmit = await repairApi.submitRepairEstimate(request);
+        
+        // Kiểm tra response.success (BE trả về ApiResponse)
+        if (!responseSubmit || responseSubmit.success === false) {
+            const errorMsg = responseSubmit?.message || "Gửi báo giá thất bại";
+            throw new Error(errorMsg);
+        }
 
-        // Skip status 5 (chờ supervisor duyệt) — nhảy thẳng 6 (chờ khách duyệt) vì chính supervisor lập.
-        const okStatus = await workbayApi.updateJobCardStatus(jobCardId, 6);
-        if (!okStatus) throw new Error("Gửi báo giá thành công nhưng cập nhật trạng thái thất bại.");
+        // 2. CẬP NHẬT TRẠNG THÁI - Skip status 5, nhảy thẳng sang 6
+        const responseStatus = await workbayApi.updateJobCardStatus(jobCardId, 6);
+        if (!responseStatus || responseStatus.success === false) {
+            const errorMsg = responseStatus?.message || "Cập nhật trạng thái thất bại";
+            throw new Error("Gửi báo giá thành công nhưng " + errorMsg);
+        }
 
+        // 3. THÀNH CÔNG
         await Swal.fire({
             icon: 'success',
-            title: 'Đã gửi báo giá',
+            title: '✅ Đã gửi báo giá',
             text: 'Đã chuyển sang chờ khách hàng duyệt.',
             timer: 2000
         });
@@ -1393,52 +1610,144 @@ window.supervisorSubmitEstimate = async (jobCardId) => {
         window.closeSupervisorEstimateModal();
         window.closeJobDetailModal();
         await refreshData();
+
     } catch (error) {
         console.error("Supervisor submit estimate lỗi:", error);
-        Swal.fire('Lỗi', error.message || 'Có lỗi khi gửi báo giá.', 'error');
+        
+        // Xử lý lỗi chi tiết từ API hoặc network
+        const errorMessage = 
+            error?.response?.data?.message ||
+            error?.response?.data ||
+            error?.message ||
+            "Có lỗi khi gửi báo giá. Vui lòng thử lại.";
+        
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Lỗi gửi báo giá',
+            text: errorMessage,
+            didClose: () => {
+                // Re-enable button khi đóng modal lỗi
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.style.opacity = '1';
+                    btnSubmit.innerHTML = originalBtnText;
+                }
+            }
+        });
+    } finally {
+        // Đảm bảo button được re-enable trong mọi trường hợp
+        if (btnSubmit && !btnSubmit.disabled) {
+            btnSubmit.disabled = false;
+            btnSubmit.style.opacity = '1';
+            btnSubmit.innerHTML = originalBtnText;
+        }
     }
 };
 
 window.supervisorNoFaultFound = async (jobCardId) => {
-    const note = document.getElementById('estimate-note')?.value || "";
-    if (!note.trim() || note.trim().length < 5) {
-        alert("Vui lòng ghi chú ngắn gọn tình trạng xe vào ô Ghi chú.");
-        document.getElementById('estimate-note')?.focus();
+    const noteElement = document.getElementById('estimate-note');
+    const note = noteElement?.value.trim() || "";
+    
+    // --- VALIDATION BLOCK ---
+    if (!note || note.length < 5) {
+        alert("⚠️ Vui lòng ghi chú ngắn gọn tình trạng xe (tối thiểu 5 ký tự).");
+        noteElement?.focus();
         return;
     }
+    
+    if (note.length > 500) {
+        alert("⚠️ Ghi chú không được vượt quá 500 ký tự! (Hiện tại: " + note.length + " ký tự)");
+        return;
+    }
+    
     if (!confirm("Xác nhận kết thúc kiểm tra: Không tìm thấy lỗi phát sinh?")) return;
 
-    try {
-        Swal.fire({ title: 'Đang xử lý...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+    // --- DISABLE BUTTON ---
+    const btnNoFault = Array.from(document.querySelectorAll('button')).find(btn => 
+        btn.textContent.includes('Không tìm thấy lỗi') && btn.closest('#supervisor-estimate-modal')
+    );
+    const originalBtnText = btnNoFault?.innerText || "Không tìm thấy lỗi";
+    
+    if (btnNoFault) {
+        btnNoFault.disabled = true;
+        btnNoFault.style.opacity = '0.6';
+        btnNoFault.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+    }
 
-        // Lấy mechanicId tường minh — endpoint updateMechanicStatus BE tra theo token, supervisor
-        // không khớp record nên phải truyền id (giống releaseAllMechanicsForSupervisor).
+    try {
+        Swal.fire({ 
+            title: 'Đang xử lý...', 
+            didOpen: () => Swal.showLoading(), 
+            allowOutsideClick: false 
+        });
+
+        // 1. LẤY CHI TIẾT JOBCARD ĐỂ LẤYID MECHANIC
         const detail = await workbayApi.getJobCardDetail(jobCardId);
+        if (!detail) throw new Error("Không lấy được chi tiết JobCard.");
+        
         const mechanic = (detail?.mechanics || [])[0];
         const mechanicId = mechanic?.mechanicId ?? mechanic?.employeeId ?? mechanic?.id ?? null;
 
-        const [okJob, okMech] = await Promise.all([
+        // 2. CẬP NHẬT TRẠNG THÁI & MECHANIC STATUS SONG SONG
+        const [responseJob, responseMech] = await Promise.all([
             workbayApi.updateJobCardStatus(jobCardId, 11),
             mechanicId != null
                 ? repairApi.updateMechanicStatus(jobCardId, 3, mechanicId)
-                : Promise.resolve(false)
+                : Promise.resolve({ success: true })
         ]);
 
-        if (!okJob) throw new Error("Cập nhật trạng thái JobCard thất bại.");
-        if (!okMech) console.warn("[supervisorNoFaultFound] Không cập nhật được mechanic status (bỏ qua).");
+        // Kiểm tra response từ API
+        if (!responseJob || responseJob.success === false) {
+            const errorMsg = responseJob?.message || "Cập nhật trạng thái JobCard thất bại";
+            throw new Error(errorMsg);
+        }
 
+        if (mechanicId && (!responseMech || responseMech.success === false)) {
+            console.warn("[supervisorNoFaultFound] Cảnh báo: Cập nhật mechanic status thất bại", responseMech?.message);
+            // Không throw error vì JobCard đã cập nhật, mechanic status là phụ
+        }
+
+        // 3. THÀNH CÔNG
         await Swal.fire({
             icon: 'success',
-            title: 'Đã hoàn tất',
-            text: 'Ghi nhận không có lỗi. Xe sẽ được chuyển về trạng thái chờ bàn giao.',
+            title: '✅ Đã hoàn tất',
+            text: 'Ghi nhận không có lỗi phát sinh. Xe sẽ được chuyển về trạng thái chờ bàn giao.',
             timer: 2000
         });
 
         window.closeSupervisorEstimateModal();
         window.closeJobDetailModal();
         await refreshData();
+
     } catch (error) {
         console.error("Supervisor no-fault-found lỗi:", error);
-        Swal.fire('Lỗi', error.message || 'Có lỗi khi xử lý.', 'error');
+        
+        // Xử lý lỗi chi tiết từ API hoặc network
+        const errorMessage = 
+            error?.response?.data?.message ||
+            error?.response?.data ||
+            error?.message ||
+            "Có lỗi khi xử lý. Vui lòng thử lại.";
+        
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Lỗi xử lý',
+            text: errorMessage,
+            didClose: () => {
+                // Re-enable button khi đóng modal lỗi
+                if (btnNoFault) {
+                    btnNoFault.disabled = false;
+                    btnNoFault.style.opacity = '1';
+                    btnNoFault.innerHTML = originalBtnText;
+                }
+            }
+        });
+    } finally {
+        // Đảm bảo button được re-enable trong mọi trường hợp
+        if (btnNoFault && !btnNoFault.disabled) {
+            btnNoFault.disabled = false;
+            btnNoFault.style.opacity = '1';
+            btnNoFault.innerHTML = originalBtnText;
+        }
     }
 };
