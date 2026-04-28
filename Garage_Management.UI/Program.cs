@@ -1,29 +1,37 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+using Microsoft.Extensions.FileProviders;
 
-// Add services to the container.
-builder.Services.AddRazorPages(options =>
-{
-    // Map root "/" tới page Auth/Login (hoặc bất kỳ page nào bạn muốn làm default)
-    options.Conventions.AddPageRoute("/Auth/Login", "");  // ← Dòng này quan trọng
-    // Hoặc nếu có Homepage: options.Conventions.AddPageRoute("/Dashboard/Homepage", "");
-});
+var builder = WebApplication.CreateBuilder(args);
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+
+// Serve wwwroot ở 2 path:
+//  - /wwwroot/...  (giữ nguyên relative ../../wwwroot/... trong các file HTML hiện có)
+//  - /...          (fallback cho path chuẩn /css/..., /js/..., /lib/...)
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "wwwroot")),
+    RequestPath = "/wwwroot"
+});
 app.UseStaticFiles();
 
-app.UseRouting();
+// Serve folder Pages/ để các file .html truy cập được qua /Pages/...
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "Pages")),
+    RequestPath = "/Pages"
+});
 
-app.UseAuthorization();
-
-app.MapRazorPages();
+// Root "/" → redirect tới trang Login mặc định
+app.MapGet("/", () => Results.Redirect("/Pages/Auth/Login.html"));
 
 app.Run();

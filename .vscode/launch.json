@@ -8,7 +8,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
-            "url": "http://localhost:8080",
+            "url": "https://msmg-api-fpt-e8bwcse7cjh9bdh7.southeastasia-01.azurewebsites.net",
             "webRoot": "${workspaceFolder}"
         }
     ]

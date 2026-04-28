@@ -1,3 +1,6 @@
 {
-    "liveServer.settings.port": 5501
+    "liveServer.settings.port": 5501,
+    "appService.preDeployTask": "publish-release",
+    "appService.deploySubpath": "Garage_Management.UI\\bin\\Release\\net8.0\\publish",
+    "appService.defaultWebAppToDeploy": "/subscriptions/6f172089-aeca-4303-8cc5-1053c1b30c29/resourceGroups/rg-msmg-prod/providers/Microsoft.Web/sites/rg-msmg-prod"
 }

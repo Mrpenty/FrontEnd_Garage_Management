@@ -1,11 +1,16 @@
-const IS_PRODUCTION = false;  // Chuyển thành true khi deploy 
+// ⬇️ Đổi sang true khi deploy. URL Azure đặt ở AZURE_API_URL bên dưới.
+const IS_PRODUCTION = true;
+
+// ⬇️ THAY URL AZURE THẬT VÀO ĐÂY (KHÔNG có dấu '/' cuối, có '/api' cuối).
+// Ví dụ: 'https://garage-mgms.azurewebsites.net/api'
+const AZURE_API_URL = 'https://msmg-api-fpt-e8bwcse7cjh9bdh7.southeastasia-01.azurewebsites.net/api';
 
 const BASE_PATH = '../..';
 
 const CONFIG = {
-    API_BASE_URL: IS_PRODUCTION 
-        ? 'https://api.your-garage-system.com/api' //Thay thành URL khi deploy
-        : 'https://localhost:7004/api', //URL local
+    API_BASE_URL: IS_PRODUCTION
+        ? AZURE_API_URL
+        : 'https://msmg-api-fpt-e8bwcse7cjh9bdh7.southeastasia-01.azurewebsites.net/api', //URL local
     
     // Quản lý tập trung các đường dẫn trang
     PAGES: {

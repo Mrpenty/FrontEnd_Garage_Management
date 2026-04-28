@@ -281,13 +281,22 @@ const stockCheckMain = {
         if (!tbody) return;
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-3 text-muted"><i class="bi bi-hourglass-split"></i> Đang tải danh sách phiên...</td></tr>`;
 
+        // Chuyển ngày user chọn (yyyy-MM-dd, local) → UTC bounds đúng start/end of day local.
+        // Tránh bug: from === to gửi cùng UTC instant → range rỗng.
+        const fromIso = sessionsState.from
+            ? new Date(`${sessionsState.from}T00:00:00`).toISOString()
+            : '';
+        const toIso = sessionsState.to
+            ? new Date(`${sessionsState.to}T23:59:59.999`).toISOString()
+            : '';
+
         try {
             const res = await stockCheckAPI.getSessions({
                 page,
                 pageSize: sessionsState.pageSize,
                 search: sessionsState.keyword,
-                from: sessionsState.from ? new Date(sessionsState.from).toISOString() : '',
-                to: sessionsState.to ? new Date(sessionsState.to).toISOString() : ''
+                from: fromIso,
+                to: toIso
             });
             if (!res.success) throw new Error(res.message || 'Không lấy được danh sách');
             const paged = res.data || {};

@@ -1,3 +1,5 @@
+import CONFIG from '../config.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     updateHeaderUI();
 });
@@ -14,7 +16,7 @@ export function updateHeaderUI() {
     if (accessToken && userInfoStr) {
         // 1. Đã đăng nhập
         const userInfo = JSON.parse(userInfoStr);
-        
+
         if (authButtons) authButtons.style.display = 'none';
         if (authUser) authUser.style.display = 'flex';
         if (userDisplayName) userDisplayName.innerText = `Xin chào, ${userInfo.fullName || 'Khách'}!`;
@@ -29,7 +31,7 @@ export function updateHeaderUI() {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.clear(); // Xóa sạch token và info
-            window.location.href = '/FrontEnd_Garage_Management/Garage_Management.UI/Pages/Dashboard/Homepage.html';
+            window.location.href = CONFIG.PAGES.HOMEPAGE;
         });
     }
 }
