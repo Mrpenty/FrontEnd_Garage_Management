@@ -1,5 +1,6 @@
 import { vehicleApi, serviceApi, jobcardApi, customerApi, appointmentApi, EstimateAPI, PaymentAPI} from './jobcard-api.js';
 import { jobcardUI } from './jobcard-ui.js';
+import { ButtonStateManager, Toast, FormValidator, ModalHelper } from '../common/ui-helpers.js';
 
 // --- State Management (Dùng để lưu trữ tạm thời khi tạo JobCard) ---
 let selectedServices = [];
@@ -356,14 +357,13 @@ async function handleEditJobCard(jobCardId) {
 // Tách hàm ra cho sạch code
 async function handleOpenEstimateModal(jobCardId, btn) {
     try {
-        btn.style.pointerEvents = 'none';
-        btn.style.opacity = '0.5';
+        ButtonStateManager.setLoading(btn, "⏳ Đang tải...");
 
         const res = await EstimateAPI.getEstimateByJobCardId(jobCardId);
         const estimate = (res && res.success && res.data && res.data.length > 0) ? res.data[0] : null;
 
         if (!estimate) {
-            alert("Không tìm thấy dữ liệu báo giá!");
+            Toast.error("Không tìm thấy dữ liệu báo giá!");
             return;
         }
 
@@ -380,10 +380,9 @@ async function handleOpenEstimateModal(jobCardId, btn) {
             modalElement.style.display = 'block';
         }
     } catch (error) {
-        alert("Lỗi: " + error.message);
+        Toast.error(`Lỗi: ${error.message}`);
     } finally {
-        btn.style.pointerEvents = 'auto';
-        btn.style.opacity = '1';
+        ButtonStateManager.resetLoading(btn);
     }
 }
 
@@ -477,28 +476,26 @@ function initVehicleLogic(elements) {
 
         // 1. Kiểm tra chọn Hãng và Dòng xe
         if (!brandId || !modelId) {
-            return alert("⚠️ Vui lòng chọn đầy đủ Hãng xe và Dòng xe!");
+            Toast.warning("Vui lòng chọn đầy đủ Hãng xe và Dòng xe!");
+            return;
         }
 
         // 2. Kiểm tra biển số (VD: 30A-12345 hoặc 29-F1 123.45)
         const plateRegex = /^[0-9]{2}[A-Z]{1,2}-[0-9]{3}\.[0-9]{2}$/;
         if (!plateRegex.test(licensePlate)) {
-            return alert("⚠️ Biển số xe không hợp lệ! (VD: 30AB-123.45)");
+            Toast.warning("Biển số xe không hợp lệ! (VD: 30AB-123.45)");
+            return;
         }
 
         // 3. Kiểm tra năm sản xuất
         if (isNaN(year) || year < 1980 || year > currentYear + 1) {
-            return alert(`⚠️ Năm sản xuất phải từ 1980 đến ${currentYear + 1}`);
+            Toast.warning(`Năm sản xuất phải từ 1980 đến ${currentYear + 1}`);
+            return;
         }
 
         // --- DISABLE SUBMIT BUTTON ---
         const submitBtn = elements.createVehicleForm.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn?.innerText || "Lưu Xe";
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.6';
-            submitBtn.innerText = "⏳ Đang lưu...";
-        }
+        ButtonStateManager.setLoading(submitBtn, "⏳ Đang lưu xe...");
 
         const payload = {
             customerId: parseInt(elements.selectedCustomerId.value),
@@ -512,7 +509,7 @@ function initVehicleLogic(elements) {
         try {
             const res = await vehicleApi.create(payload);
             if (res.success) {
-                alert("✅ Thêm xe thành công!");
+                Toast.success("Xe đã được thêm thành công!");
                 elements.modalAddVehicle.style.display = 'none';
                 elements.createVehicleForm.reset();
                 
@@ -522,7 +519,7 @@ function initVehicleLogic(elements) {
                 elements.selectVehicle.value = res.data.vehicleId;
             } else {
                 const errorMsg = res?.message || "Biển số xe này có thể đã tồn tại trên hệ thống!";
-                alert("❌ Lỗi: " + errorMsg);
+                Toast.error(`Lỗi: ${errorMsg}`);
                 console.error("Add vehicle failed:", res);
             }
         } catch (error) {
@@ -531,14 +528,10 @@ function initVehicleLogic(elements) {
                 error?.response?.data?.message ||
                 error?.message ||
                 "Có lỗi xảy ra khi kết nối máy chủ.";
-            alert("❌ Lỗi hệ thống: " + message);
+            Toast.error(`Lỗi hệ thống: ${message}`);
         } finally {
             // --- RE-ENABLE SUBMIT BUTTON ---
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = '1';
-                submitBtn.innerText = originalBtnText;
-            }
+            ButtonStateManager.resetLoading(submitBtn);
         }
     });
 }
@@ -586,10 +579,13 @@ async function getBusyAppointmentIds() {
 function initAppointmentCheck(elements) {
     elements.btnCheckAppointment?.addEventListener('click', async () => {
         const phone = elements.checkPhoneInput.value.trim();
-        if (!phone) return alert("Vui lòng nhập số điện thoại!");
+        if (!phone) {
+            Toast.warning("Vui lòng nhập số điện thoại!");
+            return;
+        }
 
         try {
-            elements.appointmentResult.innerHTML = "<em>Đang tìm kiếm mã...</em>";
+            elements.appointmentResult.innerHTML = "<em>Đang tìm kiếm lịch hẹn...</em>";
             elements.appointmentResult.style.display = "block";
 
            // 1. Gọi API lấy danh sách theo SĐT
@@ -607,6 +603,7 @@ function initAppointmentCheck(elements) {
 
             if (!list || list.length === 0) {
                 elements.appointmentResult.innerHTML = `<div class="info-alert error">Không tìm thấy lịch hẹn.</div>`;
+                Toast.info("Không tìm thấy lịch hẹn cho số điện thoại này");
                 return;
             }
 
@@ -619,6 +616,7 @@ function initAppointmentCheck(elements) {
 
             if (list.length === 0) {
                 elements.appointmentResult.innerHTML = `<div class="info-alert warning">Không có lịch hẹn hợp lệ.</div>`;
+                Toast.warning("Không có lịch hẹn hợp lệ để chọn");
                 return;
             }
             
@@ -664,7 +662,8 @@ function initAppointmentCheck(elements) {
             //     applyAppointmentData(bestAppointment, elements);
             // }
         } catch (err) {
-            elements.appointmentResult.innerHTML = `<div class="info-alert error">Lỗi hệ thống khi tìm mã.</div>`;
+            elements.appointmentResult.innerHTML = `<div class="info-alert error">Lỗi hệ thống khi tìm lịch hẹn.</div>`;
+            Toast.error("Lỗi hệ thống khi tìm lịch hẹn");
         }
     });
 }
@@ -737,21 +736,29 @@ function initCustomerLogic(elements) {
         const fullName = document.getElementById('newCustomerName').value.trim();
         const phone = document.getElementById('newCustomerPhone').value.trim();
         const email = document.getElementById('newCustomerEmail').value.trim();
+        const address = document.getElementById('newCustomerAddress').value.trim();
         
         // 1. Kiểm tra họ tên (Phải có ít nhất 2 từ)
         if (fullName.split(' ').length < 2) {
-            return alert("Vui lòng nhập đầy đủ Họ và Tên (VD: Nguyễn Văn A)");
+            Toast.warning("Vui lòng nhập đầy đủ Họ và Tên (VD: Nguyễn Văn A)");
+            return;
         }
 
         // 2. Kiểm tra số điện thoại (Định dạng Việt Nam: 10 số, bắt đầu bằng 0)
-        const phoneRegex = /^(0[3|5|7|8|9])([0-9]{8})$/;
-        if (!phoneRegex.test(phone)) {
-            return alert("Số điện thoại không hợp lệ! (Phải có 10 số và bắt đầu bằng 03, 05, 07, 08 hoặc 09)");
+        if (!FormValidator.isValidPhone(phone)) {
+            Toast.warning("Số điện thoại không hợp lệ! (Phải có 10 số và bắt đầu bằng 03, 05, 07, 08 hoặc 09)");
+            return;
         }
 
         // 3. Kiểm tra Email (Nếu có nhập thì phải đúng định dạng)
-        if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-            return alert("Email không đúng định dạng!");
+        if (email && !FormValidator.isValidEmail(email)) {
+            Toast.warning("Email không đúng định dạng!");
+            return;
+        }
+        
+        if (!address) {
+            Toast.warning("Vui lòng nhập địa chỉ!");
+            return;
         }
         // --- KẾT THÚC VALIDATE ---
 
@@ -763,16 +770,15 @@ function initCustomerLogic(elements) {
             firstName, lastName,
             phoneNumber: phone,
             email: email || null,
-            address: document.getElementById('newCustomerAddress').value.trim() || null
+            address: address || null
         };
 
         try {
-            btnSubmit.disabled = true;
-            btnSubmit.innerText = "Đang lưu...";
+            ButtonStateManager.setLoading(btnSubmit, "⏳ Đang lưu khách hàng...");
 
             const res = await customerApi.createByReceptionist(customerData);
             if (res.success) {
-                alert("Thêm khách hàng thành công!");
+                Toast.success("Khách hàng đã được thêm thành công!");
                 elements.modalAddCustomer.style.display = 'none';
                 elements.searchCustomerInput.value = `${fullName} - ${phone}`;
                 elements.selectedCustomerId.value = res.data?.customerId || res.customerId;
@@ -780,14 +786,14 @@ function initCustomerLogic(elements) {
                 elements.selectVehicle.disabled = false;
                 elements.btnOpenAddVehicle.disabled = false;
             } else {
-                alert("Lỗi: " + (res.message || "Số điện thoại này có thể đã tồn tại!"));
+                Toast.error(res.message || "Số điện thoại này có thể đã tồn tại!");
             }
         } catch (err) {
             console.error(err);
-            alert("Lỗi kết nối server.");
+            const message = err?.response?.data?.message || "Lỗi kết nối server";
+            Toast.error(message);
         } finally {
-            btnSubmit.disabled = false;
-            btnSubmit.innerText = "Lưu Khách Hàng";
+            ButtonStateManager.resetLoading(btnSubmit);
         }
     });
 }
@@ -797,23 +803,37 @@ function initJobCardSubmit(elements) {
         e.preventDefault();
         
         // --- VALIDATION BLOCK ---
-        if (selectedServices.length === 0) return alert("⚠️ Vui lòng chọn ít nhất 1 dịch vụ!");
+        if (selectedServices.length === 0) {
+            Toast.warning("Vui lòng chọn ít nhất 1 dịch vụ!");
+            return;
+        }
         
         const customerId = elements.selectedCustomerId.value;
         const vehicleId = elements.selectVehicle.value;
         const supervisorId = elements.selectSupervisor.value;
         const noteValue = elements.jobCardNote.value.trim();
         
-        if (!customerId) return alert("⚠️ Vui lòng chọn khách hàng!");
-        if (!vehicleId) return alert("⚠️ Vui lòng chọn xe!");
-        if (!supervisorId) return alert("⚠️ Vui lòng chỉ định Supervisor (Bắt buộc)!");
+        if (!customerId) {
+            Toast.warning("Vui lòng chọn khách hàng!");
+            return;
+        }
+        if (!vehicleId) {
+            Toast.warning("Vui lòng chọn xe!");
+            return;
+        }
+        if (!supervisorId) {
+            Toast.warning("Vui lòng chỉ định Supervisor (Bắt buộc)!");
+            return;
+        }
         
         // Validate note - không được rỗng và max 500 chars
         if (!noteValue) {
-            return alert("⚠️ Vui lòng nhập ghi chú về tình trạng xe!");
+            Toast.warning("Vui lòng nhập ghi chú về tình trạng xe!");
+            return;
         }
         if (noteValue.length > 500) {
-            return alert("⚠️ Ghi chú không được vượt quá 500 ký tự! (Hiện tại: " + noteValue.length + " ký tự)");
+            Toast.warning(`Ghi chú không được vượt quá 500 ký tự! (Hiện tại: ${noteValue.length} ký tự)`);
+            return;
         }
 
         const customerIdNum = Number(customerId);
@@ -821,18 +841,22 @@ function initJobCardSubmit(elements) {
         const supervisorIdNum = Number(supervisorId);
         const appointmentIdNum = Number(currentAppointmentId);
 
-        if (!Number.isFinite(customerIdNum) || customerIdNum <= 0) return alert("❌ CustomerId không hợp lệ!");
-        if (!Number.isFinite(vehicleIdNum) || vehicleIdNum <= 0) return alert("❌ VehicleId không hợp lệ!");
-        if (!Number.isFinite(supervisorIdNum) || supervisorIdNum <= 0) return alert("❌ SupervisorId không hợp lệ!");
-
-        // --- DISABLE SUBMIT BUTTON ---
-        const submitBtn = elements.createJobCardForm.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn?.innerText || "Xác nhận tạo JobCard";
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.6';
-            submitBtn.innerText = "⏳ Đang xử lý...";
+        if (!Number.isFinite(customerIdNum) || customerIdNum <= 0) {
+            Toast.error("CustomerId không hợp lệ!");
+            return;
         }
+        if (!Number.isFinite(vehicleIdNum) || vehicleIdNum <= 0) {
+            Toast.error("VehicleId không hợp lệ!");
+            return;
+        }
+        if (!Number.isFinite(supervisorIdNum) || supervisorIdNum <= 0) {
+            Toast.error("SupervisorId không hợp lệ!");
+            return;
+        }
+
+        // --- DISABLE SUBMIT BUTTON & SHOW LOADING ---
+        const submitBtn = elements.createJobCardForm.querySelector('button[type="submit"]');
+        ButtonStateManager.setLoading(submitBtn, "⏳ Đang tạo JobCard...");
 
         const payloadJobCard = {
             CustomerId: customerIdNum,
@@ -849,8 +873,14 @@ function initJobCardSubmit(elements) {
         try {
             const res = await jobcardApi.create(payloadJobCard);
             if (res && res.jobCardId) {
-                console.log("Tạo JobCard vỏ thành công, ID:", res.jobCardId);
+                console.log("Tạo JobCard thành công, ID:", res.jobCardId);
                 const newJobCardId = res.jobCardId;
+                
+                // Update button text during service addition (with null check)
+                if (submitBtn) {
+                    submitBtn.innerText = "⏳ Đang thêm dịch vụ...";
+                }
+                
                 const servicePromises = selectedServices.map(srv => {
                     return jobcardApi.addService(newJobCardId, {
                         ServiceId: parseInt(srv.id),
@@ -867,9 +897,8 @@ function initJobCardSubmit(elements) {
                             const updateAptPayload = {
                                 customerId: customerIdNum,
                                 vehicleId: vehicleIdNum,
-                                status: 3, // Chuyển sang trạng thái đã tiếp nhận (hoặc 3 tùy BE)
-                                updatedBy: 1, // Thay bằng ID user đang đăng nhập nếu có
-                                // Các trường dưới đây nên giữ nguyên từ object apt cũ hoặc truyền từ form
+                                status: 3,
+                                updatedBy: 1,
                                 description: noteValue
                             };
                             await Promise.all([
@@ -879,10 +908,11 @@ function initJobCardSubmit(elements) {
                             console.log(`Đã chuyển trạng thái lịch hẹn ${currentAppointmentId} sang 3`);
                         } catch (statusErr) {
                             console.error("Lỗi cập nhật trạng thái lịch hẹn:", statusErr);
-                            // Không alert lỗi này để tránh làm gián đoạn trải nghiệm vì JobCard đã tạo xong
                         }
                     }
-                    alert("✅ Tạo JobCard và thêm dịch vụ thành công!");                 
+                    
+                    Toast.success("JobCard và dịch vụ đã được tạo thành công!");
+                    
                     // --- Reset giao diện ---
                     elements.modalJobCard.style.display = 'none';
                     elements.createJobCardForm.reset();
@@ -891,34 +921,28 @@ function initJobCardSubmit(elements) {
                     if (elements.sparePartsDisplay) {
                         elements.sparePartsDisplay.innerHTML = '<p class="text-muted small"><i>Chưa chọn lịch hẹn...</i></p>';
                     }
-                    renderServiceTable(elements); // Xóa bảng dịch vụ trên UI
-                    loadJobCards(elements.jobCardBody); // Reload danh sách chính
+                    renderServiceTable(elements);
+                    loadJobCards(elements.jobCardBody);
                 } else {
-                    alert("⚠️ JobCard đã tạo (ID: " + newJobCardId + ") nhưng có lỗi khi thêm dịch vụ.");
+                    Toast.error(`JobCard đã tạo (ID: ${newJobCardId}) nhưng có lỗi khi thêm dịch vụ.`);
                 }
             } else {
                 // Error handling khi không tạo được JobCard
                 const errorMsg = res?.message || "Không nhận được ID từ máy chủ";
-                alert("❌ Lỗi: " + errorMsg);
+                Toast.error(`Lỗi: ${errorMsg}`);
                 console.error("Create jobcard failed:", res);
             }
         } catch (error) {
             console.error("Lỗi Submit:", error);
-
-            // Improved error handling
             const message =
                 error?.response?.data?.message ||
                 error?.response?.data ||
                 error?.message ||
                 "Đã xảy ra lỗi khi kết nối máy chủ.";
-            alert("❌ Lỗi hệ thống: " + message);
+            Toast.error(`Lỗi hệ thống: ${message}`);
         } finally {
             // --- RE-ENABLE SUBMIT BUTTON ---
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = '1';
-                submitBtn.innerText = originalBtnText;
-            }
+            ButtonStateManager.resetLoading(submitBtn);
         }
     });
 }
@@ -1088,7 +1112,8 @@ async function handlePayment(jobCardId) {
         const targetInvoice = invoices.find(inv => inv.jobCardId == jobCardId);
 
         if (!targetInvoice) {
-            return alert("Không tìm thấy hóa đơn cho Phiếu sửa chữa này!");
+            Toast.error("Không tìm thấy hóa đơn cho Phiếu sửa chữa này!");
+            return;
         }
 
         const invoiceId = targetInvoice.invoiceId;
@@ -1107,9 +1132,11 @@ async function handlePayment(jobCardId) {
             modalElement.style.display = 'block';
         }
 
+        Toast.success("Dữ liệu thanh toán đã được tải");
+
     } catch (error) {
         console.error("Lỗi thanh toán:", error);
-        alert("Có lỗi xảy ra khi tải thông tin thanh toán.");
+        Toast.error("Có lỗi xảy ra khi tải thông tin thanh toán");
     }
 }
 
@@ -1124,10 +1151,17 @@ function resetJobCardForm(elements) {
     currentAppointmentId = null;
     if (typeof selectedSpareParts !== 'undefined') selectedSpareParts = [];
 
-    // 3. Reset các thư viện bên thứ 3 (Select2)
-    $(elements.selectVehicle).val(null).trigger('change').prop('disabled', true);
-    $(elements.selectService).val(null).trigger('change');
-    $(elements.selectSupervisor).val(null).trigger('change');
+    // 3. Reset các select elements (vanilla JS, không dùng jQuery)
+    if (elements.selectVehicle) {
+        elements.selectVehicle.value = null;
+        elements.selectVehicle.disabled = true;
+    }
+    if (elements.selectService) {
+        elements.selectService.value = null;
+    }
+    if (elements.selectSupervisor) {
+        elements.selectSupervisor.value = null;
+    }
 
     // 4. Reset giao diện các bảng và thông báo
     elements.appointmentResult.innerHTML = "";

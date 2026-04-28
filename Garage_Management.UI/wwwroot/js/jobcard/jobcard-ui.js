@@ -1,4 +1,5 @@
 import { vehicleApi, serviceApi, jobcardApi, customerApi, appointmentApi, EstimateAPI, PaymentAPI} from './jobcard-api.js';
+import { ButtonStateManager, Toast, FormValidator, ModalHelper } from '../common/ui-helpers.js';
 
 export const jobcardUI = {
     // Thêm vào trong export const jobcardUI = { ... }
@@ -904,59 +905,95 @@ export const jobcardUI = {
     },
 
     renderPaymentSelection: (container, invoice) => {
+        const fmt = (n) => Number(n).toLocaleString('vi-VN');
+
         container.innerHTML = `
-            <div class="payment-container text-center">
-                <h4>Thanh toán hóa đơn #${invoice.invoiceId}</h4>
-                <p>Số tiền cần thanh toán: <b style="color:red; font-size: 20px;">${invoice.grandTotal}đ</b></p>
-                <hr>
-                <div class="row">
-                    <div class="col-6">
-                        <button id="btnPayCash" class="btn btn-success w-100 p-3">
-                            <i class="fa-solid fa-money-bill-1-wave"></i><br>TIỀN MẶT
-                        </button>
+            <div class="payment-modal-body">
+                <div class="payment-summary-card">
+                    <div>
+                        <p class="payment-invoice-label">Hóa đơn #${invoice.invoiceId}</p>
+                        <p class="payment-invoice-amount">${fmt(invoice.grandTotal)} đ</p>
                     </div>
-                    <div class="col-6">
-                        <button id="btnPayBank" class="btn btn-primary w-100 p-3">
-                            <i class="fa-solid fa-qrcode"></i><br>CHUYỂN KHOẢN
-                        </button>
+                    <span class="payment-status-badge">Chờ thanh toán</span>
+                </div>
+
+                <p class="payment-section-label">Chọn phương thức</p>
+
+                <div class="payment-method-grid">
+                    <div class="payment-method-card active" id="optCash" data-method="cash">
+                        <i class="fa-solid fa-wallet"></i>
+                        <span>Tiền mặt</span>
+                    </div>
+                    <div class="payment-method-card" id="optBank" data-method="bank">
+                        <i class="fa-solid fa-qrcode"></i>
+                        <span>Chuyển khoản</span>
                     </div>
                 </div>
-                <div id="qrContainer" class="mt-3" style="display:none;">
-                    </div>
+
+                <div id="qrContainer" class="payment-qr-container" style="display:none;"></div>
+
+                <button id="btnConfirmPayment" class="payment-confirm-btn">
+                    <i class="fa-solid fa-check"></i> Xác nhận thanh toán tiền mặt
+                </button>
             </div>
         `;
 
-        // --- Xử lý Tiền mặt ---
-        container.querySelector('#btnPayCash').onclick = async () => {
-            if (!confirm("Xác nhận khách đã trả tiền mặt?")) return;
-            const res = await PaymentAPI.confirmCashPayment(invoice.invoiceId);
-            if (res.success) {
-                alert("Thanh toán tiền mặt thành công!");
-                location.reload(); // Hoặc gọi loadJobCards()
-            }
-        };
+        let currentMethod = 'cash';
 
-        // --- Xử lý Chuyển khoản ---
-        container.querySelector('#btnPayBank').onclick = async () => {
+        const optCash = container.querySelector('#optCash');
+        const optBank = container.querySelector('#optBank');
+        const qrContainer = container.querySelector('#qrContainer');
+        const confirmBtn = container.querySelector('#btnConfirmPayment');
+
+        function setMethod(method) {
+            currentMethod = method;
+            optCash.classList.toggle('active', method === 'cash');
+            optBank.classList.toggle('active', method === 'bank');
+
+            if (method === 'cash') {
+                qrContainer.style.display = 'none';
+                confirmBtn.innerHTML = '<i class="fa-solid fa-check"></i> Xác nhận thanh toán tiền mặt';
+            } else {
+                confirmBtn.innerHTML = '<i class="fa-solid fa-check"></i> Xác nhận đã nhận tiền';
+                loadQr();
+            }
+        }
+
+        async function loadQr() {
+            if (qrContainer.innerHTML && qrContainer.dataset.loaded) {
+                qrContainer.style.display = 'block';
+                return;
+            }
+            qrContainer.style.display = 'block';
+            qrContainer.innerHTML = `<p class="payment-qr-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải mã QR...</p>`;
+
             const res = await PaymentAPI.getBankTransferQr(invoice.invoiceId);
             if (res.success) {
                 const qr = res.data;
-                const qrHtml = `
-                    <div class="card card-body bg-light mt-2">
-                        <h5>Quét mã để chuyển khoản</h5>
-                        <img src="${qr.qrCodeUrl}" style="max-width:250px; margin: 0 auto;">
-                        <p class="mt-2 mb-0"><b>${qr.bankName}</b></p>
-                        <p class="mb-0">STK: <b>${qr.accountNumber}</b></p>
-                        <p class="mb-0">Chủ TK: <b>${qr.accountName}</b></p>
-                        <p>Nội dung: <b style="color:blue;">${qr.transferContent}</b></p>
-                        <button class="btn btn-outline-success btn-sm" onclick="location.reload()">XÁC NHẬN ĐÃ NHẬN TIỀN</button>
-                    </div>
+                qrContainer.innerHTML = `
+                    <img src="${qr.qrCodeUrl}" class="payment-qr-image" alt="QR chuyển khoản">
+                    <p class="payment-qr-bank"><b>${qr.bankName}</b> — ${qr.accountNumber}</p>
+                    <p class="payment-qr-name">${qr.accountName}</p>
+                    <p class="payment-qr-content">Nội dung: <span>${qr.transferContent}</span></p>
                 `;
-                const qrBox = container.querySelector('#qrContainer');
-                if (qrBox) {
-                    qrBox.innerHTML = qrHtml;
-                    qrBox.style.display = 'block';
+                qrContainer.dataset.loaded = '1';
+            }
+        }
+
+        optCash.onclick = () => setMethod('cash');
+        optBank.onclick = () => setMethod('bank');
+
+        confirmBtn.onclick = async () => {
+            if (currentMethod === 'cash') {
+                if (!confirm('Xác nhận khách đã trả tiền mặt?')) return;
+                const res = await PaymentAPI.confirmCashPayment(invoice.invoiceId);
+                if (res.success) {
+                    Toast.success('Thanh toán tiền mặt thành công!');
+                    location.reload();
                 }
+            } else {
+                if (!confirm('Xác nhận đã nhận đủ tiền chuyển khoản?')) return;
+                location.reload();
             }
         };
     }

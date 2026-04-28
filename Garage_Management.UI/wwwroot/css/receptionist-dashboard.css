@@ -880,6 +880,360 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
 
 .empty-state { color: #94a3b8; font-size: 12px; text-align: center; padding: 30px 0; }
 
+/* =========================================
+   LOADING SPINNERS & ANIMATIONS
+========================================= */
+
+/* Loading Spinner - Tròn xoay */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    backdrop-filter: blur(4px);
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--primary-red);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Mini Loading Indicator (cho buttons) */
+.loading-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: currentColor;
+    border-radius: 50%;
+    margin-left: 4px;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+/* Loading Bar (progress bar) */
+.loading-bar {
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-red), var(--primary-blue), var(--primary-red));
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 99998;
+}
+
+/* Skeleton Loading */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+    border-radius: 4px;
+}
+
+/* =========================================
+   BUTTON IMPROVEMENTS
+========================================= */
+
+/* Button Base Styles */
+button {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Disable State cho tất cả button */
+button:disabled,
+button.btn-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Primary Button Enhancement */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-green) 0%, #229954 100%);
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+    border: none;
+    color: var(--white);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+    background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(39, 174, 96, 0.3);
+}
+
+/* Secondary Button Enhancement */
+.btn-secondary {
+    background: linear-gradient(135deg, #607d8b 0%, #455a64 100%);
+    box-shadow: 0 4px 12px rgba(96, 125, 139, 0.2);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(96, 125, 139, 0.3);
+    background: linear-gradient(135deg, #455a64 0%, #37474f 100%);
+}
+
+/* Outline Button Enhancement */
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary-red);
+    color: var(--primary-red);
+    padding: 9px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.btn-outline:hover:not(:disabled) {
+    background: var(--primary-red);
+    color: white;
+    box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-outline:disabled {
+    border-color: #ddd;
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+/* Cancel Button Enhancement */
+.btn-cancel {
+    background: linear-gradient(135deg, #f1f1f1 0%, #e8e8e8 100%);
+    color: #333;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e8e8e8 0%, #dcdcdc 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+/* Action Buttons in Table */
+.btn-action {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-action::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.5s, height 0.5s;
+}
+
+.btn-action:active::before {
+    width: 60px;
+    height: 60px;
+}
+
+.btn-action.view {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1565c0;
+}
+
+.btn-action.view:hover {
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+    transform: scale(1.05);
+}
+
+.btn-action.print {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    color: #475569;
+}
+
+.btn-action.print:hover {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(71, 85, 105, 0.3);
+    transform: scale(1.05);
+}
+
+/* Logout Button */
+.btn-logout {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, transparent 0%, transparent 100%);
+    border: 2px solid var(--primary-red);
+    color: var(--primary-red);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+    background: var(--primary-red);
+    color: var(--white);
+    box-shadow: 0 6px 20px rgba(211, 47, 47, 0.3);
+    transform: translateY(-2px);
+}
+
+/* =========================================
+   ENHANCED TABLE & CARDS STYLING
+========================================= */
+
+/* Card Shadow Enhancement */
+.stats-card,
+.notice-card,
+.card,
+.job-card-section {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.stats-card:hover,
+.notice-card:hover,
+.card:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+/* Table Row Hover Effect */
+table tbody tr {
+    transition: all 0.2s ease;
+}
+
+table tbody tr:hover {
+    background-color: #f5f9ff;
+    box-shadow: inset 0 0 10px rgba(52, 152, 219, 0.05);
+}
+
+/* Status Badge Animation */
+.status-badge {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* =========================================
+   MODAL ENHANCEMENTS
+========================================= */
+
+/* Modal Entry Animation */
+.modal.show .modal-content {
+    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Form Input Focus Animation */
+.modal-body input:focus,
+.modal-body select:focus,
+.modal-body textarea:focus {
+    animation: pulse 0.5s ease-out;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+}
+
+/* Search Results Animation */
+.autocomplete-dropdown li {
+    animation: fadeInUp 0.2s ease-out;
+}
+
 /* Thêm vào file CSS của bạn */
 .pagination {
     display: flex;
@@ -920,4 +1274,359 @@ table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13.5px; }
     color: #6c757d;
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+/* =========================================
+   SUCCESS/ERROR NOTIFICATIONS
+========================================= */
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 99999;
+    max-width: 400px;
+}
+
+.toast {
+    background: white;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-left: 4px solid var(--primary-blue);
+}
+
+.toast.success {
+    border-left-color: var(--primary-green);
+}
+
+.toast.error {
+    border-left-color: var(--primary-red);
+}
+
+.toast.warning {
+    border-left-color: var(--primary-orange);
+}
+
+.toast-icon {
+    font-size: 20px;
+    min-width: 24px;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.toast-close {
+    cursor: pointer;
+    font-size: 18px;
+    color: #999;
+    transition: color 0.2s;
+}
+
+.toast-close:hover {
+    color: #333;
+}
+
+/* =========================================
+   FORM ENHANCEMENTS
+========================================= */
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    transition: all 0.2s ease;
+    border: 1px solid #ced4da;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+}
+
+.form-group.error input,
+.form-group.error select,
+.form-group.error textarea {
+    border-color: var(--primary-red);
+    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.15);
+}
+
+.form-error {
+    color: var(--primary-red);
+    font-size: 12px;
+    margin-top: 4px;
+    animation: fadeInUp 0.2s ease-out;
+}
+
+/* =========================================
+   RIPPLE EFFECT
+========================================= */
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+    animation: ripple-animation 0.6s ease-out;
+}
+
+@keyframes ripple-animation {
+    from {
+        width: 0;
+        height: 0;
+        opacity: 1;
+    }
+    to {
+        width: 300px;
+        height: 300px;
+        opacity: 0;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(400px);
+    }
+}
+
+/* =========================================
+   TABLE ROW ANIMATION ON LOAD
+========================================= */
+
+table tbody tr {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* =========================================
+   INPUT FIELD ENHANCEMENTS
+========================================= */
+
+input[type="text"],
+input[type="email"],
+input[type="number"],
+textarea,
+select {
+    transition: all 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+    transform: scale(1.01);
+}
+
+/* =========================================
+   DISABLED STATE VISUAL
+========================================= */
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+    background-color: #f5f5f5 !important;
+    color: #999 !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* =========================================
+   ACTIVE MENU INDICATOR
+========================================= */
+
+.sidebar-nav ul li {
+    position: relative;
+}
+
+.sidebar-nav ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary-red);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.sidebar-nav ul li.active::before {
+    transform: scaleY(1);
+}
+
+/* ===== PAYMENT MODAL ===== */
+.payment-modal-body {
+    padding: 4px 0;
+}
+
+.payment-summary-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+}
+
+.payment-invoice-label {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.payment-invoice-amount {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.payment-status-badge {
+    font-size: 11px;
+    padding: 4px 12px;
+    background: #fef9c3;
+    color: #854d0e;
+    border-radius: 999px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.payment-section-label {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 10px;
+}
+
+.payment-method-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.payment-method-card {
+    cursor: pointer;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: all 0.15s ease;
+    background: #fff;
+}
+
+.payment-method-card i {
+    font-size: 22px;
+    color: #94a3b8;
+    display: block;
+    margin-bottom: 8px;
+    transition: color 0.15s;
+}
+
+.payment-method-card span {
+    font-size: 13px;
+    font-weight: 500;
+    color: #94a3b8;
+    transition: color 0.15s;
+}
+
+.payment-method-card.active {
+    border-color: #185FA5;
+    background: #eff6ff;
+}
+
+.payment-method-card.active i,
+.payment-method-card.active span {
+    color: #185FA5;
+}
+
+.payment-method-card:hover:not(.active) {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.payment-qr-container {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.payment-qr-loading {
+    color: #94a3b8;
+    font-size: 13px;
+    margin: 8px 0;
+}
+
+.payment-qr-image {
+    max-width: 160px;
+    margin: 0 auto 12px;
+    display: block;
+    border-radius: 6px;
+}
+
+.payment-qr-bank {
+    margin: 0 0 3px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.payment-qr-name {
+    margin: 0 0 3px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.payment-qr-content {
+    margin: 0;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.payment-qr-content span {
+    color: #185FA5;
+    font-weight: 500;
+}
+
+.payment-confirm-btn {
+    width: 100%;
+    padding: 12px;
+    background: #185FA5;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.payment-confirm-btn:hover {
+    background: #0c447c;
+}
+
+.payment-confirm-btn i {
+    margin-right: 6px;
 }
