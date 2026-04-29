@@ -433,142 +433,164 @@ export const jobcardUI = {
     },
 
     renderEstimateView: (container, estimate) => {
-        // Kiểm tra xem đây có phải phiếu báo giá bổ sung hay không (dựa trên status 5 - OnHold/Phát sinh)
-        const isAdditionalEstimate = estimate.services.some(sv => sv.status === 5) || 
-                                     estimate.spareParts.some(sp => sp.status === 5);
-
+        const isAdditionalEstimate = estimate.services.some(sv => sv.status === 5) ||
+                                    estimate.spareParts.some(sp => sp.status === 5);
+    
+        const serviceRows = estimate.services.map(sv => {
+            const isNew = sv.status === 5;
+            return `
+            <tr class="${isNew ? 'is-new' : ''}">
+                <td><input type="checkbox" class="chk-service" data-id="${sv.serviceId}" data-price="${sv.totalAmount}" checked></td>
+                <td>
+                    ${sv.serviceName}
+                    ${isNew ? '<span class="tag-phatsanh">phát sinh</span>' : ''}
+                </td>
+                <td>${sv.totalAmount.toLocaleString('vi-VN')}đ</td>
+            </tr>`;
+        }).join('');
+    
+        const sparePartRows = estimate.spareParts.map(sp => {
+            const isNew = sp.status === 5;
+            return `
+            <tr class="${isNew ? 'is-new' : ''}">
+                <td><input type="checkbox" class="chk-sparepart" data-id="${sp.sparePartId}" data-price="${sp.totalAmount}" checked></td>
+                <td>
+                    ${sp.sparePartName} <span class="text-muted">(x${sp.quantity})</span>
+                    ${isNew ? '<span class="tag-phatsanh">mới</span>' : ''}
+                </td>
+                <td>${sp.totalAmount.toLocaleString('vi-VN')}đ</td>
+            </tr>`;
+        }).join('');
+ 
         container.innerHTML = `
-            <div class="estimate-approval-card" style="border: 2px solid ${isAdditionalEstimate ? '#fd7e14' : '#e0e0e0'}; border-radius: 8px; padding: 15px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <div class="estimate-approval-card ${isAdditionalEstimate ? 'is-additional' : ''}">
+    
+                <div class="ea-card-header">
                     <div>
-                        <h4 style="margin: 0; color: ${isAdditionalEstimate ? '#fd7e14' : '#d32f2f'};">
-                            ${isAdditionalEstimate ? '⚠️ BÁO GIÁ BỔ SUNG' : '📋 BÁO GIÁ CHI TIẾT'} #${estimate.repairEstimateId}
-                        </h4>
-                        ${isAdditionalEstimate ? '<small style="color: #fd7e14; font-weight: bold;">(Phát hiện lỗi mới trong quá trình sửa chữa)</small>' : ''}
+                        <span class="ea-badge ${isAdditionalEstimate ? 'addl' : 'normal'}">
+                            ${isAdditionalEstimate ? '⚠ Báo giá bổ sung' : '📋 Báo giá chi tiết'} #${estimate.repairEstimateId}
+                        </span>
+                        <p class="ea-card-subtitle ${isAdditionalEstimate ? 'addl' : ''}">
+                            ${isAdditionalEstimate ? 'Phát hiện lỗi mới trong quá trình sửa chữa' : 'Nhân viên thao tác duyệt hộ khách hàng'}
+                        </p>
                     </div>
-                    <span style="font-size: 12px; color: #666;">Ngày tạo: ${new Date(estimate.createdAt).toLocaleDateString('vi-VN')}</span>
+                    <span class="ea-card-date">${new Date(estimate.createdAt).toLocaleDateString('vi-VN')}</span>
                 </div>
-                
-                <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
-                    <i class="fas fa-info-circle"></i> Nhân viên đang thao tác duyệt hộ khách hàng:
-                </p>
-                
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 15px;">
+    
+                <div class="ea-notice ${isAdditionalEstimate ? 'addl' : ''}">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2"/>
+                        <path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                    </svg>
+                    Vui lòng chọn hạng mục khách đồng ý thực hiện
+                </div>
+    
+                <table class="ea-table">
                     <thead>
-                        <tr style="background: #f8f9fa; text-align: left;">
-                            <th style="padding: 10px; border: 1px solid #eee; width: 40px; text-align: center;">Duyệt</th>
-                            <th style="padding: 10px; border: 1px solid #eee;">Nội dung hạng mục</th>
-                            <th style="padding: 10px; border: 1px solid #eee; text-align: right;">Đơn giá</th>
+                        <tr>
+                            <th></th>
+                            <th>Nội dung hạng mục</th>
+                            <th style="text-align:right;">Đơn giá</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${estimate.services.map(sv => {
-                            const isNew = sv.status === 5;
-                            return `
-                            <tr style="${isNew ? 'background: #fff9f4;' : ''}">
-                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">
-                                    <input type="checkbox" checked class="chk-service" data-id="${sv.serviceId}" data-price="${sv.totalAmount}">
-                                </td>
-                                <td style="padding: 10px; border: 1px solid #eee;">
-                                    ${sv.serviceName} 
-                                    ${isNew ? '<span style="background: #fd7e14; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">PHÁT SINH</span>' : ''}
-                                </td>
-                                <td style="padding: 10px; border: 1px solid #eee; text-align: right;">${sv.totalAmount.toLocaleString()}đ</td>
-                            </tr>`;
-                        }).join('')}
-
-                        ${estimate.spareParts.map(sp => {
-                            const isNew = sp.status === 5;
-                            return `
-                            <tr style="${isNew ? 'background: #fff9f4;' : ''}">
-                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">
-                                    <input type="checkbox" checked class="chk-sparepart" data-id="${sp.sparePartId}" data-price="${sp.totalAmount}">
-                                </td>
-                                <td style="padding: 10px; border: 1px solid #eee;">
-                                    ${sp.sparePartName} (x${sp.quantity})
-                                    ${isNew ? '<span style="background: #fd7e14; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">MỚI</span>' : ''}
-                                </td>
-                                <td style="padding: 10px; border: 1px solid #eee; text-align: right;">${sp.totalAmount.toLocaleString()}đ</td>
-                            </tr>`;
-                        }).join('')}
+                        ${serviceRows}
+                        ${sparePartRows}
                     </tbody>
                 </table>
-                
-                <div style="background: #fdfdfd; border: 1px dashed #ddd; padding: 15px; border-radius: 4px; margin-bottom: 15px; text-align: right;">
-                    <span style="color: #666;">Tổng chi phí duyệt thêm:</span>
-                    <strong id="live-total" style="font-size: 22px; color: ${isAdditionalEstimate ? '#fd7e14' : '#d32f2f'}; margin-left: 10px;">
-                        ${estimate.grandTotal.toLocaleString()}đ
+    
+                <div class="ea-total-footer">
+                    <span class="ea-total-label">
+                        ${isAdditionalEstimate ? 'Tổng chi phí duyệt thêm' : 'Tổng chi phí duyệt'}
+                    </span>
+                    <strong id="live-total" class="ea-total-value ${isAdditionalEstimate ? 'addl' : ''}">
+                        ${estimate.grandTotal.toLocaleString('vi-VN')}đ
                     </strong>
                 </div>
-
-                <div style="display: flex; gap: 10px;">
-                    <button id="btnConfirmEstimate" class="btn-submit" style="flex: 2; background: #28a745; border: none; padding: 14px; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.3s;">
-                        <i class="fas fa-check-circle"></i> ${isAdditionalEstimate ? 'DUYỆT LÀM THÊM (HỘ KHÁCH)' : 'XÁC NHẬN SỬA CHỮA (HỘ KHÁCH)'}
+    
+                <div class="ea-actions">
+                    <button id="btnConfirmEstimate" class="ea-btn-confirm ${isAdditionalEstimate ? 'addl' : ''}">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                            <path d="M3 8l3.5 3.5L13 4.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        ${isAdditionalEstimate ? 'Duyệt làm thêm (hộ khách)' : 'Xác nhận sửa chữa (hộ khách)'}
                     </button>
-                    <button id="btnRejectAll" style="flex: 1; background: #f8f9fa; border: 1px solid #ddd; padding: 14px; border-radius: 6px; color: #666; cursor: pointer; font-weight: bold;">
-                        TỪ CHỐI TẤT CẢ
-                    </button>
+                    <button id="btnRejectAll" class="ea-btn-reject">Từ chối tất cả</button>
                 </div>
+    
             </div>
         `;
-
-        // --- LOGIC TÍNH TIỀN REALTIME ---
+    
+        // --- TÍNH TIỀN REALTIME ---
         const updateRealtimeTotal = () => {
             let total = 0;
             container.querySelectorAll('input[type="checkbox"]:checked').forEach(chk => {
-                total += parseInt(chk.dataset.price);
+                total += parseInt(chk.dataset.price) || 0;
             });
-            const liveTotalEl = document.getElementById('live-total');
-            if (liveTotalEl) liveTotalEl.innerText = total.toLocaleString() + 'đ';
+            const el = document.getElementById('live-total');
+            if (el) el.innerText = total.toLocaleString('vi-VN') + 'đ';
         };
-
         container.querySelectorAll('input[type="checkbox"]').forEach(chk => {
             chk.onchange = updateRealtimeTotal;
         });
-
-        // --- XỬ LÝ SỰ KIỆN NÚT BẤM ---
+    
+        // --- NÚT BẤM ---
         const btnConfirm = container.querySelector('#btnConfirmEstimate');
-        const btnReject = container.querySelector('#btnRejectAll');
-
+        const btnReject  = container.querySelector('#btnRejectAll');
+    
         if (btnConfirm) {
             btnConfirm.onclick = async () => {
                 const selectedSVs = Array.from(container.querySelectorAll('.chk-service:checked'))
-                             .map(el => parseInt(el.dataset.id))
-                             .filter(id => !isNaN(id)); // Loại bỏ nếu id bị null/undefined
-
+                    .map(el => parseInt(el.dataset.id)).filter(id => !isNaN(id));
                 const selectedSPs = Array.from(container.querySelectorAll('.chk-sparepart:checked'))
-                             .map(el => parseInt(el.dataset.id))
-                             .filter(id => !isNaN(id));
-
-                const msg = isAdditionalEstimate 
-                    ? "Xác nhận Lễ tân duyệt hộ các hạng mục phát sinh?" 
-                    : "Xác nhận duyệt báo giá hộ khách để bắt đầu sửa chữa?";
-
+                    .map(el => parseInt(el.dataset.id)).filter(id => !isNaN(id));
+    
+                const msg = isAdditionalEstimate
+                    ? 'Xác nhận Lễ tân duyệt hộ các hạng mục phát sinh?'
+                    : 'Xác nhận duyệt báo giá hộ khách để bắt đầu sửa chữa?';
                 if (!confirm(msg)) return;
-
-                // Gọi hàm handleProxyApproval đã được tối ưu cho nhân viên
+    
                 const success = await window.handleProxyApproval(estimate.jobCardId, selectedSPs, selectedSVs);
                 if (success) {
-                    // Nếu dùng trong Modal thì đóng modal, nếu dùng trang riêng thì reload
-                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(document.getElementById('estimateModal'))) {
-                        bootstrap.Modal.getInstance(document.getElementById('estimateModal')).hide();
-                    }
-                    // Load lại bảng danh sách
+                    const modal = typeof bootstrap !== 'undefined' &&
+                        bootstrap.Modal.getInstance(document.getElementById('estimateModal'));
+                    if (modal) modal.hide();
                     if (typeof loadJobCards === 'function') loadJobCards(document.getElementById('job-card-body'));
                 }
             };
         }
-
+    
         if (btnReject) {
             btnReject.onclick = async () => {
-                if (confirm("Bạn có chắc chắn muốn từ chối toàn bộ các hạng mục này hộ khách hàng?")) {
+                if (confirm('Bạn có chắc chắn muốn từ chối toàn bộ các hạng mục này hộ khách hàng?')) {
                     const success = await handleProxyApproval(estimate.jobCardId, [], []);
                     if (success && typeof loadJobCards === 'function') {
+                        const modal = btn.closest('.modal');
+                        if (modal) {
+                            modal.classList.remove('show');
+                            modal.style.display = 'none';
+                        }
                         loadJobCards(document.getElementById('job-card-body'));
                     }
                 }
             };
         }
+
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.btn-close');
+            if (!btn) return;
+
+            //đóng modal
+            const modal = btn.closest('.modal');
+            if (modal) {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+            }
+            // Ví dụ: reload lại danh sách
+            if (typeof loadJobCards === 'function') {
+                loadJobCards(document.getElementById('job-card-body'));
+            }
+        });
     },
 
     // Render kết quả tìm kiếm khách hàng (Autocomplete)
@@ -999,5 +1021,7 @@ export const jobcardUI = {
                 location.reload();
             }
         };
-    }
+    },
+
+    
 };

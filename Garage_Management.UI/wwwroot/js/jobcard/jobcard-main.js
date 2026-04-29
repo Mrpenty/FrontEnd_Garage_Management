@@ -191,12 +191,12 @@ async function handleProxyApproval(jobCardId, selectedSparePartIds = [], selecte
         const finalStatus = (hasAnyApproval || hasOnHoldService) ? 7 : 10;
         await EstimateAPI.updateJobCardStatus(jobCardId, finalStatus);
 
-        alert(hasAnyApproval ? "Đã duyệt báo giá hộ khách hàng!" : "Đã ghi nhận từ chối báo giá.");
+        Toast.success(hasAnyApproval ? "Đã duyệt báo giá hộ khách hàng!" : "Đã ghi nhận từ chối báo giá.");
         return true;
 
     } catch (error) {
         console.error("Lỗi duyệt hộ:", error);
-        alert("Có lỗi xảy ra: " + error.message);
+        Toast.error("Có lỗi xảy ra: " + error.message);
         return false;
     }
 }
