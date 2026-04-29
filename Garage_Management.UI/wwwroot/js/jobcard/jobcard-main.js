@@ -1,12 +1,16 @@
 import { vehicleApi, serviceApi, jobcardApi, customerApi, appointmentApi, EstimateAPI, PaymentAPI} from './jobcard-api.js';
 import { jobcardUI } from './jobcard-ui.js';
 import { ButtonStateManager, Toast, FormValidator, ModalHelper } from '../common/ui-helpers.js';
+import { renderPagination, extractPaging } from '../common/pagination.js';
 
 // --- State Management (Dùng để lưu trữ tạm thời khi tạo JobCard) ---
 let selectedServices = [];
 let selectedSpareParts = [];
 let allModels = [];
 let currentAppointmentId = null;
+
+const JOBCARD_PAGE_SIZE = 20;
+let jobcardCurrentPage = 1;
 
 export async function initJobCardModule() {
     const mainContent = document.getElementById('main-display');
@@ -67,13 +71,31 @@ export async function initJobCardModule() {
 
 // --- CHI TIẾT CÁC HÀM LOGIC ---
 
-async function loadJobCards(tbody) {
+async function loadJobCards(tbody, page = jobcardCurrentPage) {
     try {
-        const res = await jobcardApi.getAll({ PageIndex: 1, PageSize: 20 });
-        const items = res.pageData || (res.data?.pageData) || (Array.isArray(res) ? res : []);
-        console.log("Dữ liệu nhận được:", items);
+        const res = await jobcardApi.getAll({ PageIndex: page, PageSize: JOBCARD_PAGE_SIZE });
+        // Có thể là root paged hoặc nằm trong res.data
+        const paged = res.data || res;
+        const items = paged.pageData || (Array.isArray(res) ? res : []);
         jobcardUI.renderJobCardTable(tbody, items);
         initTableActions(tbody);
+
+        const { page: p, totalPages, total } = extractPaging(paged, JOBCARD_PAGE_SIZE);
+        jobcardCurrentPage = p;
+        renderPagination('jobcardPagination', {
+            page: p, totalPages,
+            callbackName: 'jobcardGoPage',
+            onPageClick: (np) => loadJobCards(tbody, np)
+        });
+        const metaBox = document.getElementById('jobcardPagingMeta');
+        if (metaBox) {
+            if (!total) metaBox.textContent = '';
+            else {
+                const from = (p - 1) * JOBCARD_PAGE_SIZE + 1;
+                const to = Math.min(p * JOBCARD_PAGE_SIZE, total);
+                metaBox.textContent = `Hiển thị ${from}-${to} / ${total} phiếu`;
+            }
+        }
     } catch (err) {
         console.error("Lỗi tải danh sách JobCard:", err);
         tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color:red">Lỗi kết nối server</td></tr>`;

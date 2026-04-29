@@ -5,6 +5,11 @@ const VEHICLE_URL = `${CONFIG.API_BASE_URL}/Vehiclies`;
 const MODEL_URL = `${CONFIG.API_BASE_URL}/VehicleModels`;
 const BRAND_URL = `${CONFIG.API_BASE_URL}/VehicleBrands`;
 
+const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+});
+
 export const CustomerAPI = {
     // Lấy danh sách khách hàng phân trang
     getAll: async (query) => {
@@ -14,7 +19,7 @@ export const CustomerAPI = {
             Page: query.Page || 1,
             PageSize: query.PageSize || 10
         });
-        const res = await fetch(`${CUSTOMER_URL}?${params}`);
+        const res = await fetch(`${CUSTOMER_URL}?${params}`, { headers: getAuthHeaders() });
         return await res.json();
     },
 
@@ -46,7 +51,7 @@ export const CustomerAPI = {
 
     // Lấy chi tiết lịch sử bảo dưỡng của 1 khách
     getDetails: async (id) => {
-        const res = await fetch(`${CUSTOMER_URL}/${id}`);
+        const res = await fetch(`${CUSTOMER_URL}/${id}`, { headers: getAuthHeaders() });
         return await res.json();
     },
 

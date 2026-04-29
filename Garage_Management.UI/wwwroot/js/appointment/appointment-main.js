@@ -1,6 +1,10 @@
     import { AppointmentAPI, BookingAPI, customerApi } from './booking-api.js';
     import { appointmentUI } from './appointment-ui.js';
     import { jobcardUI } from '../jobcard/jobcard-ui.js';
+    import { renderPagination, extractPaging } from '../common/pagination.js';
+
+    const APT_PAGE_SIZE = 20;
+    let aptCurrentPage = 1;
 
     function initModalEvents(elements) {
         // 1. Nút mở Modal Tạo JobCard
@@ -62,30 +66,48 @@
         initCustomerLogic(createCustomerForm);
         initVehicleLogic(createVehicleForm);
         // 2. Hàm tải dữ liệu
-        async function fetchData() {
+        async function fetchData(page = aptCurrentPage) {
             try {
                 const query = {
                     Search: searchInput.value,
                     Status: statusFilter.value,
                     Date: dateFilter.value,
-                    Page: 1,
-                    PageSize: 20
+                    Page: page,
+                    PageSize: APT_PAGE_SIZE
                 };
                 const res = await AppointmentAPI.getPaged(query);
                 if (res.success) {
-                    appointmentUI.renderTableRows(tbody, res.data.pageData);
+                    const paged = res.data || {};
+                    appointmentUI.renderTableRows(tbody, paged.pageData || []);
                     bindRowEvents();
+
+                    const { page: p, totalPages, total } = extractPaging(paged, APT_PAGE_SIZE);
+                    aptCurrentPage = p;
+                    renderPagination('appointmentPagination', {
+                        page: p, totalPages,
+                        callbackName: 'appointmentGoPage',
+                        onPageClick: (np) => fetchData(np)
+                    });
+                    const metaBox = document.getElementById('appointmentPagingMeta');
+                    if (metaBox) {
+                        if (!total) metaBox.textContent = '';
+                        else {
+                            const from = (p - 1) * APT_PAGE_SIZE + 1;
+                            const to = Math.min(p * APT_PAGE_SIZE, total);
+                            metaBox.textContent = `Hiển thị ${from}-${to} / ${total} lịch hẹn`;
+                        }
+                    }
                 }
             } catch (err) {
                 console.error("Lỗi tải lịch hẹn:", err);
             }
         }
 
-        // 3. Bắt sự kiện (Dùng trực tiếp để tránh lỗi null khi đổi trang)
-        searchInput.oninput = debounce(() => fetchData(), 500);
-        statusFilter.onchange = fetchData;
-        dateFilter.onchange = fetchData;
-        document.getElementById('btn-refresh-appointment').onclick = fetchData;
+        // 3. Bắt sự kiện — đổi filter/search reset về trang 1
+        searchInput.oninput = debounce(() => fetchData(1), 500);
+        statusFilter.onchange = () => fetchData(1);
+        dateFilter.onchange = () => fetchData(1);
+        document.getElementById('btn-refresh-appointment').onclick = () => fetchData(aptCurrentPage);
 
         // --- Logic Mở Modal & Load Data dự phòng ---
         document.getElementById('btn-open-booking').onclick = async () => {

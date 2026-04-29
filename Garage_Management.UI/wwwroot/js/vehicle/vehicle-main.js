@@ -12,6 +12,11 @@ const API_ENDPOINTS = {
     types: `${CONFIG.API_BASE_URL}/VehicleTypes`
 };
 
+const getAuthHeaders = () => ({
+    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    'Content-Type': 'application/json'
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     loadTableData();
     const userInfoStr = localStorage.getItem('userInfo');
@@ -44,7 +49,7 @@ async function loadTableData() {
     tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center">Đang tải...</td></tr>';
 
     try {
-        const response = await fetch(`${API_ENDPOINTS[currentTab]}?page=${currentPage}&pageSize=10`);
+        const response = await fetch(`${API_ENDPOINTS[currentTab]}?page=${currentPage}&pageSize=10`, { headers: getAuthHeaders() });
         const result = await response.json();
         const list = result.data?.pageData || [];
         
@@ -189,7 +194,7 @@ async function handleFormSubmit(e) {
     try {
         const res = await fetch(API_ENDPOINTS[currentTab], {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(payload)
         });
 
@@ -205,8 +210,8 @@ async function handleFormSubmit(e) {
 
 async function refreshCaches() {
     const [bRes, tRes] = await Promise.all([
-        fetch(`${API_ENDPOINTS.brands}?page=1&pageSize=100`),
-        fetch(`${API_ENDPOINTS.types}?page=1&pageSize=100`)
+        fetch(`${API_ENDPOINTS.brands}?page=1&pageSize=100`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.types}?page=1&pageSize=100`, { headers: getAuthHeaders() })
     ]);
     const bData = await bRes.json();
     const tData = await tRes.json();
@@ -219,7 +224,7 @@ window.closeModal = () => document.getElementById('vehicle-modal').style.display
 window.deleteItem = async (id) => {
     if (!confirm("Bạn có chắc chắn muốn xóa mục này?")) return;
     try {
-        const res = await fetch(`${API_ENDPOINTS[currentTab]}/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${API_ENDPOINTS[currentTab]}/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         if (res.ok) loadTableData();
         else alert("Không thể xóa (có thể đang có dữ liệu liên quan)");
     } catch (e) { alert("Lỗi kết nối"); }

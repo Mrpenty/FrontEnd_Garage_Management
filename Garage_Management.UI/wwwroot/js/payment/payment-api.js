@@ -10,10 +10,14 @@ export const PaymentAPI = {
         return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
     },
 
-    getInvoices: async () => {
-        const response = await fetch(`${INVOICE_URL}`, {
+    getInvoices: async ({ page = 1, pageSize = 20, search = '' } = {}) => {
+        const qs = new URLSearchParams();
+        qs.set('Page', page);
+        qs.set('PageSize', pageSize);
+        if (search) qs.set('Search', search);
+        const response = await fetch(`${INVOICE_URL}?${qs}`, {
             headers: PaymentAPI.getAuthHeader()
-        }); 
+        });
         return await response.json();
     },
 

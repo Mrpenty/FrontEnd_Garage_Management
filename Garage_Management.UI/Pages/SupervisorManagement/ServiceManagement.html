@@ -21,7 +21,6 @@
                 <a href="ServiceManagement.html" class="nav-btn active"><i class="fas fa-concierge-bell"></i> Quản lý dịch vụ</a>
                 <a href="VehicleManagement.html" class="nav-btn"><i class="fas fa-car-side"></i> Quản lý phương tiện</a>
                 <a href="WorkbayManagement.html" class="nav-btn"><i class="fas fa-warehouse"></i> Quản lý khoang sửa xe</a>
-                <a href="statistics.html" class="nav-btn"><i class="fas fa-chart-bar"></i> Thống kê</a>
             </nav>
         </header>
 
@@ -48,10 +47,9 @@
                 </table>
             </div>
 
-            <div class="pagination">
-                <button id="prev-btn" class="btn-page">Trước</button>
-                <span id="page-info">Trang 1</span>
-                <button id="next-btn" class="btn-page">Sau</button>
+            <div class="pagination-bar" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0;">
+                <small id="servicePagingMeta" class="text-muted"></small>
+                <div id="servicePagination"></div>
             </div>
         </section>
     </div>

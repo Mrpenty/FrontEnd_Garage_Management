@@ -1,8 +1,15 @@
 import CONFIG from '../config.js';
+import { renderPagination, extractPaging } from '../common/pagination.js';
 
 const SERVICE_API = `${CONFIG.API_BASE_URL}/Services`;
 const TASK_API = `${CONFIG.API_BASE_URL}/ServiceTasks`;
+const SERVICE_PAGE_SIZE = 20;
+let serviceCurrentPage = 1;
 
+const getAuthHeaders = () => ({
+    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    'Content-Type': 'application/json'
+});
 document.addEventListener('DOMContentLoaded', () => {
     loadServices();
     const userInfoStr = localStorage.getItem('userInfo');
@@ -19,21 +26,17 @@ document.addEventListener('DOMContentLoaded', () => {
             serviceName: e.target.serviceName.value,
             description: e.target.description.value
         };
-        
         const res = await fetch(SERVICE_API, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(payload)
         });
 
         if (res.ok) {
             alert("Đã tạo dịch vụ thành công!");
             closeModals();
-            loadServices();
+            loadServices(1);
         }
-
-        document.getElementById('prev-btn').onclick = () => changePage(-1);
-        document.getElementById('next-btn').onclick = () => changePage(1);
     });
 
     // Xử lý tạo Task mới
@@ -61,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const res = await fetch(url, {
             method: method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(payload)
         });
 
@@ -74,24 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function changePage(step) {
-    const newPage = currentPage + step;
-    if (newPage >= 1 && newPage <= totalPages) {
-        currentPage = newPage;
-        loadTableData();
-    }
-}
-
-function updatePaginationUI() {
-    document.getElementById('page-info').innerText = `Trang ${currentPage} / ${totalPages}`;
-    document.getElementById('prev-btn').disabled = (currentPage === 1);
-    document.getElementById('next-btn').disabled = (currentPage === totalPages);
-}
-
-async function loadServices() {
-    const res = await fetch(`${SERVICE_API}?page=1&pageSize=20`);
+async function loadServices(page = serviceCurrentPage) {
+    const res = await fetch(`${SERVICE_API}?page=${page}&pageSize=${SERVICE_PAGE_SIZE}`, { headers: getAuthHeaders() });
     const result = await res.json();
-    const services = result.data.pageData;
+    const paged = result.data || {};
+    const services = paged.pageData || [];
 
     const body = document.getElementById('service-table-body');
     body.innerHTML = services.map(s => `
@@ -108,10 +98,27 @@ async function loadServices() {
             </td>
         </tr>
     `).join('');
+
+    const { page: p, totalPages, total } = extractPaging(paged, SERVICE_PAGE_SIZE);
+    serviceCurrentPage = p;
+    renderPagination('servicePagination', {
+        page: p, totalPages,
+        callbackName: 'serviceGoPage',
+        onPageClick: (np) => loadServices(np)
+    });
+    const metaBox = document.getElementById('servicePagingMeta');
+    if (metaBox) {
+        if (!total) metaBox.textContent = '';
+        else {
+            const from = (p - 1) * SERVICE_PAGE_SIZE + 1;
+            const to = Math.min(p * SERVICE_PAGE_SIZE, total);
+            metaBox.textContent = `Hiển thị ${from}-${to} / ${total} dịch vụ`;
+        }
+    }
 }
 
 window.viewTasks = async (serviceId) => {
-    const res = await fetch(`${SERVICE_API}?page=1&pageSize=100`);
+    const res = await fetch(`${SERVICE_API}?page=1&pageSize=100`, { headers: getAuthHeaders() });
     const result = await res.json();
     const service = result.data.pageData.find(s => s.serviceId === serviceId);
 

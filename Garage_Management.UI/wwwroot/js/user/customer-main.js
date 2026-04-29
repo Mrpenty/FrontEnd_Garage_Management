@@ -1,5 +1,9 @@
 import { CustomerAPI } from './customer-api.js';
 import { customerUI } from './customer-ui.js';
+import { renderPagination, extractPaging } from '../common/pagination.js';
+
+const PAGE_SIZE = 20;
+let currentPage = 1;
 
 export async function initCustomerModule() {
     const mainContent = document.getElementById('main-display');
@@ -100,13 +104,30 @@ export async function initCustomerModule() {
     });
 
     // --- Hàm tải danh sách ---
-    async function loadCustomers() {
+    async function loadCustomers(page = currentPage) {
         try {
-            const query = { Search: searchInput.value, Page: 1, PageSize: 20 };
+            const query = { Search: searchInput.value, Page: page, PageSize: PAGE_SIZE };
             const res = await CustomerAPI.getAll(query);
-            // API của bạn trả về pageData nằm trong data
-            const items = res.data?.pageData || res.pageData || [];
+            const paged = res.data || res;
+            const items = paged.pageData || [];
             customerUI.renderTableRows(tbody, items);
+
+            const { page: p, totalPages, total } = extractPaging(paged, PAGE_SIZE);
+            currentPage = p;
+            renderPagination('customerPagination', {
+                page: p, totalPages,
+                callbackName: 'customerGoPage',
+                onPageClick: (np) => loadCustomers(np)
+            });
+            const metaBox = document.getElementById('customerPagingMeta');
+            if (metaBox) {
+                if (!total) metaBox.textContent = '';
+                else {
+                    const from = (p - 1) * PAGE_SIZE + 1;
+                    const to = Math.min(p * PAGE_SIZE, total);
+                    metaBox.textContent = `Hiển thị ${from}-${to} / ${total} khách hàng`;
+                }
+            }
         } catch (err) {
             console.error("Lỗi tải danh sách:", err);
         }
@@ -170,12 +191,12 @@ export async function initCustomerModule() {
         }
     });
 
-    // Tìm kiếm Debounce
+    // Tìm kiếm Debounce — reset về trang 1 khi đổi keyword
     let timer;
     searchInput.oninput = () => {
         clearTimeout(timer);
-        timer = setTimeout(loadCustomers, 500);
+        timer = setTimeout(() => loadCustomers(1), 500);
     };
 
-    loadCustomers();
+    loadCustomers(1);
 }

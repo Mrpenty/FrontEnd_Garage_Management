@@ -48,6 +48,10 @@ export const appointmentUI = {
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-bar" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0;">
+                    <small id="appointmentPagingMeta" class="text-muted"></small>
+                    <div id="appointmentPagination"></div>
+                </div>
             </div>
 
             <!-- Modal thêm khách hàng mới -->

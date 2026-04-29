@@ -34,8 +34,11 @@ export const jobcardUI = {
                             </tr>
                         </thead>
                         <tbody id="job-card-body"></tbody>
-                        <div id="jobcard-pagination" class="mt-3"></div>
                     </table>
+                </div>
+                <div class="pagination-bar" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0;">
+                    <small id="jobcardPagingMeta" class="text-muted"></small>
+                    <div id="jobcardPagination"></div>
                 </div>
             </div>
 

@@ -75,6 +75,10 @@
                     <tbody id="invoiceTableBody">
                     </tbody>
                 </table>
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <small id="invoicePagingMeta" class="text-muted"></small>
+                    <div id="invoicePagination"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -95,22 +99,22 @@
 
         // Load invoices khi trang được tải
         document.addEventListener('DOMContentLoaded', async () => {
-            await loadInvoices();
+            await loadInvoices(1);
         });
 
-        async function loadInvoices() {
+        async function loadInvoices(page = 1) {
             try {
-                const result = await PaymentAPI.getInvoices();
+                const result = await PaymentAPI.getInvoices({ page, pageSize: PaymentUI.PAGE_SIZE });
                 if (result.success) {
-                    PaymentUI.renderInvoices(result);
+                    PaymentUI.renderInvoices(result, (np) => loadInvoices(np));
                 } else {
                     console.error("API trả về lỗi:", result.message);
-                    document.getElementById('invoiceTableBody').innerHTML = 
+                    document.getElementById('invoiceTableBody').innerHTML =
                         '<tr><td colspan="5" class="text-center text-danger">Lỗi khi tải dữ liệu</td></tr>';
                 }
             } catch (error) {
                 console.error("Lỗi kết nối API:", error);
-                document.getElementById('invoiceTableBody').innerHTML = 
+                document.getElementById('invoiceTableBody').innerHTML =
                     '<tr><td colspan="5" class="text-center text-danger">Lỗi kết nối</td></tr>';
             }
         }

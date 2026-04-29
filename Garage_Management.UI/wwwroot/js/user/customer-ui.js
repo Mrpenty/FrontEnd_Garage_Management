@@ -36,6 +36,10 @@ export const customerUI = {
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-bar" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0;">
+                    <small id="customerPagingMeta" class="text-muted"></small>
+                    <div id="customerPagination"></div>
+                </div>
             </div>
 
             <!-- Modal thêm khách hàng mới -->
