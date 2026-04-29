@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:msmg-api-fpt-e8bwcse7cjh9bdh7.southeastasia-01.azurewebsites.net)"
+    ]
+  }
+}

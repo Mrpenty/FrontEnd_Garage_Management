@@ -1,4 +1,4 @@
-import CONFIG from '../config.js';
+﻿import CONFIG from '../config.js';
 
 let currentTab = 'brands';
 let currentPage = 1;
@@ -46,9 +46,13 @@ function changePage(step) {
 // --- TẢI DỮ LIỆU BẢNG ---
 async function loadTableData() {
     const tableBody = document.getElementById('vehicle-table-body');
-    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center">Đang tải...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center">Äang táº£i...</td></tr>';
 
     try {
+        if (currentTab === 'models') {
+            await refreshCaches();
+        }
+
         const response = await fetch(`${API_ENDPOINTS[currentTab]}?page=${currentPage}&pageSize=10`, { headers: getAuthHeaders() });
         const result = await response.json();
         const list = result.data?.pageData || [];
@@ -100,6 +104,8 @@ function renderTableHeader() {
 
 function renderTableBody(data) {
     const body = document.getElementById('vehicle-table-body');
+    const brandNameById = new Map(cachedBrands.map(b => [Number(b.brandId), b.brandName]));
+    const typeNameById = new Map(cachedTypes.map(t => [Number(t.vehicleTypeId), t.typeName]));
     body.innerHTML = data.map(item => {
         const id = item.modelId || item.brandId || item.vehicleTypeId;
         const name = item.brandName || item.modelName || item.typeName;
@@ -107,7 +113,9 @@ function renderTableBody(data) {
 
         let extraCols = '';
         if (currentTab === 'models') {
-            extraCols = `<td>${item.brandName || item.brandId}</td><td>${item.typeName || item.typeId}</td>`;
+            const brandName = item.brandName || brandNameById.get(Number(item.brandId)) || item.brandId || '';
+            const typeName = item.typeName || typeNameById.get(Number(item.typeId)) || item.typeId || '';
+            extraCols = `<td>${brandName}</td><td>${typeName}</td>`;
         } else if (currentTab === 'types') {
             extraCols = `<td>${item.description || ''}</td>`;
         }

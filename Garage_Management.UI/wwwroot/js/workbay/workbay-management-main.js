@@ -104,10 +104,16 @@ async function saveWorkbay() {
         ? `${CONFIG.API_BASE_URL}/WorkBays/${id}` // Giả định API Update dùng PUT/POST kèm ID
         : `${CONFIG.API_BASE_URL}/WorkBays/Create`;
 
+    const branchId = Number(localStorage.getItem('branchId'));
+    if (!branchId) {
+        Swal.fire('Thiếu BranchId', 'Không tìm thấy branchId trong localStorage. Vui lòng đăng nhập lại.', 'error');
+        return;
+    }
+
     const payload = {
         name: $('#wb-name').val(),
         note: $('#wb-note').val(),
-        branchId: 0 // Server sẽ lấy từ Token như DTO mô tả
+        branchId: branchId
     };
 
     if (isEdit) {
@@ -117,7 +123,7 @@ async function saveWorkbay() {
     try {
         const response = await fetch(url, {
             method: isEdit ? 'PUT' : 'POST',
-            headers: { 
+            headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
@@ -129,10 +135,20 @@ async function saveWorkbay() {
             closeWorkbayModal();
             loadWorkbays();
         } else {
-            throw new Error('Lỗi từ server');
+            // Đọc message thật từ BE để dễ debug
+            let detail = `HTTP ${response.status}`;
+            try {
+                const errBody = await response.json();
+                detail = errBody.message || errBody.title || JSON.stringify(errBody.errors || errBody);
+            } catch {
+                detail = await response.text();
+            }
+            console.error('[saveWorkbay] payload:', payload);
+            console.error('[saveWorkbay] BE response:', detail);
+            throw new Error(detail);
         }
     } catch (error) {
-        Swal.fire('Thất bại', 'Có lỗi xảy ra khi lưu', 'error');
+        Swal.fire('Thất bại', error.message || 'Có lỗi xảy ra khi lưu', 'error');
     }
 }
 
