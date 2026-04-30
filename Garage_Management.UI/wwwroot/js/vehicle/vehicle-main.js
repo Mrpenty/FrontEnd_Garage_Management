@@ -1,15 +1,24 @@
-﻿import CONFIG from '../config.js';
+import CONFIG from '../config.js';
 
 let currentTab = 'brands';
 let currentPage = 1;
 let totalPages = 1;
 let cachedBrands = [];
 let cachedTypes = [];
+let editingId = null;          // id đang edit (null = đang create)
+let lastLoadedRows = [];       // cache rows trang hiện tại để pre-fill khi edit
 
 const API_ENDPOINTS = {
     brands: `${CONFIG.API_BASE_URL}/VehicleBrands`,
     models: `${CONFIG.API_BASE_URL}/VehicleModels`,
     types: `${CONFIG.API_BASE_URL}/VehicleTypes`
+};
+
+// Tên field id của từng tab (BE response trả khác nhau)
+const ID_FIELD = {
+    brands: 'brandId',
+    models: 'modelId',
+    types: 'vehicleTypeId'
 };
 
 const getAuthHeaders = () => ({
@@ -26,11 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('display-name').innerText = `${userInfo.fullName} (${userInfo.email})`;
     }
 
-    // Gán sự kiện cho các nút phân trang
     document.getElementById('prev-btn').onclick = () => changePage(-1);
     document.getElementById('next-btn').onclick = () => changePage(1);
-    
-    // Gắn sự kiện submit cho form
     document.getElementById('vehicle-form').onsubmit = handleFormSubmit;
 });
 
@@ -46,7 +52,7 @@ function changePage(step) {
 // --- TẢI DỮ LIỆU BẢNG ---
 async function loadTableData() {
     const tableBody = document.getElementById('vehicle-table-body');
-    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center">Äang táº£i...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center">Đang tải...</td></tr>';
 
     try {
         if (currentTab === 'models') {
@@ -56,8 +62,8 @@ async function loadTableData() {
         const response = await fetch(`${API_ENDPOINTS[currentTab]}?page=${currentPage}&pageSize=10`, { headers: getAuthHeaders() });
         const result = await response.json();
         const list = result.data?.pageData || [];
-        
-        // Tính toán tổng trang
+        lastLoadedRows = list;
+
         totalPages = Math.ceil((result.data?.total || 0) / 10) || 1;
 
         renderTableHeader();
@@ -79,14 +85,13 @@ window.openTab = (tabName) => {
     currentTab = tabName;
     currentPage = 1;
 
-    // Cập nhật UI nút Tab
     document.querySelectorAll('.tab-link').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabName));
     });
 
     const titles = { brands: 'Thương hiệu', models: 'Dòng xe', types: 'Loại xe' };
     document.getElementById('tab-title').innerText = `Danh sách ${titles[tabName]}`;
-    
+
     loadTableData();
 };
 
@@ -94,11 +99,11 @@ window.openTab = (tabName) => {
 function renderTableHeader() {
     const head = document.getElementById('table-head');
     if (currentTab === 'brands') {
-        head.innerHTML = `<th>ID</th><th>Tên thương hiệu</th><th>Trạng thái</th><th>Thao tác</th>`;
+        head.innerHTML = `<th>ID</th><th>Tên thương hiệu</th><th>Trạng thái</th><th class="text-center">Thao tác</th>`;
     } else if (currentTab === 'models') {
-        head.innerHTML = `<th>ID</th><th>Tên dòng xe</th><th>Thương hiệu</th><th>Loại xe</th><th>Trạng thái</th><th>Thao tác</th>`;
+        head.innerHTML = `<th>ID</th><th>Tên dòng xe</th><th>Thương hiệu</th><th>Loại xe</th><th>Trạng thái</th><th class="text-center">Thao tác</th>`;
     } else {
-        head.innerHTML = `<th>ID</th><th>Loại xe</th><th>Mô tả</th><th>Trạng thái</th><th>Thao tác</th>`;
+        head.innerHTML = `<th>ID</th><th>Loại xe</th><th>Mô tả</th><th>Trạng thái</th><th class="text-center">Thao tác</th>`;
     }
 }
 
@@ -106,10 +111,14 @@ function renderTableBody(data) {
     const body = document.getElementById('vehicle-table-body');
     const brandNameById = new Map(cachedBrands.map(b => [Number(b.brandId), b.brandName]));
     const typeNameById = new Map(cachedTypes.map(t => [Number(t.vehicleTypeId), t.typeName]));
+
     body.innerHTML = data.map(item => {
-        const id = item.modelId || item.brandId || item.vehicleTypeId;
+        const id = item[ID_FIELD[currentTab]];
         const name = item.brandName || item.modelName || item.typeName;
         const statusClass = item.isActive ? 'status-active' : 'status-inactive';
+        const toggleTitle = item.isActive ? 'Vô hiệu hóa' : 'Kích hoạt';
+        const toggleIcon = item.isActive ? 'fa-toggle-on' : 'fa-toggle-off';
+        const toggleColor = item.isActive ? '#10b981' : '#94a3b8';
 
         let extraCols = '';
         if (currentTab === 'models') {
@@ -126,82 +135,110 @@ function renderTableBody(data) {
                 <td><strong>${name}</strong></td>
                 ${extraCols}
                 <td><span class="status-pill ${statusClass}">${item.isActive ? 'Active' : 'Inactive'}</span></td>
-                <td>
-                    <button class="btn-icon text-danger" onclick="deleteItem(${id})"><i class="fas fa-trash"></i></button>
+                <td class="text-center" style="white-space:nowrap;">
+                    <button class="btn-icon" title="Sửa" style="color:#4f46e5;" onclick="editItem(${id})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-icon" title="${toggleTitle}" style="color:${toggleColor};" onclick="toggleActive(${id})">
+                        <i class="fas ${toggleIcon}"></i>
+                    </button>
+                    <button class="btn-icon text-danger" title="Xóa cứng" onclick="hardDeleteItem(${id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
             </tr>`;
     }).join('');
 }
 
-// --- MODAL & VALIDATION ---
+// --- MODAL & FORM ---
 window.showAddModal = async () => {
+    editingId = null;                       // tạo mới
+    await openModal();
+};
+
+window.editItem = async (id) => {
+    const item = lastLoadedRows.find(r => r[ID_FIELD[currentTab]] === id);
+    if (!item) {
+        alert('Không tìm thấy dữ liệu để sửa.');
+        return;
+    }
+    editingId = id;
+    await openModal(item);
+};
+
+async function openModal(item = null) {
     const modal = document.getElementById('vehicle-modal');
     const fields = document.getElementById('form-fields');
+    const titleEl = document.querySelector('#vehicle-modal h3, #vehicle-modal .modal-title, #vehicle-modal-title');
+
     modal.style.display = 'block';
     fields.innerHTML = 'Đang tải...';
+    if (titleEl) titleEl.innerText = item ? 'Chỉnh sửa' : 'Thêm mới';
 
     if (currentTab === 'brands') {
-        fields.innerHTML = renderInputField("Tên thương hiệu", "brandName", "VD: Honda...");
-    } 
-    else if (currentTab === 'models') {
+        fields.innerHTML = renderInputField("Tên thương hiệu", "brandName", "VD: Honda...", item?.brandName);
+    } else if (currentTab === 'models') {
         await refreshCaches();
         fields.innerHTML = `
-            ${renderInputField("Tên dòng xe", "modelName", "VD: SH 150i...")}
+            ${renderInputField("Tên dòng xe", "modelName", "VD: SH 150i...", item?.modelName)}
             <div class="form-group">
                 <label>Thương hiệu</label>
                 <select name="brandId" required>
                     <option value="">-- Chọn thương hiệu --</option>
-                    ${cachedBrands.map(b => `<option value="${b.brandId}">${b.brandName}</option>`).join('')}
+                    ${cachedBrands.map(b => `<option value="${b.brandId}" ${item?.brandId == b.brandId ? 'selected' : ''}>${b.brandName}</option>`).join('')}
                 </select>
             </div>
             <div class="form-group">
                 <label>Loại xe</label>
                 <select name="typeId" required>
                     <option value="">-- Chọn loại xe --</option>
-                    ${cachedTypes.map(t => `<option value="${t.vehicleTypeId}">${t.typeName}</option>`).join('')}
+                    ${cachedTypes.map(t => `<option value="${t.vehicleTypeId}" ${item?.typeId == t.vehicleTypeId ? 'selected' : ''}>${t.typeName}</option>`).join('')}
                 </select>
             </div>`;
-    } 
-    else {
+    } else {
         fields.innerHTML = `
-            ${renderInputField("Tên loại xe", "typeName", "VD: Xe ga...")}
+            ${renderInputField("Tên loại xe", "typeName", "VD: Xe ga...", item?.typeName)}
             <div class="form-group">
                 <label>Mô tả</label>
-                <textarea name="description" rows="2"></textarea>
+                <textarea name="description" rows="2">${item?.description || ''}</textarea>
             </div>`;
     }
-    // Checkbox Active mặc định
+
     fields.innerHTML += `
         <div class="form-group-checkbox">
-            <input type="checkbox" name="isActive" checked id="chk-active">
+            <input type="checkbox" name="isActive" ${item ? (item.isActive ? 'checked' : '') : 'checked'} id="chk-active">
             <label for="chk-active">Đang hoạt động</label>
         </div>`;
-};
+}
 
-function renderInputField(label, name, placeholder) {
-    return `<div class="form-group"><label>${label}</label><input type="text" name="${name}" required placeholder="${placeholder}"></div>`;
+function renderInputField(label, name, placeholder, value = '') {
+    const safeValue = String(value || '').replace(/"/g, '&quot;');
+    return `<div class="form-group"><label>${label}</label><input type="text" name="${name}" required placeholder="${placeholder}" value="${safeValue}"></div>`;
 }
 
 async function handleFormSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData.entries());
-    
-    // Ép kiểu dữ liệu & Validate
+
     payload.isActive = formData.get('isActive') === 'on';
     if (payload.brandId) payload.brandId = parseInt(payload.brandId);
     if (payload.typeId) payload.typeId = parseInt(payload.typeId);
 
-    // Validate chuỗi trống (trim)
     const nameValue = payload.brandName || payload.modelName || payload.typeName;
     if (!nameValue || nameValue.trim().length < 2) {
         alert("Vui lòng nhập tên hợp lệ (tối thiểu 2 ký tự)");
         return;
     }
 
+    const isEdit = editingId !== null;
+    const url = isEdit
+        ? `${API_ENDPOINTS[currentTab]}/${editingId}`
+        : API_ENDPOINTS[currentTab];
+
     try {
-        const res = await fetch(API_ENDPOINTS[currentTab], {
-            method: 'POST',
+        const res = await fetch(url, {
+            method: isEdit ? 'PUT' : 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(payload)
         });
@@ -210,10 +247,12 @@ async function handleFormSubmit(e) {
             window.closeModal();
             loadTableData();
         } else {
-            const err = await res.json();
-            alert("Lỗi: " + (err.message || "Không thể lưu"));
+            const err = await res.json().catch(() => ({}));
+            alert("Lỗi: " + (err.message || `Không thể ${isEdit ? 'cập nhật' : 'lưu'}`));
         }
-    } catch (e) { alert("Lỗi kết nối server"); }
+    } catch (e) {
+        alert("Lỗi kết nối server");
+    }
 }
 
 async function refreshCaches() {
@@ -227,13 +266,45 @@ async function refreshCaches() {
     cachedTypes = tData.data?.pageData || [];
 }
 
-window.closeModal = () => document.getElementById('vehicle-modal').style.display = 'none';
+window.closeModal = () => {
+    document.getElementById('vehicle-modal').style.display = 'none';
+    editingId = null;
+};
 
-window.deleteItem = async (id) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa mục này?")) return;
+// --- TOGGLE ACTIVE (PATCH /{id}) ---
+window.toggleActive = async (id) => {
+    if (!confirm("Đổi trạng thái Active/Inactive cho mục này?")) return;
     try {
-        const res = await fetch(`${API_ENDPOINTS[currentTab]}/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
-        if (res.ok) loadTableData();
-        else alert("Không thể xóa (có thể đang có dữ liệu liên quan)");
-    } catch (e) { alert("Lỗi kết nối"); }
+        const res = await fetch(`${API_ENDPOINTS[currentTab]}/${id}`, {
+            method: 'PATCH',
+            headers: getAuthHeaders()
+        });
+        if (res.ok) {
+            loadTableData();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            alert("Không đổi trạng thái được: " + (err.message || `HTTP ${res.status}`));
+        }
+    } catch (e) {
+        alert("Lỗi kết nối server");
+    }
+};
+
+// --- HARD DELETE (DELETE /{id}) ---
+window.hardDeleteItem = async (id) => {
+    if (!confirm("⚠️ XÓA VĨNH VIỄN mục này?\n\nLưu ý: nếu mục đang có dữ liệu liên kết (model/vehicle/service-mapping) sẽ bị từ chối.")) return;
+    try {
+        const res = await fetch(`${API_ENDPOINTS[currentTab]}/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        if (res.ok) {
+            loadTableData();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            alert("Không xóa được: " + (err.message || "Có dữ liệu liên kết, hãy đổi sang Inactive thay vì xóa cứng."));
+        }
+    } catch (e) {
+        alert("Lỗi kết nối server");
+    }
 };
