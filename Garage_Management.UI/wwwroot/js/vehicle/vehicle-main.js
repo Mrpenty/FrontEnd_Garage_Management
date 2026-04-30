@@ -1,4 +1,5 @@
 import CONFIG from '../config.js';
+import { authGuard } from '../auth/auth-guard.js';
 
 let currentTab = 'brands';
 let currentPage = 1;
@@ -35,6 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (userInfoStr) {
         const userInfo = JSON.parse(userInfoStr);
         document.getElementById('display-name').innerText = `${userInfo.fullName} (${userInfo.email})`;
+    }
+
+    const logoutBtn = document.getElementById('btn-staff-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => authGuard.logout());
     }
 
     document.getElementById('prev-btn').onclick = () => changePage(-1);

@@ -1,5 +1,6 @@
 import CONFIG from '../config.js';
 import { renderPagination, extractPaging } from '../common/pagination.js';
+import { authGuard } from '../auth/auth-guard.js';
 
 const SERVICE_API = `${CONFIG.API_BASE_URL}/Services`;
 const TASK_API = `${CONFIG.API_BASE_URL}/ServiceTasks`;
@@ -17,6 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (userInfoStr) {
         const userInfo = JSON.parse(userInfoStr);
         document.getElementById('display-name').innerText = `${userInfo.fullName} (${userInfo.email})`;
+    }
+
+    const logoutBtn = document.getElementById('btn-staff-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => authGuard.logout());
     }
 
     // Xử lý tạo Service mới
