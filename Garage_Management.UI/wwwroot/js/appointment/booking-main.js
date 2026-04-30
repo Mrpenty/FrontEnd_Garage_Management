@@ -1,4 +1,4 @@
-import { BookingAPI } from './booking-api.js';
+﻿import { BookingAPI } from './booking-api.js';
 import { bookingUI } from './booking-ui.js';
 
 const TIME_SLOTS = [
@@ -52,7 +52,7 @@ function initEvents() {
             input.classList.remove('hidden');
             select.classList.add('hidden');
             if (type === 'Brand') {
-                // Nếu hãng xe nhập tay, thì loại xe cũng phải cho nhập tay
+                // Náº¿u hÃ£ng xe nháº­p tay, thÃ¬ loáº¡i xe cÅ©ng pháº£i cho nháº­p tay
                 toggleCustomInput('Model');
             }
         } else {
@@ -96,16 +96,16 @@ async function loadInitialData() {
                 const vehicleList = res.data.items || res.data.pageData || (Array.isArray(res.data) ? res.data : []);
                 bookingUI.renderMyVehicles(vehicleList);
             }
-        } catch (err) { console.error("Lỗi tải xe user:", err); }
+        } catch (err) { console.error("Lá»—i táº£i xe user:", err); }
     } else {
-        // Khách vãng lai
+        // KhÃ¡ch vÃ£ng lai
         toggleArea.style.display = "none";
         myVehicleGroup.style.display = "none";
         newVehicleGroup.style.display = "block";
         bookingState.isNewVehicle = true;
     }
 
-    // Khi khởi tạo Step 3, điền data user
+    // Khi khá»Ÿi táº¡o Step 3, Ä‘iá»n data user
     const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
     const formContainer = document.getElementById("booking-form");
     
@@ -134,37 +134,37 @@ function handleBrandChange(e) {
         const filtered = allModels.filter(m => Number(m.brandId) === Number(brandId));
         bookingUI.renderModelSelect(modelSelect, filtered);
     } else {
-        modelSelect.innerHTML = `<option value="">-- Chọn loại xe --</option>`;
+        modelSelect.innerHTML = `<option value="">-- Chá»n loáº¡i xe --</option>`;
         modelSelect.disabled = true;
     }
 }
 
 async function loadServices() {
     const container = document.getElementById("service-list");
-    container.innerHTML = "<p>Đang tải dịch vụ...</p>";
+    container.innerHTML = "<p>Äang táº£i dá»‹ch vá»¥...</p>";
     try {
         const res = await BookingAPI.getServices();
         allServices = res.data?.pageData || res.data?.items || (Array.isArray(res.data) ? res.data : []);
         
-        currentServicePage = 1; // Reset về trang 1
+        currentServicePage = 1; // Reset vá» trang 1
         renderCurrentServicePage();
     } catch (err) {
-        container.innerHTML = `<p class="error-msg">Lỗi: ${err.message}</p>`;
+        container.innerHTML = `<p class="error-msg">Lá»—i: ${err.message}</p>`;
     }
 }
 
-// Hàm phụ để render trang hiện tại
+// HÃ m phá»¥ Ä‘á»ƒ render trang hiá»‡n táº¡i
 function renderCurrentServicePage() {
     const container = document.getElementById("service-list");
     bookingUI.renderServiceList(container, allServices, formatCurrency, currentServicePage, 6);
     
-    // Giữ trạng thái checkbox đã chọn từ bookingState.services
+    // Giá»¯ tráº¡ng thÃ¡i checkbox Ä‘Ã£ chá»n tá»« bookingState.services
     bookingState.services.forEach(id => {
         const chk = document.getElementById(`svc-${id}`);
         if (chk) chk.checked = true;
     });
 
-    // Lắng nghe sự thay đổi của checkbox để cập nhật bookingState ngay lập tức
+    // Láº¯ng nghe sá»± thay Ä‘á»•i cá»§a checkbox Ä‘á»ƒ cáº­p nháº­t bookingState ngay láº­p tá»©c
     container.querySelectorAll('input[name="service-item"]').forEach(chk => {
         chk.addEventListener('change', (e) => {
             const id = parseInt(e.target.value);
@@ -180,15 +180,15 @@ function renderCurrentServicePage() {
 async function loadInventories() {
     const container = document.getElementById("part-list");
     if (!bookingState.brandId || bookingState.brandId === 0) {
-        container.innerHTML = "<p class='info-msg'>Hãng xe này hiện chưa có danh sách phụ tùng mẫu. Vui lòng ghi chú yêu cầu ở bước sau.</p>";
-        allParts = []; // Reset danh sách
+        container.innerHTML = "<p class='info-msg'>HÃ£ng xe nÃ y hiá»‡n chÆ°a cÃ³ danh sÃ¡ch phá»¥ tÃ¹ng máº«u. Vui lÃ²ng ghi chÃº yÃªu cáº§u á»Ÿ bÆ°á»›c sau.</p>";
+        allParts = []; // Reset danh sÃ¡ch
         return;
     }
 
-    container.innerHTML = "<p class='loading-text'>Đang tìm phụ tùng phù hợp cho hãng xe...</p>";
+    container.innerHTML = "<p class='loading-text'>Äang tÃ¬m phá»¥ tÃ¹ng phÃ¹ há»£p cho hÃ£ng xe...</p>";
     
     try {
-        // Sử dụng brandId đã lưu ở State từ Bước 0
+        // Sá»­ dá»¥ng brandId Ä‘Ã£ lÆ°u á»Ÿ State tá»« BÆ°á»›c 0
         const res = await BookingAPI.getInventory();
         
         allParts = res.data?.pageData || res.data?.items || (Array.isArray(res.data) ? res.data : []);
@@ -196,19 +196,19 @@ async function loadInventories() {
         bookingUI.renderPartList(container, allParts, formatCurrency, currentPartPage, 6);
     } catch (err) {
         console.error("Load parts error:", err);
-        container.innerHTML = `<p class="error-msg">Không thể tải danh sách phụ kiện.</p>`;
+        container.innerHTML = `<p class="error-msg">KhÃ´ng thá»ƒ táº£i danh sÃ¡ch phá»¥ kiá»‡n.</p>`;
     }
 }
 
 function handleVehicleStep() {
     if (!bookingState.isNewVehicle) {
-        // Lấy từ xe có sẵn
+        // Láº¥y tá»« xe cÃ³ sáºµn
         const select = document.getElementById("myVehicles");
         const vehicleId = select.value;
-        if (!vehicleId) return alert("Vui lòng chọn xe!");
+        if (!vehicleId) return alert("Vui lÃ²ng chá»n xe!");
         
         bookingState.vehicleId = parseInt(vehicleId);
-        // Lưu brandName/modelName từ thuộc tính data- của option (nếu có) để BE hiển thị
+        // LÆ°u brandName/modelName tá»« thuá»™c tÃ­nh data- cá»§a option (náº¿u cÃ³) Ä‘á»ƒ BE hiá»ƒn thá»‹
         const selectedOption = select.options[select.selectedIndex];
         bookingState.brandId = parseInt(selectedOption.dataset.brandid);
         bookingState.brandName = selectedOption.dataset.brand;
@@ -216,17 +216,17 @@ function handleVehicleStep() {
         bookingState.modelId = parseInt(selectedOption.dataset.modelid);
         bookingState.licensePlate = selectedOption.dataset.plate;
     } else {
-        // Lấy từ form chọn hãng/loại
+        // Láº¥y tá»« form chá»n hÃ£ng/loáº¡i
         const brandSelect = document.getElementById("vehicleBrand");
         const customBrandInput = document.getElementById("customBrand");
         if (!customBrandInput.classList.contains('hidden') && customBrandInput.value.trim() !== "") {
             bookingState.brandName = customBrandInput.value.trim();
-            bookingState.brandId = 0; // 0 để BE biết đây là hãng mới
+            bookingState.brandId = 0; // 0 Ä‘á»ƒ BE biáº¿t Ä‘Ã¢y lÃ  hÃ£ng má»›i
         } else if (brandSelect.value) {
             bookingState.brandName = brandSelect.options[brandSelect.selectedIndex].text;
             bookingState.brandId = parseInt(brandSelect.value);
         } else {
-            return alert("Vui lòng chọn hoặc nhập hãng xe!");
+            return alert("Vui lÃ²ng chá»n hoáº·c nháº­p hÃ£ng xe!");
         }
 
         const modelSelect = document.getElementById("vehicleModel");
@@ -238,10 +238,10 @@ function handleVehicleStep() {
             bookingState.modelName = modelSelect.options[modelSelect.selectedIndex].text;
             bookingState.modelId = parseInt(modelSelect.value);
         } else {
-            return alert("Vui lòng chọn hoặc nhập loại xe!");
+            return alert("Vui lÃ²ng chá»n hoáº·c nháº­p loáº¡i xe!");
         }
 
-        bookingState.vehicleId = 0; // Hoặc null tùy BE
+        bookingState.vehicleId = 0; // Hoáº·c null tÃ¹y BE
     }
     
     loadServices();
@@ -250,14 +250,14 @@ function handleVehicleStep() {
 
 function nextStep(step) {
     if (step === 2) {
-        // Kiểm tra dịch vụ trước khi sang bước phụ kiện
+        // Kiá»ƒm tra dá»‹ch vá»¥ trÆ°á»›c khi sang bÆ°á»›c phá»¥ kiá»‡n
         const checked = [...document.querySelectorAll('input[name="service-item"]:checked')];
         if (checked.length === 0) {
-            alert("Vui lòng chọn ít nhất một dịch vụ để tiếp tục");
+            alert("Vui lÃ²ng chá»n Ã­t nháº¥t má»™t dá»‹ch vá»¥ Ä‘á»ƒ tiáº¿p tá»¥c");
             return;
         }
         bookingState.services = checked.map(input => parseInt(input.value));
-        // Gọi hàm load phụ tùng
+        // Gá»i hÃ m load phá»¥ tÃ¹ng
         loadInventories();
     }
 
@@ -268,7 +268,7 @@ function nextStep(step) {
         const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
         const formContainer = document.getElementById("booking-form");
         
-        // TRUYỀN THÊM bookingState VÀO ĐÂY
+        // TRUYá»€N THÃŠM bookingState VÃ€O ÄÃ‚Y
         bookingUI.renderBookingForm(formContainer, userInfo, bookingState); 
         setupStep3Events();
         const slotContainer = document.getElementById("time-slots");
@@ -287,20 +287,20 @@ function setupStep3Events() {
         if (chkOthers) {
             chkOthers.addEventListener("change", (e) => {
                 if (!e.target.checked) {
-                    // --- YÊU CẦU 3: Khôi phục lại biển số nếu bỏ tích đặt hộ ---
+                    // --- YÃŠU Cáº¦U 3: KhÃ´i phá»¥c láº¡i biá»ƒn sá»‘ náº¿u bá» tÃ­ch Ä‘áº·t há»™ ---
                     if (bookingState.licensePlate) {
                         plateInput.value = bookingState.licensePlate;
                         plateInput.readOnly = true; 
                     }
                 } else {
-                    // Nếu đặt hộ thì cho phép nhập mới
+                    // Náº¿u Ä‘áº·t há»™ thÃ¬ cho phÃ©p nháº­p má»›i
                     plateInput.value = "";
                     plateInput.readOnly = false;
                 }
             });
         }
 
-        // --- YÊU CẦU 5: Max Length cho Textarea ---
+        // --- YÃŠU Cáº¦U 5: Max Length cho Textarea ---
         if (noteArea) {
             noteArea.setAttribute("maxlength", "500");
         }
@@ -325,38 +325,43 @@ async function handleFormSubmit(e) {
         today.setHours(0, 0, 0, 0);
 
         if (selectedDate < today) {
-            alert("Ngày hẹn không được trong quá khứ!");
+            alert("NgÃ y háº¹n khÃ´ng Ä‘Æ°á»£c trong quÃ¡ khá»©!");
             return;
         }
     }
 
     if (!date || !timeSlot) {
-        alert("Vui lòng chọn đầy đủ ngày và giờ hẹn!");
+        alert("Vui lÃ²ng chá»n Ä‘áº§y Ä‘á»§ ngÃ y vÃ  giá» háº¹n!");
         return;
     }
 
     if (rawLicensePlate.length > 11) {
-        alert("Biển số xe không được quá 11 ký tự!");
+        alert("Biá»ƒn sá»‘ xe khÃ´ng Ä‘Æ°á»£c quÃ¡ 11 kÃ½ tá»±!");
         document.getElementById("licensePlate").focus();
         return;
     }
 
-    if (rawLicensePlate.length < 4) { // Validate tối thiểu nếu cần
-        alert("Biển số xe không hợp lệ!");
+    if (rawLicensePlate.length < 4) { // Validate tá»‘i thiá»ƒu náº¿u cáº§n
+        alert("Biá»ƒn sá»‘ xe khÃ´ng há»£p lá»‡!");
         return;
     }
 
     if (!plateRegex.test(rawLicensePlate)) {
-        alert("Biển số xe không đúng định dạng! (Ví dụ đúng: 29BF-009.09)");
+        alert("Biá»ƒn sá»‘ xe khÃ´ng Ä‘Ãºng Ä‘á»‹nh dáº¡ng! (VÃ­ dá»¥ Ä‘Ãºng: 29BF-009.09)");
         document.getElementById("licensePlate").focus();
         return;
     }
 
     const cleanLicensePlate = rawLicensePlate;
+    const branchId = Number(localStorage.getItem("branchId"));
+    if (!Number.isFinite(branchId) || branchId <= 0) {
+        alert("Thiếu thông tin chi nhánh (branchId). Vui lòng đăng nhập lại.");
+        return;
+    }
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang xử lý...';
+    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Äang xá»­ lÃ½...';
 
-    // Tạo Payload với KEY viết hoa chữ cái đầu (PascalCase) để khớp tuyệt đối với C# DTO
+    // Táº¡o Payload vá»›i KEY viáº¿t hoa chá»¯ cÃ¡i Ä‘áº§u (PascalCase) Ä‘á»ƒ khá»›p tuyá»‡t Ä‘á»‘i vá»›i C# DTO
     const payload = {
         AppointmentDateTime: `${date}T${timeSlot}:00`,
         ServiceIds: (bookingState.services || []).map(id => Number(id)),
@@ -366,12 +371,13 @@ async function handleFormSubmit(e) {
         CustomVehicleModel: bookingState.modelName,
         LicensePlate: cleanLicensePlate,
         Description: noteArea.value.trim().substring(0, 500),
-        Status: 1
+        Status: 1,
+        BranchId: branchId
     };
 
-    // --- Xử lý Logic Role theo đúng AppointmentService.cs ---
+    // --- Xá»­ lÃ½ Logic Role theo Ä‘Ãºng AppointmentService.cs ---
    if (isLogged && !isBookForOthers) {
-        // TH1: Đăng nhập đặt cho mình
+        // TH1: ÄÄƒng nháº­p Ä‘áº·t cho mÃ¬nh
         payload.CustomerId = getCustomerId();
         payload.VehicleId = bookingState.vehicleId || null; 
         payload.FirstName = null;
@@ -383,8 +389,8 @@ async function handleFormSubmit(e) {
         payload.CustomVehicleModel = null;
     } 
     else if (isLogged && isBookForOthers) {
-        // TH3: Đăng nhập nhưng đặt hộ bạn bè
-        payload.CustomerId = null; // Gửi null để BE hiểu là khách mới
+        // TH3: ÄÄƒng nháº­p nhÆ°ng Ä‘áº·t há»™ báº¡n bÃ¨
+        payload.CustomerId = null; // Gá»­i null Ä‘á»ƒ BE hiá»ƒu lÃ  khÃ¡ch má»›i
         payload.VehicleId = null;
         payload.CustomVehicleBrand = null;
         payload.CustomVehicleModel = null;
@@ -393,7 +399,7 @@ async function handleFormSubmit(e) {
         payload.Phone = document.getElementById("phone").value.trim();
     }
     else {
-        // TH4: Khách vãng lai (hoặc TH2 xe mới hoàn toàn)
+        // TH4: KhÃ¡ch vÃ£ng lai (hoáº·c TH2 xe má»›i hoÃ n toÃ n)
         payload.CustomerId = null;
         payload.VehicleId = null;
         payload.FirstName = document.getElementById("firstName").value.trim();
@@ -403,19 +409,19 @@ async function handleFormSubmit(e) {
         payload.CustomVehicleModel = null;
     }
 
-    console.log("Payload gửi đi:", payload);
+    console.log("Payload gá»­i Ä‘i:", payload);
 
     try {
         const result = await BookingAPI.createAppointment(payload);
         if (result.success || result.data) {
             nextStep(4);
         } else {
-            alert("Lỗi: " + (result.message || "Không thể đặt lịch"));
+            alert("Lá»—i: " + (result.message || "KhÃ´ng thá»ƒ Ä‘áº·t lá»‹ch"));
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
         }
     } catch (err) {
-        alert("Lỗi hệ thống: " + err.message);
+        alert("Lá»—i há»‡ thá»‘ng: " + err.message);
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;
     }
@@ -428,22 +434,22 @@ function getCustomerId() {
 }
 
 function formatCurrency(amount) {
-    return (amount || 0).toLocaleString('vi-VN') + " VNĐ";
+    return (amount || 0).toLocaleString('vi-VN') + " VNÄ";
 }
 
-// Hàm chuyển trang cho Dịch vụ
+// HÃ m chuyá»ƒn trang cho Dá»‹ch vá»¥
 window.changeServicePage = function(page) {
     currentServicePage = page;
     const container = document.getElementById("service-list");
     bookingUI.renderServiceList(container, allServices, formatCurrency, currentServicePage, 6);
-    // Cuộn nhẹ lên đầu danh sách
+    // Cuá»™n nháº¹ lÃªn Ä‘áº§u danh sÃ¡ch
     container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
-// Hàm chuyển trang cho Phụ tùng
+// HÃ m chuyá»ƒn trang cho Phá»¥ tÃ¹ng
 window.changePartPage = function(page) {
     currentPartPage = page;
-    const container = document.getElementById("part-list"); // hoặc ID container phụ tùng của bạn
+    const container = document.getElementById("part-list"); // hoáº·c ID container phá»¥ tÃ¹ng cá»§a báº¡n
     bookingUI.renderPartList(container, allParts, formatCurrency, currentPartPage, 6);
     container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
@@ -454,7 +460,7 @@ window.handlePartClick = (cardEl, partId) => {
     const chk = cardEl.querySelector('input');
     chk.checked = !chk.checked;
     
-    // Cập nhật vào bookingState
+    // Cáº­p nháº­t vÃ o bookingState
     if (!bookingState.parts) bookingState.parts = [];
     
     if (chk.checked) {
@@ -465,3 +471,4 @@ window.handlePartClick = (cardEl, partId) => {
         bookingState.parts = bookingState.parts.filter(id => id !== partId);
     }
 };
+

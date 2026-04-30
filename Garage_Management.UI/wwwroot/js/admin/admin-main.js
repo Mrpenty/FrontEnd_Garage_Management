@@ -6,6 +6,7 @@ let currentUserPage = 1;
 
 export async function initAdminDashboard() {
     setupNavigation();
+    setupCreateEmployee();
     await loadUserData(1);
     await loadReportData();
     await loadBranchData();
@@ -74,4 +75,51 @@ window.handleToggleBranch = async (branchId, newStatus) => {
             loadBranchData();
         }
     }
+}
+
+function setupCreateEmployee() {
+    const openBtn = document.getElementById('btn-open-create-employee');
+    const closeBtn = document.getElementById('btn-close-create-employee');
+    const cancelBtn = document.getElementById('btn-cancel-create-employee');
+    const modal = document.getElementById('create-employee-modal');
+    const form = document.getElementById('create-employee-form');
+
+    if (!modal || !form) return;
+
+    const openModal = () => {
+        form.reset();
+        modal.classList.remove('d-none');
+    };
+    const closeModal = () => modal.classList.add('d-none');
+
+    openBtn?.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            fullName: document.getElementById('emp-full-name').value.trim(),
+            email: document.getElementById('emp-email').value.trim(),
+            phoneNumber: document.getElementById('emp-phone').value.trim(),
+            password: document.getElementById('emp-password').value,
+            role: document.getElementById('emp-role').value,
+            branchId: Number(document.getElementById('emp-branch-id').value)
+        };
+
+        if (!payload.fullName || !payload.email || !payload.phoneNumber || !payload.password || !payload.role || !payload.branchId) {
+            alert('Vui lòng nhập đầy đủ thông tin nhân viên');
+            return;
+        }
+
+        const res = await adminApi.createEmployee(payload);
+        if (res.success) {
+            alert('Tạo nhân viên thành công');
+            closeModal();
+            await loadUserData(currentUserPage);
+            return;
+        }
+
+        alert(res.message || 'Không thể tạo nhân viên');
+    });
 }

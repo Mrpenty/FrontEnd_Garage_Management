@@ -1,4 +1,4 @@
-import { vehicleApi, serviceApi, jobcardApi, customerApi, appointmentApi, EstimateAPI, PaymentAPI} from './jobcard-api.js';
+﻿import { vehicleApi, serviceApi, jobcardApi, customerApi, appointmentApi, EstimateAPI, PaymentAPI} from './jobcard-api.js';
 import { ButtonStateManager, Toast, FormValidator, ModalHelper } from '../common/ui-helpers.js';
 
 export const jobcardUI = {
@@ -896,7 +896,7 @@ export const jobcardUI = {
                 </div>
                 <div class="info-card">
                     <label>Biển số xe</label>
-                    <p class="plate-text">${data.licensePlate || 'ID: ' + data.vehicleId}</p>
+                    <p class="plate-text">${data.licensePlate || data.vehicle?.licensePlate || 'N/A'}</p>
                 </div>
                 <div class="info-card">
                     <label>Kỹ thuật viên</label>

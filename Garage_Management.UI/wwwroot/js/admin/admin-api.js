@@ -1,6 +1,7 @@
 import CONFIG from '../config.js';
 
 const USER_URL = `${CONFIG.API_BASE_URL}/User`;
+const EMPLOYEE_URL = `${CONFIG.API_BASE_URL}/Employee`;
 const BRANCH_URL = `${CONFIG.API_BASE_URL}/Branches`;
 const REPORT_URL = `${CONFIG.API_BASE_URL}/reports`;
 
@@ -20,6 +21,13 @@ export const adminApi = {
             method: 'POST',
             headers: adminApi.getAuthHeader(),
             body: JSON.stringify({ userId, isActive })
+        }).then(res => res.json()),
+
+    createEmployee: (payload) =>
+        fetch(`${EMPLOYEE_URL}/create`, {
+            method: 'POST',
+            headers: adminApi.getAuthHeader(),
+            body: JSON.stringify(payload)
         }).then(res => res.json()),
 
     // Branch APIs

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -33,6 +33,9 @@
                 <section id="section-users" class="dashboard-section">
                     <div class="d-flex justify-content-between mb-3">
                         <h2>Quản lý người dùng</h2>
+                        <button id="btn-open-create-employee" class="btn btn-primary btn-sm">
+                            <i class="bi bi-person-plus me-1"></i> Tạo nhân viên
+                        </button>
                     </div>
                     <div class="table-responsive bg-white shadow-sm p-3 rounded">
                         <table class="table table-hover align-middle">
@@ -64,7 +67,7 @@
                                     <th>Quản lý</th>
                                     <th>Số nhân viên</th>
                                     <th>Số lượng công việc</th>
-                                    <th>Status</th>
+                                    <th>Trạng thái</th>
                                     <th>Hành động</th>
                                 </tr>
                             </thead>
@@ -94,6 +97,58 @@
         </div>
     </div>
 
+
+
+    
+    <div id="create-employee-modal" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background: rgba(0,0,0,.45); z-index: 2000;">
+        <div class="d-flex justify-content-center align-items-center h-100">
+            <div class="bg-white rounded shadow p-4" style="width: 100%; max-width: 560px;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Tạo nhân viên</h5>
+                    <button id="btn-close-create-employee" type="button" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <form id="create-employee-form">
+                    <div class="mb-2">
+                        <label class="form-label">Họ tên</label>
+                        <input id="emp-full-name" class="form-control" type="text" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Email</label>
+                        <input id="emp-email" class="form-control" type="email" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Số điện thoại</label>
+                        <input id="emp-phone" class="form-control" type="text" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Mật khẩu</label>
+                        <input id="emp-password" class="form-control" type="password" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Vai trò</label>
+                        <select id="emp-role" class="form-select" required>
+                            <option value="">-- Chọn vai trò --</option>
+                            <option value="Supervisor">Supervisor</option>
+                            <option value="Receptionist">Receptionist</option>
+                            <option value="Mechanic">Mechanic</option>
+                            <option value="Stocker">Stocker</option>
+                            <option value="Accountant">Accountant</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Branch ID</label>
+                        <input id="emp-branch-id" class="form-control" type="number" min="1" required>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button id="btn-cancel-create-employee" type="button" class="btn btn-secondary">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Tạo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <script type="module">
         import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
         import { initAdminDashboard } from '../../wwwroot/js/admin/admin-main.js';
