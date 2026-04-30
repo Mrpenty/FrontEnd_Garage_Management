@@ -7,6 +7,8 @@ let cachedBrands = [];
 let cachedTypes = [];
 let editingId = null;          // id đang edit (null = đang create)
 let lastLoadedRows = [];       // cache rows trang hiện tại để pre-fill khi edit
+let currentKeyword = '';       // search theo tên
+let currentBrandFilter = '';   // filter brand (chỉ áp dụng cho tab Models)
 
 const API_ENDPOINTS = {
     brands: `${CONFIG.API_BASE_URL}/VehicleBrands`,
@@ -38,6 +40,24 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('prev-btn').onclick = () => changePage(-1);
     document.getElementById('next-btn').onclick = () => changePage(1);
     document.getElementById('vehicle-form').onsubmit = handleFormSubmit;
+
+    // Search debounce
+    let searchTimer;
+    document.getElementById('vehicle-search')?.addEventListener('input', (e) => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            currentKeyword = e.target.value.trim();
+            currentPage = 1;
+            loadTableData();
+        }, 350);
+    });
+
+    // Brand filter (Models tab) — đổi → fetch lại
+    document.getElementById('brand-filter')?.addEventListener('change', (e) => {
+        currentBrandFilter = e.target.value;
+        currentPage = 1;
+        loadTableData();
+    });
 });
 
 // --- LOGIC PHÂN TRANG ---
@@ -57,9 +77,21 @@ async function loadTableData() {
     try {
         if (currentTab === 'models') {
             await refreshCaches();
+            populateBrandFilter();
         }
 
-        const response = await fetch(`${API_ENDPOINTS[currentTab]}?page=${currentPage}&pageSize=10`, { headers: getAuthHeaders() });
+        // Build URL: tab Models + có brandFilter → dùng endpoint mới /VehicleBrands/{id}/models
+        const qs = new URLSearchParams({ page: currentPage, pageSize: 10 });
+        if (currentKeyword) qs.set('keyword', currentKeyword);
+
+        let url;
+        if (currentTab === 'models' && currentBrandFilter) {
+            url = `${API_ENDPOINTS.brands}/${currentBrandFilter}/models?${qs}`;
+        } else {
+            url = `${API_ENDPOINTS[currentTab]}?${qs}`;
+        }
+
+        const response = await fetch(url, { headers: getAuthHeaders() });
         const result = await response.json();
         const list = result.data?.pageData || [];
         lastLoadedRows = list;
@@ -74,6 +106,17 @@ async function loadTableData() {
     }
 }
 
+// Đổ danh sách brand vào filter dropdown (chỉ visible khi tab = models)
+function populateBrandFilter() {
+    const sel = document.getElementById('brand-filter');
+    if (!sel) return;
+    if (sel.options.length <= 1) {
+        sel.innerHTML = '<option value="">-- Tất cả thương hiệu --</option>' +
+            cachedBrands.map(b => `<option value="${b.brandId}">${b.brandName}</option>`).join('');
+    }
+    sel.value = currentBrandFilter || '';
+}
+
 function updatePaginationUI() {
     document.getElementById('page-info').innerText = `Trang ${currentPage} / ${totalPages}`;
     document.getElementById('prev-btn').disabled = (currentPage === 1);
@@ -84,6 +127,8 @@ function updatePaginationUI() {
 window.openTab = (tabName) => {
     currentTab = tabName;
     currentPage = 1;
+    currentKeyword = '';
+    currentBrandFilter = '';
 
     document.querySelectorAll('.tab-link').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabName));
@@ -91,6 +136,15 @@ window.openTab = (tabName) => {
 
     const titles = { brands: 'Thương hiệu', models: 'Dòng xe', types: 'Loại xe' };
     document.getElementById('tab-title').innerText = `Danh sách ${titles[tabName]}`;
+
+    // Reset search input + brand filter visibility (chỉ Models hiện brand filter)
+    const searchInput = document.getElementById('vehicle-search');
+    if (searchInput) searchInput.value = '';
+    const brandFilter = document.getElementById('brand-filter');
+    if (brandFilter) {
+        brandFilter.style.display = tabName === 'models' ? 'inline-block' : 'none';
+        brandFilter.value = '';
+    }
 
     loadTableData();
 };

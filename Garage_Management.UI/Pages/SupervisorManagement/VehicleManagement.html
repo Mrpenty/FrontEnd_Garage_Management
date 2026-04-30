@@ -37,6 +37,14 @@
                 <button class="btn-primary" onclick="showAddModal()"><i class="fas fa-plus"></i> Thêm mới</button>
             </div>
 
+            <div class="filter-bar" style="display:flex; gap:10px; align-items:center; padding:10px 0; flex-wrap:wrap;">
+                <input type="text" id="vehicle-search" placeholder="Tìm theo tên..."
+                    style="flex:1; min-width:200px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px;">
+                <select id="brand-filter" style="display:none; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px;">
+                    <option value="">-- Tất cả thương hiệu --</option>
+                </select>
+            </div>
+
             <div class="table-responsive">
                 <table class="data-table">
                     <thead>

@@ -42,9 +42,12 @@ async function loadWorkbays() {
                     <td>${wb.note || ''}</td>
                     <td>${statusBadge}</td>
                     <td>${wb.jobcardId ? `<span class="tag">JC: #${wb.jobcardId}</span>` : '<em>Không có</em>'}</td>
-                    <td>
-                        <button class="btn-detail-inner" onclick="editWorkbay(${wb.id})">
+                    <td style="white-space:nowrap;">
+                        <button class="btn-detail-inner" title="Chỉnh sửa" onclick="editWorkbay(${wb.id})">
                             <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-detail-inner" title="Xóa cứng" style="background:#be123c; color:#fff; border-color:#be123c;" onclick="deleteWorkbay(${wb.id}, '${(wb.name || '').replace(/'/g, "\\'")}')">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
@@ -154,4 +157,41 @@ async function saveWorkbay() {
 
 window.closeWorkbayModal = function() {
     $('#workbay-modal').fadeOut();
+}
+
+// DELETE /api/WorkBays/{id} — BE chặn nếu khoang đang Occupied hoặc có lịch sử jobcard.
+window.deleteWorkbay = async function(id, name) {
+    const result = await Swal.fire({
+        title: 'Xóa cứng khoang?',
+        html: `Bạn sẽ xóa <strong>${name || 'khoang #' + id}</strong> khỏi hệ thống.<br><small>BE sẽ chặn nếu khoang đang Occupied hoặc đã có lịch sử jobcard.</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Xóa cứng',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#be123c'
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/WorkBays/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            Swal.fire('Đã xóa', 'Khoang đã bị xóa khỏi hệ thống.', 'success');
+            loadWorkbays();
+        } else {
+            const errBody = await response.json().catch(() => ({}));
+            const msg = errBody.message
+                || errBody.title
+                || 'Không xóa được. Có thể khoang đang Occupied hoặc có jobcard liên quan — hãy đổi sang Inactive thay vì xóa cứng.';
+            Swal.fire('Không thể xóa', msg, 'error');
+        }
+    } catch (e) {
+        Swal.fire('Lỗi', 'Không kết nối được server', 'error');
+    }
 }
