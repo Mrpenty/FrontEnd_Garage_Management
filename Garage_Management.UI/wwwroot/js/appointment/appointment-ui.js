@@ -1,6 +1,85 @@
 export const appointmentUI = {
     renderLayout: (container) => {
         container.innerHTML = `
+            <style>
+                .service-picker {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                    gap: 8px;
+                    max-height: 240px;
+                    overflow-y: auto;
+                    padding: 8px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    background: #f8fafc;
+                }
+                .service-picker:empty::before {
+                    content: "Đang tải dịch vụ...";
+                    color: #94a3b8;
+                    font-size: 0.85rem;
+                    padding: 6px;
+                    grid-column: 1 / -1;
+                }
+                .service-card {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 8px;
+                    padding: 10px 12px;
+                    background: #fff;
+                    border: 1.5px solid #e2e8f0;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                    user-select: none;
+                }
+                .service-card:hover {
+                    border-color: #4f46e5;
+                    background: #eef2ff;
+                }
+                .service-card input[type="checkbox"] {
+                    margin-top: 3px;
+                    flex-shrink: 0;
+                    cursor: pointer;
+                    accent-color: #4f46e5;
+                }
+                .service-card.selected {
+                    border-color: #4f46e5;
+                    background: #eef2ff;
+                    box-shadow: 0 1px 3px rgba(79, 70, 229, 0.15);
+                }
+                .service-card-body { flex: 1; min-width: 0; }
+                .service-card-name {
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    color: #1e293b;
+                    line-height: 1.3;
+                    word-break: break-word;
+                }
+                .service-card-meta {
+                    margin-top: 3px;
+                    font-size: 0.72rem;
+                    color: #64748b;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                .service-summary {
+                    margin-top: 6px;
+                    font-size: 0.78rem;
+                    color: #475569;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .service-summary .badge-count {
+                    background: #4f46e5;
+                    color: #fff;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-weight: 600;
+                    font-size: 0.7rem;
+                }
+            </style>
             <div class="job-card-section">
                 <h2 class="table-title-main">QUẢN LÝ LỊCH HẸN</h2>
                 
@@ -185,9 +264,11 @@ export const appointmentUI = {
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Dịch vụ</label>
-                                <select id="bookService" multiple style="height: 80px;">
-                                </select>
+                                <label>Dịch vụ <span style="color:#64748b; font-weight:400; font-size:0.8rem;">(chọn nhiều)</span></label>
+                                <div id="bookService" class="service-picker"></div>
+                                <div class="service-summary" id="bookServiceSummary">
+                                    Đã chọn: <span class="badge-count" id="bookServiceCount">0</span>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label>Ghi chú</label>

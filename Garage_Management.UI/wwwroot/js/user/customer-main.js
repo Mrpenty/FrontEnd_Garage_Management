@@ -1,5 +1,6 @@
 import { CustomerAPI } from './customer-api.js';
 import { customerUI } from './customer-ui.js';
+import { jobcardApi } from '../jobcard/jobcard-api.js';
 import { renderPagination, extractPaging } from '../common/pagination.js';
 
 const PAGE_SIZE = 20;
@@ -24,8 +25,47 @@ export async function initCustomerModule() {
         if (btnAddVehicle) {
             currentSelectedCustomerId = btnAddVehicle.dataset.id;
             openVehicleModal();
+            return;
+        }
+
+        const btnView = e.target.closest('.btn-view-customer');
+        if (btnView) {
+            await openCustomerDetailModal(btnView.dataset.id);
+            return;
         }
     };
+
+    // --- Modal chi tiết khách hàng + lịch sử sửa xe ---
+    async function openCustomerDetailModal(customerId) {
+        const detailModal = document.getElementById('customerDetailModal');
+        const body = document.getElementById('customerDetailBody');
+
+        body.innerHTML = `<div class="text-center" style="padding:30px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>`;
+        detailModal.style.display = 'block';
+
+        try {
+            // Gọi song song: chi tiết khách + lịch sử sửa xe
+            const [custRes, jcRes] = await Promise.all([
+                CustomerAPI.getDetails(customerId),
+                jobcardApi.getMyJobCard(customerId).catch(() => ({ data: { pageData: [] } }))
+            ]);
+
+            const customer = custRes.data || custRes;
+            const jobcards = jcRes.data?.pageData || jcRes.data?.items || (Array.isArray(jcRes.data) ? jcRes.data : []);
+
+            customerUI.renderCustomerDetail(body, { customer, jobcards });
+        } catch (err) {
+            console.error('Lỗi tải chi tiết khách hàng:', err);
+            body.innerHTML = `<div class="text-center" style="color:red; padding:20px;">Lỗi: ${err.message}</div>`;
+        }
+    }
+
+    // Đóng modal chi tiết
+    document.querySelectorAll('.close-customer-detail').forEach(btn => {
+        btn.onclick = () => {
+            document.getElementById('customerDetailModal').style.display = 'none';
+        };
+    });
 
     // --- Hàm mở và nạp dữ liệu cho Modal Xe ---
     async function openVehicleModal() {

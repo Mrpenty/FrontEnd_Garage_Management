@@ -117,12 +117,36 @@
             timeSelect.innerHTML = '<option value="">-- Chọn khung giờ --</option>' + 
             TIME_SLOTS.map(slot => `<option value="${slot.value}">${slot.label}</option>`).join('');
 
-            // Load Services
+            // Load Services — render dạng card grid có checkbox
             const serviceRes = await BookingAPI.getServices();
-            if(serviceRes.success) {
-                const serviceSelect = document.getElementById('bookService');
-                serviceSelect.innerHTML = serviceRes.data.pageData.map(s => 
-                    `<option value="${s.serviceId}">${s.serviceName}</option>`).join('');
+            if (serviceRes.success) {
+                const container = document.getElementById('bookService');
+                const services = serviceRes.data.pageData || [];
+                container.innerHTML = services.map(s => {
+                    const minutes = s.totalEstimateMinute ?? s.estimateMinute ?? 0;
+                    const safeName = (s.serviceName || '').replace(/"/g, '&quot;');
+                    return `
+                        <label class="service-card" data-id="${s.serviceId}">
+                            <input type="checkbox" value="${s.serviceId}">
+                            <div class="service-card-body">
+                                <div class="service-card-name">${safeName}</div>
+                                ${minutes > 0 ? `<div class="service-card-meta"><i class="far fa-clock"></i> ~${minutes} phút</div>` : ''}
+                            </div>
+                        </label>`;
+                }).join('');
+
+                // Sync class .selected + đếm số đã chọn
+                const updateCount = () => {
+                    const checked = container.querySelectorAll('input[type="checkbox"]:checked');
+                    const countEl = document.getElementById('bookServiceCount');
+                    if (countEl) countEl.textContent = checked.length;
+                    container.querySelectorAll('.service-card').forEach(card => {
+                        const chk = card.querySelector('input');
+                        card.classList.toggle('selected', chk.checked);
+                    });
+                };
+                container.addEventListener('change', updateCount);
+                updateCount();
             }
         };
 
@@ -339,7 +363,7 @@
                 appointmentDateTime: appointmentDateTime,
                 vehicleId: parseInt(document.getElementById('bookVehicle').value) || null,
                 vehicleModelId: null,
-                serviceIds: Array.from(document.getElementById('bookService').selectedOptions).map(o => parseInt(o.value)),
+                serviceIds: Array.from(document.querySelectorAll('#bookService input[type="checkbox"]:checked')).map(c => parseInt(c.value)),
                 description: document.getElementById('bookDescription').value,
                 status: 2, // Mặc định Đã xác nhận vì lễ tân đặt hộ
                 branchId: branchId

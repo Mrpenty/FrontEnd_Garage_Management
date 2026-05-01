@@ -26,13 +26,14 @@ export const customerUI = {
                                 <th>Họ tên</th>
                                 <th>Số điện thoại</th>
                                 <th>Email</th>
-                                <th>Danh sách xe</th>
+                                <th>Biển số xe</th>
+                                <th>Dòng xe (Models)</th>
                                 <th>Địa chỉ</th>
                                 <th class="text-center">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody id="customer-table-body">
-                            <tr><td colspan="6" class="text-center">Đang tải dữ liệu...</td></tr>
+                            <tr><td colspan="8" class="text-center">Đang tải dữ liệu...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -75,6 +76,21 @@ export const customerUI = {
                                 <button type="submit" class="btn-primary" id="btnSubmitNewCustomer">Lưu Khách Hàng</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Chi tiết khách hàng + lịch sử sửa xe -->
+            <div id="customerDetailModal" class="modal customer-modal">
+                <div class="modal-content" style="max-width: 900px; width: 90%;">
+                    <div class="modal-header">
+                        <h3><i class="fa-solid fa-id-card"></i> Chi tiết khách hàng</h3>
+                        <span class="close-modal close-customer-detail">&times;</span>
+                    </div>
+                    <div class="modal-body" id="customerDetailBody" style="max-height: 70vh; overflow-y: auto;">
+                        <div class="text-center" style="padding:30px;">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                        </div>
                     </div>
                 </div>
             </div>
@@ -128,49 +144,167 @@ export const customerUI = {
 
     renderTableRows: (tbody, items) => {
         if (!items || items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center">Không tìm thấy khách hàng nào</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center">Không tìm thấy khách hàng nào</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = items.map(item =>
-            {
-                const vehicles = item.vehicles || [];
-                let vehicleHtml = '';
+        tbody.innerHTML = items.map(item => {
+            const vehicles = item.vehicles || [];
+            let plateHtml = '';
+            let modelsHtml = '';
 
-                if (vehicles.length > 0) {
-                    vehicleHtml = vehicles.map(v => `
-                        <div class="vehicle-mini-badge" title="${v.brand} ${v.model} (${v.year})">
-                            <i class="fa-solid fa-motorcycle"></i> ${v.licensePlate}
-                        </div>
-                    `).join('');
-                } else {
-                    vehicleHtml = '<span class="text-muted" style="font-size: 11px;">Chưa có xe</span>';
-                }           
-            return `
-            <tr>
-                <td>#${item.customerId}</td>
-                <td><strong>${item.fullName}</strong></td>
-                <td>${item.phoneNumber}</td>
-                <td>${item.email || '<span class="text-muted">N/A</span>'}</td>
-                <td>
-                    <div class="customer-vehicles-list">
-                        ${vehicleHtml}
+            if (vehicles.length > 0) {
+                plateHtml = vehicles.map(v => `
+                    <div class="vehicle-mini-badge" title="${v.brand || ''} ${v.model || ''} (${v.year || ''})">
+                        <i class="fa-solid fa-motorcycle"></i> ${v.licensePlate || ''}
                     </div>
-                </td>
-                <td><small>${item.address || 'Chưa cập nhật'}</small></td>              
-                <td class="text-center">
-                    <button class="btn-action view btn-view-customer" data-id="${item.customerId}" title="Xem lịch sử">
-                        <i class="fa-solid fa-eye"></i>
-                    </button>
-                    <button class="btn-action add-v btn-add-vehicle-row" data-id="${item.customerId}" title="Thêm xe">
-                        <i class="fa-solid fa-plus-circle"></i>
-                    </button>
-                    <button class="btn-action print btn-edit-customer" data-id="${item.customerId}" title="Sửa">
-                        <i class="fa-solid fa-pen"></i>
-                    </button>
-                </td>
-                
-            </tr>
-        `;}).join('');
+                `).join('');
+                modelsHtml = vehicles.map(v => {
+                    const label = [v.brand, v.model].filter(Boolean).join(' ') || 'N/A';
+                    return `<div style="font-size:12px; color:#475569; padding:2px 0;">${label}</div>`;
+                }).join('');
+            } else {
+                plateHtml = '<span class="text-muted" style="font-size: 11px;">Chưa có xe</span>';
+                modelsHtml = '<span class="text-muted" style="font-size: 11px;">—</span>';
+            }
+
+            return `
+                <tr>
+                    <td>#${item.customerId}</td>
+                    <td><strong>${item.fullName}</strong></td>
+                    <td>${item.phoneNumber}</td>
+                    <td>${item.email || '<span class="text-muted">N/A</span>'}</td>
+                    <td><div class="customer-vehicles-list">${plateHtml}</div></td>
+                    <td>${modelsHtml}</td>
+                    <td><small>${item.address || 'Chưa cập nhật'}</small></td>
+                    <td class="text-center">
+                        <button class="btn-action view btn-view-customer" data-id="${item.customerId}" title="Xem chi tiết & lịch sử sửa xe">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <button class="btn-action add-v btn-add-vehicle-row" data-id="${item.customerId}" title="Thêm xe">
+                            <i class="fa-solid fa-plus-circle"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    // Render chi tiết khách + xe + lịch sử sửa xe vào modal
+    renderCustomerDetail: (container, { customer, jobcards }) => {
+        if (!customer) {
+            container.innerHTML = `<div class="text-center" style="color:red; padding:20px;">Không tải được dữ liệu khách hàng</div>`;
+            return;
+        }
+
+        const vehicles = customer.vehicles || [];
+        const jcs = (jobcards || []).slice().sort((a, b) =>
+            new Date(b.startDate || b.createdAt || 0) - new Date(a.startDate || a.createdAt || 0));
+
+        // --- Section 1: Thông tin cá nhân ---
+        const infoHtml = `
+            <div style="background:#f8fafc; border-radius:8px; padding:15px; margin-bottom:15px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div><i class="fa-solid fa-user" style="color:#4f46e5; width:20px;"></i>
+                        <strong>${customer.fullName || ''}</strong></div>
+                    <div><i class="fa-solid fa-phone" style="color:#4f46e5; width:20px;"></i>
+                        ${customer.phoneNumber || 'N/A'}</div>
+                    <div><i class="fa-solid fa-envelope" style="color:#4f46e5; width:20px;"></i>
+                        ${customer.email || '<span class="text-muted">Chưa cập nhật</span>'}</div>
+                    <div><i class="fa-solid fa-id-card" style="color:#4f46e5; width:20px;"></i>
+                        Mã KH: <strong>#${customer.customerId}</strong></div>
+                    <div style="grid-column: span 2;"><i class="fa-solid fa-location-dot" style="color:#4f46e5; width:20px;"></i>
+                        ${customer.address || '<span class="text-muted">Chưa cập nhật</span>'}</div>
+                </div>
+            </div>`;
+
+        // --- Section 2: Danh sách xe ---
+        const vehicleCards = vehicles.length === 0
+            ? `<div style="color:#94a3b8; font-style:italic; padding:10px;">Khách hàng chưa có xe nào</div>`
+            : vehicles.map(v => `
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <strong style="color:#4f46e5; font-size:1.05rem;">
+                            <i class="fa-solid fa-motorcycle"></i> ${v.licensePlate || 'Chưa có biển số'}
+                        </strong>
+                        ${v.year ? `<span style="font-size:0.8rem; color:#64748b;">Năm SX: ${v.year}</span>` : ''}
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:6px; font-size:0.85rem; color:#475569;">
+                        <div><span style="color:#94a3b8;">Hãng:</span> <strong>${v.brand || 'N/A'}</strong></div>
+                        <div><span style="color:#94a3b8;">Dòng:</span> <strong>${v.model || 'N/A'}</strong></div>
+                        <div><span style="color:#94a3b8;">Loại:</span> <strong>${v.typeName || v.type || 'N/A'}</strong></div>
+                        ${v.vin ? `<div style="grid-column: span 3;"><span style="color:#94a3b8;">VIN:</span> <code style="font-size:0.75rem;">${v.vin}</code></div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+        // --- Section 3: Lịch sử sửa xe ---
+        const statusMap = {
+            1: { text: 'Mới tạo', color: '#64748b' },
+            2: { text: 'Chờ thợ', color: '#f59e0b' },
+            3: { text: 'Chờ kiểm tra', color: '#f59e0b' },
+            4: { text: 'Đang kiểm tra', color: '#3b82f6' },
+            5: { text: 'Chờ duyệt', color: '#a855f7' },
+            6: { text: 'Chờ khách duyệt', color: '#a855f7' },
+            7: { text: 'Đang sửa', color: '#3b82f6' },
+            8: { text: 'Hoàn thành', color: '#10b981' },
+            9: { text: 'Đã giao xe', color: '#10b981' },
+            10: { text: 'Đã hủy', color: '#ef4444' },
+            11: { text: 'Không có lỗi', color: '#10b981' },
+            12: { text: 'Phát sinh', color: '#f59e0b' }
+        };
+
+        const historyHtml = jcs.length === 0
+            ? `<div style="color:#94a3b8; font-style:italic; padding:10px;">Chưa có lịch sử sửa xe</div>`
+            : `<div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã phiếu</th>
+                            <th>Ngày tiếp nhận</th>
+                            <th>Biển số</th>
+                            <th>Dịch vụ</th>
+                            <th>Trạng thái</th>
+                            <th class="text-center">Tổng tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${jcs.map(jc => {
+                            const s = statusMap[jc.status] || { text: 'N/A', color: '#94a3b8' };
+                            const date = jc.startDate ? new Date(jc.startDate).toLocaleString('vi-VN') : '';
+                            const services = (jc.services || []).map(sv => sv.serviceName).filter(Boolean).join(', ');
+                            const plate = jc.vehicles?.[0]?.licensePlate || jc.licensePlate || '';
+                            const total = (jc.services || []).reduce((sum, s) => sum + (s.price || 0), 0)
+                                        + (jc.spareParts || []).reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+                            return `
+                                <tr>
+                                    <td><strong style="color:#4f46e5;">#JC-${jc.jobCardId}</strong></td>
+                                    <td><small>${date}</small></td>
+                                    <td><strong>${plate}</strong></td>
+                                    <td><small>${services || '<span class="text-muted">—</span>'}</small></td>
+                                    <td><span style="background:${s.color}; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:600;">${s.text}</span></td>
+                                    <td class="text-center"><strong>${total > 0 ? total.toLocaleString('vi-VN') + 'đ' : '—'}</strong></td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+
+        container.innerHTML = `
+            <h4 style="border-left:4px solid #4f46e5; padding-left:10px; margin-bottom:10px; color:#1e293b;">
+                <i class="fa-solid fa-circle-info"></i> Thông tin cá nhân
+            </h4>
+            ${infoHtml}
+
+            <h4 style="border-left:4px solid #10b981; padding-left:10px; margin-bottom:10px; color:#1e293b;">
+                <i class="fa-solid fa-motorcycle"></i> Danh sách xe (${vehicles.length})
+            </h4>
+            ${vehicleCards}
+
+            <h4 style="border-left:4px solid #f59e0b; padding-left:10px; margin: 20px 0 10px 0; color:#1e293b;">
+                <i class="fa-solid fa-clock-rotate-left"></i> Lịch sử sửa xe (${jcs.length})
+            </h4>
+            ${historyHtml}
+        `;
     }
 };
