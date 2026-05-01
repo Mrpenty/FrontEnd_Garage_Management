@@ -28,6 +28,7 @@ let bookingState = {
 let allModels = [];
 let allServices = [];
 let allParts = [];
+let allBranches = [];
 let currentServicePage = 1;
 let currentPartPage = 1;
 
@@ -273,10 +274,44 @@ function nextStep(step) {
         setupStep3Events();
         const slotContainer = document.getElementById("time-slots");
         bookingUI.renderTimeSlots(slotContainer, TIME_SLOTS);
+        // Load chi nhánh vào dropdown branchSelect (sau khi form đã render)
+        loadBranches();
     }
 
     bookingUI.showStepContent(step);
     bookingUI.updateStepBar(step);
+}
+
+// Load danh sách chi nhánh vào dropdown #branchSelect.
+// Chạy mỗi khi vào step 4 (renderBookingForm).
+async function loadBranches() {
+    const sel = document.getElementById("branchSelect");
+    if (!sel) return;
+    try {
+        // Cache lần đầu để tránh request lặp khi user qua lại giữa các step
+        if (allBranches.length === 0) {
+            const res = await BookingAPI.getBranches();
+            allBranches = res.data?.pageData || res.data?.items || (Array.isArray(res.data) ? res.data : []);
+        }
+        if (allBranches.length === 0) {
+            sel.innerHTML = '<option value="">Không có chi nhánh nào</option>';
+            return;
+        }
+        sel.innerHTML = '<option value="">-- Chọn chi nhánh --</option>' +
+            allBranches.map(b => {
+                const id = b.branchId || b.id;
+                const name = b.branchName || b.name;
+                const addr = b.address ? ` — ${b.address}` : '';
+                return `<option value="${id}">${name}${addr}</option>`;
+            }).join('');
+
+        // Auto-select nếu user đã đăng nhập và có branchId trong localStorage
+        const savedBranchId = Number(localStorage.getItem("branchId"));
+        if (savedBranchId > 0) sel.value = String(savedBranchId);
+    } catch (err) {
+        console.error("Lỗi tải chi nhánh:", err);
+        sel.innerHTML = '<option value="">Lỗi tải chi nhánh</option>';
+    }
 }
 
 function setupStep3Events() {
@@ -353,9 +388,13 @@ async function handleFormSubmit(e) {
     }
 
     const cleanLicensePlate = rawLicensePlate;
-    const branchId = Number(localStorage.getItem("branchId"));
+
+    // Đọc branchId từ dropdown user vừa chọn (ưu tiên), fallback về localStorage nếu user đã đăng nhập
+    const branchSelect = document.getElementById("branchSelect");
+    const branchId = Number(branchSelect?.value) || Number(localStorage.getItem("branchId"));
     if (!Number.isFinite(branchId) || branchId <= 0) {
-        alert("Thiếu thông tin chi nhánh (branchId). Vui lòng đăng nhập lại.");
+        alert("Vui lòng chọn chi nhánh sửa xe!");
+        branchSelect?.focus();
         return;
     }
     submitBtn.disabled = true;

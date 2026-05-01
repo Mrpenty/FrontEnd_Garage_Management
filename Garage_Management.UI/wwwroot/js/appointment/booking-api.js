@@ -7,6 +7,7 @@ const SERVICE_URL = `${CONFIG.API_BASE_URL}/Services`;
 const INVENTORY_URL = `${CONFIG.API_BASE_URL}/Inventories`;
 const APPOINTMENT_URL = `${CONFIG.API_BASE_URL}/Appointments`;
 const CUSTOMER_URL = `${CONFIG.API_BASE_URL}/Customer`;
+const BRANCH_URL = `${CONFIG.API_BASE_URL}/Branches`;
 
 const getHeaders = () => {
     const headers = {
@@ -36,6 +37,12 @@ export const BookingAPI = {
     getBrands: async () => {
         // Lấy pageSize lớn để lấy hết hãng xe
         const res = await fetch(`${BRAND_URL}?page=1&pageSize=50`, { headers: getHeaders() });
+        return await res.json();
+    },
+
+    // Lấy danh sách chi nhánh garage (cho khách chọn khi đặt lịch)
+    getBranches: async () => {
+        const res = await fetch(`${BRANCH_URL}?page=1&pageSize=100`, { headers: getHeaders() });
         return await res.json();
     },
 

@@ -152,11 +152,16 @@ export const bookingUI = {
                 </div>
                 <input type="text" id="phone" placeholder="Số điện thoại *" value="${userInfo.phoneNumber || ''}" ${isLogged ? 'readonly' : ''} required>
                 
-                <input type="text" id="licensePlate" placeholder="Ví dụ: 29BF-009.09 *" 
-                   value="${licensePlateValue}" 
-                   ${isVehicleReadOnly ? 'readonly style="background-color: #e9ecef;"' : ''} 
-                   maxlength="11" required>                
+                <input type="text" id="licensePlate" placeholder="Ví dụ: 29BF-009.09 *"
+                   value="${licensePlateValue}"
+                   ${isVehicleReadOnly ? 'readonly style="background-color: #e9ecef;"' : ''}
+                   maxlength="11" required>
                 <small class="text-muted">Định dạng bắt buộc: 29XX-XXX.XX</small>
+
+                <label style="margin-top: 10px; display: block;">Chọn chi nhánh sửa xe: *</label>
+                <select id="branchSelect" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    <option value="">-- Đang tải danh sách chi nhánh... --</option>
+                </select>
 
                 <label style="margin-top: 10px; display: block;">Chọn ngày hẹn:</label>
                 <input type="date" id="appointmentDate" min="${new Date().toISOString().split('T')[0]}" required>
