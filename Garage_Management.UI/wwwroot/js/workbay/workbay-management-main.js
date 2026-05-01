@@ -125,7 +125,7 @@ async function saveWorkbay() {
 
     try {
         const response = await fetch(url, {
-            method: isEdit ? 'PUT' : 'POST',
+            method: 'PUT' ,
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'

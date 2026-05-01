@@ -326,6 +326,13 @@
             const customerId = document.getElementById('bookCustomerId').value;
             if (!customerId) return alert("Vui lòng chọn khách hàng!");
             if (!date || !time) return alert("Vui lòng chọn thời gian!");
+
+            // Lấy branchId từ token của lễ tân đang đăng nhập (lưu trong localStorage khi login)
+            const branchId = Number(localStorage.getItem("branchId"));
+            if (!Number.isFinite(branchId) || branchId <= 0) {
+                return alert("Thiếu thông tin chi nhánh. Vui lòng đăng nhập lại.");
+            }
+
             const appointmentDateTime = `${date}T${time}:00`;
             const requestBody = {
                 customerId: parseInt(customerId),
@@ -334,7 +341,8 @@
                 vehicleModelId: null,
                 serviceIds: Array.from(document.getElementById('bookService').selectedOptions).map(o => parseInt(o.value)),
                 description: document.getElementById('bookDescription').value,
-                status: 2 // Mặc định Đã xác nhận vì lễ tân đặt hộ
+                status: 2, // Mặc định Đã xác nhận vì lễ tân đặt hộ
+                branchId: branchId
             };
 
             try {
