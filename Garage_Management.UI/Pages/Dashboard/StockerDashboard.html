@@ -23,17 +23,17 @@
             <nav class="sidebar-nav">
                 <ul>
                     <li class="active">
-                        <a href="#" data-tab-target="inventory">
+                        <a href="#inventory" id="inventory-tab" data-bs-target="#inventory">
                             <i class="bi bi-box-seam"></i> Tồn kho hiện tại
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-tab-target="transactions">
+                        <a href="#transactions" id="transactions-tab" data-bs-target="#transactions">
                             <i class="bi bi-arrow-left-right"></i> Lịch sử giao dịch
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-tab-target="stockcheck">
+                        <a href="#stockcheck" id="stockcheck-tab" data-bs-target="#stockcheck">
                             <i class="bi bi-clipboard-check"></i> Kiểm kê kho
                         </a>
                     </li>
@@ -398,18 +398,21 @@
             });
         }
 
-        // Sidebar tab switching
-        document.querySelectorAll('.sidebar-nav a[data-tab-target]').forEach(link => {
+        // Switch tab thủ công + fire shown.bs.tab cho các module lazy-load
+        document.querySelectorAll('.sidebar-nav a[data-bs-target]').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const targetId = link.getAttribute('data-tab-target');
+                const targetSel = link.getAttribute('data-bs-target');
+                const target = document.querySelector(targetSel);
+                if (!target) return;
 
-                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show', 'active'));
-                const target = document.getElementById(targetId);
-                if (target) target.classList.add('show', 'active');
+                document.querySelectorAll('#stockerTabContent > .tab-pane').forEach(p => p.classList.remove('show', 'active'));
+                target.classList.add('show', 'active');
 
                 document.querySelectorAll('.sidebar-nav li').forEach(li => li.classList.remove('active'));
                 link.closest('li').classList.add('active');
+
+                link.dispatchEvent(new CustomEvent('shown.bs.tab', { bubbles: true }));
             });
         });
     </script>

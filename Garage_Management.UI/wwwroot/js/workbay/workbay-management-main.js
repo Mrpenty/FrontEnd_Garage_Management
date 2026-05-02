@@ -37,16 +37,15 @@ async function loadWorkbays() {
             const statusBadge = getStatusBadge(wb.status);
             tbody.append(`
                 <tr>
-                    <td>${wb.id}</td>
                     <td><strong>${wb.name}</strong></td>
                     <td>${wb.note || ''}</td>
                     <td>${statusBadge}</td>
                     <td>${wb.jobcardId ? `<span class="tag">JC: #${wb.jobcardId}</span>` : '<em>Không có</em>'}</td>
                     <td style="white-space:nowrap;">
-                        <button class="btn-detail-inner" title="Chỉnh sửa" onclick="editWorkbay(${wb.id})">
+                        <button class="btn-detail-inner" title="Chỉnh sửa" style="width:auto; padding:6px 10px; margin-right:4px;" onclick="editWorkbay(${wb.id})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn-detail-inner" title="Xóa cứng" style="background:#be123c; color:#fff; border-color:#be123c;" onclick="deleteWorkbay(${wb.id}, '${(wb.name || '').replace(/'/g, "\\'")}')">
+                        <button class="btn-detail-inner" title="Xóa" style="width:auto; padding:6px 10px; background:#be123c; color:#fff; border-color:#be123c;" onclick="deleteWorkbay(${wb.id}, '${(wb.name || '').replace(/'/g, "\\'")}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>

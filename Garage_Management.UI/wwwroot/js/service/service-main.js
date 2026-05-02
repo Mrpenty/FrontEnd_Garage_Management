@@ -17,7 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (userInfoStr) {
         const userInfo = JSON.parse(userInfoStr);
-        document.getElementById('display-name').innerText = `${userInfo.fullName} (${userInfo.email})`;
+        const displayNameEl = document.getElementById('display-name');
+        if (displayNameEl) {
+            displayNameEl.innerText = `${userInfo.fullName} (${userInfo.email})`;
+        }
     }
 
     const logoutBtn = document.getElementById('btn-staff-logout');
@@ -90,20 +93,30 @@ async function loadServices(page = serviceCurrentPage) {
     const services = paged.pageData || [];
 
     const body = document.getElementById('service-table-body');
-    body.innerHTML = services.map(s => `
+    body.innerHTML = services.map(s => {
+        const statusClass = s.isActive ? 'status-active' : 'status-inactive';
+        const statusText = s.isActive ? 'Đang hoạt động' : 'Ngừng';
+        const toggleTitle = s.isActive ? 'Vô hiệu hóa' : 'Kích hoạt';
+        const toggleIcon = s.isActive ? 'fa-toggle-on' : 'fa-toggle-off';
+        const toggleColor = s.isActive ? '#10b981' : '#94a3b8';
+        return `
         <tr>
             <td>#${s.serviceId}</td>
             <td><strong>${s.serviceName}</strong></td>
             <td><small>${s.description || ''}</small></td>
             <td><i class="far fa-clock"></i> ${s.totalEstimateMinute} phút</td>
             <td><span class="badge-count">${s.serviceTasks.length} Task</span></td>
-            <td>
+            <td><span class="status-pill ${statusClass}">${statusText}</span></td>
+            <td style="white-space:nowrap;">
                 <button class="btn-secondary" onclick="window.viewTasks(${s.serviceId})">
                     <i class="fas fa-list-check"></i> Quản lý Task
                 </button>
+                <button class="btn-icon" title="${toggleTitle}" style="color:${toggleColor}; background:transparent; border:none; cursor:pointer; font-size:1.4rem; padding:4px 6px;" onclick="window.toggleServiceActive(${s.serviceId}, ${!s.isActive})">
+                    <i class="fas ${toggleIcon}"></i>
+                </button>
             </td>
-        </tr>
-    `).join('');
+        </tr>`;
+    }).join('');
 
     const { page: p, totalPages, total } = extractPaging(paged, SERVICE_PAGE_SIZE);
     serviceCurrentPage = p;
@@ -182,3 +195,22 @@ window.showAddServiceModal = () => document.getElementById('service-modal').styl
 window.closeModals = () => {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 }
+
+window.toggleServiceActive = async (serviceId, newStatus) => {
+    if (!confirm('Đổi trạng thái Hoạt động/Ngừng cho dịch vụ này?')) return;
+    try {
+        const res = await fetch(`${SERVICE_API}/${serviceId}/status`, {
+            method: 'PATCH',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ isActive: newStatus })
+        });
+        if (res.ok) {
+            loadServices(serviceCurrentPage);
+        } else {
+            const err = await res.json().catch(() => ({}));
+            alert('Không đổi trạng thái được: ' + (err.message || `HTTP ${res.status}`));
+        }
+    } catch (e) {
+        alert('Lỗi kết nối server');
+    }
+};

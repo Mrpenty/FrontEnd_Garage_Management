@@ -35,7 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (userInfoStr) {
         const userInfo = JSON.parse(userInfoStr);
-        document.getElementById('display-name').innerText = `${userInfo.fullName} (${userInfo.email})`;
+        const displayNameEl = document.getElementById('display-name');
+        if (displayNameEl) {
+            displayNameEl.innerText = `${userInfo.fullName} (${userInfo.email})`;
+        }
     }
 
     const logoutBtn = document.getElementById('btn-staff-logout');

@@ -100,7 +100,7 @@ function renderPendingJobs(jobs, allWorkbays) {
                     ${job.note ? `<div class="job-note"><em>* Ghi chú: ${job.note}</em></div>` : ''}
                 </div>
                 <div class="assign-action">
-                    <select class="select-wb-dropdown" onchange="window.handleAssign(${job.jobCardId}, this.value)">
+                    <select class="select-wb-dropdown" onchange="window.handleAssign(${job.jobCardId}, this.value, this)">
                         <option value="">Điều phối vào khoang...</option>
                         ${wbOptions}
                     </select>
@@ -255,7 +255,10 @@ window.changePendingPage = (newPage) => {
 
         if (userInfoStr) {
             const userInfo = JSON.parse(userInfoStr);
-            document.getElementById('display-name').innerText = `${userInfo.fullName} (${userInfo.email})`;
+            const displayNameEl = document.getElementById('display-name');
+            if (displayNameEl) {
+                displayNameEl.innerText = `${userInfo.fullName} (${userInfo.email})`;
+            }
             await refreshData();
         }
 
@@ -269,21 +272,34 @@ window.changePendingPage = (newPage) => {
 });
 
 // Hàm xử lý gán Workbay (Export ra window để HTML gọi được)
-    window.handleAssign = async (jobId, wbId) => {
+    window.handleAssign = async (jobId, wbId, selectEl) => {
         if (!wbId) return;
-        
+
         const confirmAssign = confirm(`Xác nhận đưa lệnh #${jobId} vào khoang này?`);
-        if (!confirmAssign) return;
+        if (!confirmAssign) {
+            if (selectEl) selectEl.value = '';
+            return;
+        }
+
+        // Disable dropdown + đổi placeholder để báo hiệu đang xử lý
+        if (selectEl) {
+            selectEl.disabled = true;
+            const placeholder = selectEl.querySelector('option[value=""]');
+            if (placeholder) placeholder.textContent = 'Đang điều phối...';
+        }
 
         try {
-            const res = await workbayApi.assignJobToWorkbay(jobId, wbId);
-            // Kiểm tra res hoặc res.success tùy thuộc API trả về
-            if (res) {
-                alert("Đã điều phối xe vào Workbay thành công!");
-                await refreshData(); // Tải lại dữ liệu mà không cần reload trang
-            }
+            await workbayApi.assignJobToWorkbay(jobId, wbId);
+            // Bỏ alert — refreshData sẽ tự cập nhật UI cho user thấy kết quả
+            await refreshData();
         } catch (error) {
-            alert("Lỗi khi gán Workbay: " + error.message);
+            alert('Lỗi khi gán Workbay: ' + error.message);
+            if (selectEl) {
+                selectEl.disabled = false;
+                selectEl.value = '';
+                const placeholder = selectEl.querySelector('option[value=""]');
+                if (placeholder) placeholder.textContent = 'Điều phối vào khoang...';
+            }
         }
     };
 
@@ -413,7 +429,8 @@ window.viewJobDetail = async (jobCardId) => {
 
     modal.style.display = "block";
     infoBox.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu chi tiết và báo cáo...</div>';
-    estimateBox.innerHTML = ''; 
+    servicesBox.innerHTML = '';
+    estimateBox.innerHTML = '';
     actionZone.style.display = "none";
 
     try {
@@ -449,16 +466,21 @@ window.viewJobDetail = async (jobCardId) => {
 
         // 2. Render danh sách Dịch vụ (Gộp cả ban đầu và phát sinh)
         if (job.services && job.services.length > 0) {
-            servicesBox.innerHTML = '<h4 style="margin-bottom:10px; border-left:4px solid #4f46e5; padding-left:10px;">Yêu cầu ban đầu của Khách</h4>' + 
+            servicesBox.innerHTML = '<h4 style="margin-bottom:10px; border-left:4px solid #4f46e5; padding-left:10px;">Yêu cầu ban đầu của Khách</h4>' +
             job.services.map(s => {
-                // Highlight nếu là dịch vụ phát sinh (ví dụ dựa trên status của dịch vụ đó là 5)
-                const isExtraService = s.status === 5; 
+                const isExtraService = s.status === 5;
                 return `
                     <div class="task-item-row" style="display:flex; justify-content:space-between; background:${isExtraService ? '#fff1f2' : '#f1f5f9'}; margin-bottom:5px; padding:10px; border-radius:6px; border-left: ${isExtraService ? '4px solid #be123c' : 'none'}">
                         <span>${isExtraService ? '<i class="fas fa-plus-circle" style="color:#be123c"></i> ' : ''}${s.description || s.serviceName || s.serviceId}</span>
                     </div>
                 `;
             }).join('');
+        } else {
+            servicesBox.innerHTML = `
+                <h4 style="margin-bottom:10px; border-left:4px solid #4f46e5; padding-left:10px;">Yêu cầu ban đầu của Khách</h4>
+                <div style="padding:15px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; text-align:center; color:#94a3b8;">
+                    <em>Không có dịch vụ ban đầu được ghi nhận</em>
+                </div>`;
         }
 
         // 3. Render BÁO CÁO & TÍNH TỔNG TẤT CẢ
@@ -483,7 +505,7 @@ window.viewJobDetail = async (jobCardId) => {
 
             // Render phiếu kiểm tra ban đầu (Màu cam)
             // Lưu ý: Dịch vụ ban đầu chỉ hiện ở phiếu này để tránh trùng lặp
-            estimateHtml += renderEstimateUI(initialEst, "KIỂM TRA TỔNG QUÁT BAN ĐẦU", "#b45309", job.services.filter(s => s.status !== 5));
+            estimateHtml += renderEstimateUI(initialEst, "KIỂM TRA TỔNG QUÁT BAN ĐẦU", "#b45309", (job.services || []).filter(s => s.status !== 5));
 
             // THÊM DÒNG TỔNG CỘNG CUỐI CÙNG CHO TOÀN BỘ JOB
             estimateHtml += `
