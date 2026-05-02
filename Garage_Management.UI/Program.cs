@@ -31,7 +31,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/Pages"
 });
 
-// Root "/" → redirect tới trang Login mặc định
-app.MapGet("/", () => Results.Redirect("/Pages/Auth/Login.html"));
+// Root "/" → redirect tới trang Dashboard mặc định (cho khách chưa đăng ký)
+app.MapGet("/", () => Results.Redirect("/Pages/Dashboard/Index.html"));
 
 app.Run();

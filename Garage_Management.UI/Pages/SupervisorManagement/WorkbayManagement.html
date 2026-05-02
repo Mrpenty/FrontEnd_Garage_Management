@@ -5,64 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Khoang Sửa Xe - MGMS</title>
     <link rel="stylesheet" href="../../wwwroot/css/supervisor-dashboard.css">
+    <link rel="stylesheet" href="../../wwwroot/css/dashboard-shell.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <div class="supervisor-container">
-        <header class="header">
-            <div class="header-top">
-                <div class="header-left">
-                    <h1 class="brand-title">Hệ thống Quản lý</h1>
-                    <p class="user-welcome">Quản lý Khoang Sửa Xe (Workbay)</p>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-user">
+                <i class="fa-solid fa-circle-user"></i>
+                <div class="user-info">
+                    <span id="staff-name">Đang tải...</span>
+                    <small>Quản lý</small>
                 </div>
-                <button id="btn-staff-logout" class="btn-logout">
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="../Dashboard/SupervisorDashboard.html" data-page="SupervisorDashboard.html">
+                            <i class="fas fa-tools"></i> Quản lý công việc
+                        </a>
+                    </li>
+                    <li>
+                        <a href="ServiceManagement.html" data-page="ServiceManagement.html">
+                            <i class="fas fa-concierge-bell"></i> Quản lý dịch vụ
+                        </a>
+                    </li>
+                    <li>
+                        <a href="VehicleManagement.html" data-page="VehicleManagement.html">
+                            <i class="fas fa-car-side"></i> Quản lý phương tiện
+                        </a>
+                    </li>
+                    <li>
+                        <a href="WorkbayManagement.html" data-page="WorkbayManagement.html">
+                            <i class="fas fa-warehouse"></i> Quản lý khoang sửa xe
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="btn-staff-logout" class="btn-shell-logout">
                     <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
                 </button>
             </div>
+        </aside>
 
-            <nav class="header-navigation">
-                <a href="../Dashboard/SupervisorDashboard.html" class="nav-btn">
-                    <i class="fas fa-tools"></i> Quản lý công việc
-                </a>
-                <a href="ServiceManagement.html" class="nav-btn">
-                    <i class="fas fa-concierge-bell"></i> Quản lý dịch vụ
-                </a>
-                <a href="VehicleManagement.html" class="nav-btn">
-                    <i class="fas fa-car-side"></i> Quản lý phương tiện
-                </a>
-                <a href="WorkbayManagement.html" class="nav-btn active">
-                    <i class="fas fa-warehouse"></i> Quản lý khoang sửa xe
-                </a>
-            </nav>
-        </header>
+        <main class="main-content">
+            <section class="section-box">
+                <div class="section-header-flex">
+                    <h2 class="section-title">Danh sách Khoang sửa xe</h2>
+                    <button class="btn-detail-inner" onclick="openAddWorkbayModal()" style="background-color: #28a745; color: white;">
+                        <i class="fas fa-plus"></i> Thêm khoang mới
+                    </button>
+                </div>
 
-        <section class="section-box">
-            <div class="section-header-flex">
-                <h2 class="section-title">Danh sách Khoang sửa xe</h2>
-                <button class="btn-detail-inner" onclick="openAddWorkbayModal()" style="background-color: #28a745; color: white;">
-                    <i class="fas fa-plus"></i> Thêm khoang mới
-                </button>
-            </div>
-            
-            <div class="table-responsive" style="margin-top: 20px;">
-                <table class="queue-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Tên Khoang</th>
-                            <th>Ghi chú</th>
-                            <th>Trạng thái</th>
-                            <th>Công việc hiện tại</th>
-                            <th>Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody id="workbay-table-body">
-                        </tbody>
-                </table>
-            </div>
-        </section>
+                <div class="table-responsive" style="margin-top: 20px;">
+                    <table class="queue-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên Khoang</th>
+                                <th>Ghi chú</th>
+                                <th>Trạng thái</th>
+                                <th>Công việc hiện tại</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workbay-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
     </div>
 
     <div id="workbay-modal" class="modal">
@@ -90,11 +107,34 @@
                             <option value="2">Bảo trì (Maintenance)</option>
                         </select>
                     </div>
-                    <button type="submit" class="nav-btn active" style="width: 100%; border: none;">Lưu thông tin</button>
+                    <button type="submit" class="btn-primary" style="width: 100%; border: none;">Lưu thông tin</button>
                 </form>
             </div>
         </div>
     </div>
+
+    <script type="module">
+        import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
+        import CONFIG from '../../wwwroot/js/config.js';
+
+        authGuard.authorize('Supervisor');
+
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const nameEl = document.getElementById('staff-name');
+        if (nameEl) nameEl.innerText = userInfo.fullName || 'Quản lý';
+
+        document.getElementById('btn-staff-logout').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = CONFIG.PAGES.STAFF_LOGIN;
+        });
+
+        const currentPath = window.location.pathname.split('/').pop();
+        document.querySelectorAll('.sidebar-nav a[data-page]').forEach(a => {
+            if (a.getAttribute('data-page') === currentPath) {
+                a.closest('li').classList.add('active');
+            }
+        });
+    </script>
 
     <script type="module" src="../../wwwroot/js/workbay/workbay-management-main.js"></script>
 </body>

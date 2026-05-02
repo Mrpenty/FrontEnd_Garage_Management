@@ -1,0 +1,130 @@
+/* Shell layout chung cho các dashboard nhân viên (giống ReceptionistDashboard) */
+
+:root {
+    --shell-primary-red: #d32f2f;
+    --shell-bg-gray: #f4f4f4;
+    --shell-border: #ddd;
+    --shell-text: #333;
+    --shell-white: #ffffff;
+}
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--shell-bg-gray);
+}
+
+.sidebar {
+    width: 240px;
+    background-color: var(--shell-white);
+    border-right: 1px solid var(--shell-border);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+}
+
+.sidebar-user {
+    padding: 25px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.sidebar-user > i {
+    font-size: 35px;
+    color: var(--shell-primary-red);
+}
+
+.sidebar-user .user-info span {
+    font-weight: bold;
+    display: block;
+    color: var(--shell-text);
+}
+
+.sidebar-user .user-info small {
+    color: #888;
+}
+
+.sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav ul li {
+    border-bottom: 1px solid #f9f9f9;
+    transition: 0.3s;
+}
+
+.sidebar-nav ul li a {
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--shell-text);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.sidebar-nav ul li a i {
+    width: 25px;
+    margin-right: 10px;
+    text-align: center;
+}
+
+.sidebar-nav ul li.active {
+    background-color: var(--shell-primary-red);
+}
+
+.sidebar-nav ul li.active a {
+    color: var(--shell-white);
+}
+
+.sidebar-nav ul li:not(.active):hover {
+    background-color: #f8f9fa;
+}
+
+.sidebar-nav ul li:not(.active):hover a {
+    color: var(--shell-primary-red);
+}
+
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid #eee;
+}
+
+.sidebar-footer .btn-shell-logout {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--shell-primary-red);
+    color: var(--shell-primary-red);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.sidebar-footer .btn-shell-logout:hover {
+    background: var(--shell-primary-red);
+    color: var(--shell-white);
+}
+
+.main-content {
+    flex: 1;
+    padding: 25px;
+    overflow-y: auto;
+    min-width: 0;
+}

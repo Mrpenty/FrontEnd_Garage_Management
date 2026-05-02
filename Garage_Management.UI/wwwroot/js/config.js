@@ -1,16 +1,16 @@
-// ⬇️ Đổi sang true khi deploy. URL Azure đặt ở AZURE_API_URL bên dưới.
+// ⬇️ false = chạy local (BE chạy trên máy), true = deploy (BE trên Azure)
 const IS_PRODUCTION = true;
 
-// ⬇️ THAY URL AZURE THẬT VÀO ĐÂY (KHÔNG có dấu '/' cuối, có '/api' cuối).
-// Ví dụ: 'https://garage-mgms.azurewebsites.net/api'
+// ⬇️ URL Azure (production)
 const AZURE_API_URL = 'https://msmg-api-fpt-e8bwcse7cjh9bdh7.southeastasia-01.azurewebsites.net/api';
+
+// ⬇️ URL Backend chạy local — đổi port cho khớp với launchSettings.json của project BE
+const LOCAL_API_URL = 'https://localhost:7004/api';
 
 const BASE_PATH = '../..';
 
 const CONFIG = {
-    API_BASE_URL: IS_PRODUCTION
-        ? AZURE_API_URL
-        : 'https://msmg-api-fpt-e8bwcse7cjh9bdh7.southeastasia-01.azurewebsites.net/api', //URL local
+    API_BASE_URL: IS_PRODUCTION ? AZURE_API_URL : LOCAL_API_URL,
     
     // Quản lý tập trung các đường dẫn trang
     PAGES: {

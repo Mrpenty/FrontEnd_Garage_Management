@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:msmg-api-fpt-e8bwcse7cjh9bdh7.southeastasia-01.azurewebsites.net)"
+      "WebFetch(domain:msmg-api-fpt-e8bwcse7cjh9bdh7.southeastasia-01.azurewebsites.net)",
+      "Bash(findstr /n \"sidebar dashboard-container main-content\" \"d:\\\\Workspace\\\\DoAn\\\\FE\\\\FrontEnd_Garage_Management\\\\Garage_Management.UI\\\\wwwroot\\\\css\\\\supervisor-dashboard.css\")"
     ]
   }
 }

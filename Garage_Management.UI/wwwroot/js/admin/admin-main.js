@@ -13,18 +13,20 @@ export async function initAdminDashboard() {
 }
 
 function setupNavigation() {
-    const navLinks = document.querySelectorAll('.nav-link');
+    const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
+            e.preventDefault();
             const targetId = e.currentTarget.getAttribute('data-target');
-            
-            // Switch UI
+            if (!targetId) return;
+
             document.querySelectorAll('.dashboard-section').forEach(s => s.classList.add('d-none'));
-            document.getElementById(targetId).classList.remove('d-none');
-            
-            // Active link
-            navLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
+            const target = document.getElementById(targetId);
+            if (target) target.classList.remove('d-none');
+
+            document.querySelectorAll('.sidebar-nav li').forEach(li => li.classList.remove('active'));
+            const parentLi = link.closest('li');
+            if (parentLi) parentLi.classList.add('active');
         });
     });
 }

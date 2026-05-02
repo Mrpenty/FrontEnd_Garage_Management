@@ -5,63 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý phương tiện - MGMS</title>
     <link rel="stylesheet" href="../../wwwroot/css/supervisor-dashboard.css">
+    <link rel="stylesheet" href="../../wwwroot/css/dashboard-shell.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="supervisor-container">
-        <header class="header">
-            <div class="header-top">
-                <div class="header-left">
-                    <h1 class="brand-title">VEHICLE MANAGEMENT</h1>
-                    <p class="user-welcome">Xin chào, <span id="display-name">Người dùng</span></p>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-user">
+                <i class="fa-solid fa-circle-user"></i>
+                <div class="user-info">
+                    <span id="staff-name">Đang tải...</span>
+                    <small>Quản lý</small>
                 </div>
-                <button id="btn-staff-logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
             </div>
-            <nav class="header-navigation">
-                <a href="../Dashboard/SupervisorDashboard.html" class="nav-btn"><i class="fas fa-tools"></i> Quản lý công việc</a>
-                <a href="ServiceManagement.html" class="nav-btn"><i class="fas fa-concierge-bell"></i> Quản lý dịch vụ</a>
-                <a href="VehicleManagement.html" class="nav-btn active"><i class="fas fa-car-side"></i> Quản lý phương tiện</a>
-                <a href="WorkbayManagement.html" class="nav-btn"><i class="fas fa-warehouse"></i> Quản lý khoang sửa xe</a>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="../Dashboard/SupervisorDashboard.html" data-page="SupervisorDashboard.html">
+                            <i class="fas fa-tools"></i> Quản lý công việc
+                        </a>
+                    </li>
+                    <li>
+                        <a href="ServiceManagement.html" data-page="ServiceManagement.html">
+                            <i class="fas fa-concierge-bell"></i> Quản lý dịch vụ
+                        </a>
+                    </li>
+                    <li>
+                        <a href="VehicleManagement.html" data-page="VehicleManagement.html">
+                            <i class="fas fa-car-side"></i> Quản lý phương tiện
+                        </a>
+                    </li>
+                    <li>
+                        <a href="WorkbayManagement.html" data-page="WorkbayManagement.html">
+                            <i class="fas fa-warehouse"></i> Quản lý khoang sửa xe
+                        </a>
+                    </li>
+                </ul>
             </nav>
-        </header>
 
-        <div class="tab-container">
-            <button class="tab-link active" onclick="openTab('brands')">Thương hiệu (Brands)</button>
-            <button class="tab-link" onclick="openTab('models')">Dòng xe (Models)</button>
-            <button class="tab-link" onclick="openTab('types')">Loại xe (Types)</button>
-        </div>
+            <div class="sidebar-footer">
+                <button id="btn-staff-logout" class="btn-shell-logout">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </button>
+            </div>
+        </aside>
 
-        <section class="section-box">
-            <div class="section-header-flex">
-                <h2 id="tab-title" class="section-title">Danh sách Thương hiệu</h2>
-                <button class="btn-primary" onclick="showAddModal()"><i class="fas fa-plus"></i> Thêm mới</button>
+        <main class="main-content">
+            <div class="tab-container">
+                <button class="tab-link active" onclick="openTab('brands')">Thương hiệu (Brands)</button>
+                <button class="tab-link" onclick="openTab('models')">Dòng xe (Models)</button>
+                <button class="tab-link" onclick="openTab('types')">Loại xe (Types)</button>
             </div>
 
-            <div class="filter-bar" style="display:flex; gap:10px; align-items:center; padding:10px 0; flex-wrap:wrap;">
-                <input type="text" id="vehicle-search" placeholder="Tìm theo tên..."
-                    style="flex:1; min-width:200px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px;">
-                <select id="brand-filter" style="display:none; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px;">
-                    <option value="">-- Tất cả thương hiệu --</option>
-                </select>
-            </div>
+            <section class="section-box">
+                <div class="section-header-flex">
+                    <h2 id="tab-title" class="section-title">Danh sách Thương hiệu</h2>
+                    <button class="btn-primary" onclick="showAddModal()"><i class="fas fa-plus"></i> Thêm mới</button>
+                </div>
 
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr id="table-head">
-                            </tr>
-                    </thead>
-                    <tbody id="vehicle-table-body">
-                        </tbody>
-                </table>
-            </div>
+                <div class="filter-bar" style="display:flex; gap:10px; align-items:center; padding:10px 0; flex-wrap:wrap;">
+                    <input type="text" id="vehicle-search" placeholder="Tìm theo tên..."
+                        style="flex:1; min-width:200px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px;">
+                    <select id="brand-filter" style="display:none; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px;">
+                        <option value="">-- Tất cả thương hiệu --</option>
+                    </select>
+                </div>
 
-            <div class="pagination">
-                <button id="prev-btn" class="btn-page">Trước</button>
-                <span id="page-info">Trang 1</span>
-                <button id="next-btn" class="btn-page">Sau</button>
-            </div>
-        </section>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr id="table-head">
+                                </tr>
+                        </thead>
+                        <tbody id="vehicle-table-body">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    <button id="prev-btn" class="btn-page">Trước</button>
+                    <span id="page-info">Trang 1</span>
+                    <button id="next-btn" class="btn-page">Sau</button>
+                </div>
+            </section>
+        </main>
     </div>
 
     <div id="vehicle-modal" class="modal">
@@ -76,6 +104,29 @@
             </form>
         </div>
     </div>
+
+    <script type="module">
+        import { authGuard } from '../../wwwroot/js/auth/auth-guard.js';
+        import CONFIG from '../../wwwroot/js/config.js';
+
+        authGuard.authorize('Supervisor');
+
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const nameEl = document.getElementById('staff-name');
+        if (nameEl) nameEl.innerText = userInfo.fullName || 'Quản lý';
+
+        document.getElementById('btn-staff-logout').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = CONFIG.PAGES.STAFF_LOGIN;
+        });
+
+        const currentPath = window.location.pathname.split('/').pop();
+        document.querySelectorAll('.sidebar-nav a[data-page]').forEach(a => {
+            if (a.getAttribute('data-page') === currentPath) {
+                a.closest('li').classList.add('active');
+            }
+        });
+    </script>
 
     <script type="module" src="../../wwwroot/js/vehicle/vehicle-main.js"></script>
 </body>
