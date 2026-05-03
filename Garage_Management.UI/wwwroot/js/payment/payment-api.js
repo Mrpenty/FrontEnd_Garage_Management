@@ -21,6 +21,13 @@ export const PaymentAPI = {
         return await response.json();
     },
 
+    getInvoiceById: async (invoiceId) => {
+        const response = await fetch(`${INVOICE_URL}/${invoiceId}`, {
+            headers: PaymentAPI.getAuthHeader()
+        });
+        return await response.json();
+    },
+
     getBankTransferQr: async (invoiceId) => {
         const response = await fetch(`${PAYMENT_URL}/bank-transfer/${invoiceId}`, {
             headers: PaymentAPI.getAuthHeader()
