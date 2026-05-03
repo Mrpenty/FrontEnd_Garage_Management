@@ -9,10 +9,17 @@ const getHeaders = () => ({
 });
 
 export const inventoryAPI = {
-    // Lấy danh sách tồn kho có phân trang
+    // Lấy danh sách tồn kho có phân trang (filter theo chi nhánh của user)
     getInventory: async (query = "", page = 1) => {
-        // Fix lỗi ReferenceError bằng cách đảm bảo page có giá trị
-        const response = await fetch(`${INVENTORY_URL}?Search=${encodeURIComponent(query)}&PageIndex=${page}&PageSize=10`, {
+        const params = new URLSearchParams({
+            Page: page,
+            PageSize: 10
+        });
+        if (query) params.set('Search', query);
+        const branchId = localStorage.getItem('branchId');
+        if (branchId) params.set('BranchId', branchId);
+
+        const response = await fetch(`${INVENTORY_URL}?${params.toString()}`, {
             headers: getHeaders()
         });
         return await response.json();
@@ -36,9 +43,13 @@ export const inventoryAPI = {
         return await response.json();
     },
 
-    // Lấy lịch sử giao dịch
+    // Lấy lịch sử giao dịch (filter theo chi nhánh của user)
     getTransactions: async () => {
-        const response = await fetch(`${STOCKTRANS_URL}?PageSize=50`, {
+        const params = new URLSearchParams({ PageSize: 50 });
+        const branchId = localStorage.getItem('branchId');
+        if (branchId) params.set('BranchId', branchId);
+
+        const response = await fetch(`${STOCKTRANS_URL}?${params.toString()}`, {
             headers: getHeaders()
         });
         return await response.json();

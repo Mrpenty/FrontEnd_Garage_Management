@@ -105,10 +105,14 @@
                                         <tr>
                                             <th>Ngày</th>
                                             <th>Loại</th>
+                                            <th>Mã PT</th>
                                             <th>Phụ tùng</th>
-                                            <th>Thay đổi</th>
+                                            <th class="text-center">Thay đổi</th>
+                                            <th class="text-end">Đơn giá</th>
+                                            <th class="text-end">Thành tiền</th>
                                             <th>Mã chứng từ</th>
                                             <th>Ghi chú</th>
+                                            <th class="text-center">Chi tiết</th>
                                         </tr>
                                     </thead>
                                     <tbody id="transactionTableBody"></tbody>
@@ -283,6 +287,21 @@
         </div>
     </div>
 
+    <div class="modal fade" id="transactionDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-receipt"></i> Chi tiết Giao dịch Kho</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="transactionDetailBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="transactionModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -311,6 +330,26 @@
                         <div id="divActual" class="mb-3 d-none">
                             <label class="form-label text-primary fw-bold">Số lượng thực tế tại kho</label>
                             <input type="number" class="form-control border-primary" name="actualQuantity">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Đơn giá (VNĐ)</label>
+                                <input type="number" class="form-control" name="unitPrice" min="0" step="1000" placeholder="0">
+                            </div>
+                            <div class="col-md-6 mb-3" id="divSupplier">
+                                <label class="form-label">NCC ID (nếu nhập)</label>
+                                <input type="number" class="form-control" name="supplierId" min="1" placeholder="vd: 1">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Số lô (Lot)</label>
+                                <input type="text" class="form-control" name="lotNumber" placeholder="vd: LOT-2026-001">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Serial</label>
+                                <input type="text" class="form-control" name="serialNumber" placeholder="vd: SN-XXX">
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Mã chứng từ / Số hóa đơn</label>

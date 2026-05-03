@@ -31,8 +31,12 @@ const inventoryMain = {
                 transactionType: parseInt(formData.get('transactionType')),
                 quantityChange: parseFloat(formData.get('quantityChange')) || 0,
                 actualQuantity: formData.get('actualQuantity') ? parseFloat(formData.get('actualQuantity')) : null,
-                receiptCode: formData.get('receiptCode'),
-                note: formData.get('note')
+                unitPrice: formData.get('unitPrice') ? parseFloat(formData.get('unitPrice')) : null,
+                supplierId: formData.get('supplierId') ? parseInt(formData.get('supplierId')) : null,
+                lotNumber: formData.get('lotNumber') || null,
+                serialNumber: formData.get('serialNumber') || null,
+                receiptCode: formData.get('receiptCode') || null,
+                note: formData.get('note') || null
             };
 
             try {

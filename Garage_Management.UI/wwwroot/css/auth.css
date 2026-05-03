@@ -21,7 +21,7 @@ body, html {
 /* Sidebar bên trái */
 .login-sidebar {
     flex: 1;
-    background: url('https://imgcdn.zigwheels.ph/large/gallery/exterior/73/3016/honda-airblade-160-slant-rear-view-full-image-769608.jpg') no-repeat center center;
+    background: url('https://demoda.vn/wp-content/uploads/2022/07/hinh-nen-xe-moto-1.jpg?fbclid=IwY2xjawRkQkdleHRuA2FlbQIxMABicmlkETEzY1BjNGtka1ZWREpqbkYxc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHoprXQo7y52eK6KWGWMJJpEvfXmDLeKyvJ7GjDDRrcAfihpEoSQdrLorVX4C_aem_I5k2wDzg9quRmoP3xjqmyg') no-repeat center center;
     background-size: cover;
     position: relative;
     display: none; /* Ẩn trên mobile */
