@@ -1100,6 +1100,13 @@ window.showPrintPreviewFromData = async (input) => {
         </div>
     `;
 
+    // Đóng JobCard detail modal trước khi mở print preview
+    const detailModal = document.getElementById('jobCardDetailModal');
+    if (detailModal) {
+        detailModal.style.display = 'none';
+        detailModal.classList.remove('show');
+    }
+
     document.getElementById('printPreviewModal').style.display = 'block';
 };
 
@@ -1113,6 +1120,13 @@ window.closePrintModal = () => {
 
 window.executePrint = () => {
     window.print();
+    // Đóng cả 2 modal sau khi in xong / hủy in
+    window.closePrintModal();
+    const detailModal = document.getElementById('jobCardDetailModal');
+    if (detailModal) {
+        detailModal.style.display = 'none';
+        detailModal.classList.remove('show');
+    }
 };
 
 

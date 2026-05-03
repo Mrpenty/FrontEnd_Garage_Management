@@ -11,7 +11,7 @@ const serviceFilters = {
     keyword: '',
     isActive: '',
     hasPrice: '',
-    sortBy: 'createdAt',
+    sortBy: '',
     sortDesc: true
 };
 
@@ -102,14 +102,23 @@ function buildServiceQueryString(page) {
     if (serviceFilters.keyword) params.set('keyword', serviceFilters.keyword);
     if (serviceFilters.isActive !== '') params.set('isActive', serviceFilters.isActive);
     if (serviceFilters.hasPrice !== '') params.set('hasPrice', serviceFilters.hasPrice);
-    if (serviceFilters.sortBy) params.set('sortBy', serviceFilters.sortBy);
-    params.set('sortDesc', serviceFilters.sortDesc);
+    if (serviceFilters.sortBy) {
+        params.set('sortBy', serviceFilters.sortBy);
+        params.set('sortDesc', serviceFilters.sortDesc);
+    }
     return params.toString();
 }
 
 async function loadServices(page = serviceCurrentPage) {
     const qs = buildServiceQueryString(page);
-    const res = await fetch(`${SERVICE_API}?${qs}`, { headers: getAuthHeaders() });
+    const url = `${SERVICE_API}?${qs}`;
+    const res = await fetch(url, { headers: getAuthHeaders() });
+    if (!res.ok) {
+        console.error('[Services] HTTP', res.status, 'URL:', url);
+        const body = document.getElementById('service-table-body');
+        if (body) body.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Lỗi HTTP ${res.status} — kiểm tra Network tab</td></tr>`;
+        return;
+    }
     const result = await res.json();
     const paged = result.data || {};
     const services = paged.pageData || [];
@@ -269,12 +278,12 @@ function initServiceFilters() {
             serviceFilters.keyword = '';
             serviceFilters.isActive = '';
             serviceFilters.hasPrice = '';
-            serviceFilters.sortBy = 'createdAt';
+            serviceFilters.sortBy = '';
             serviceFilters.sortDesc = true;
             if (searchEl) searchEl.value = '';
             if (activeEl) activeEl.value = '';
             if (hasPriceEl) hasPriceEl.value = '';
-            if (sortEl) sortEl.value = 'createdAt|true';
+            if (sortEl) sortEl.value = '';
             reload();
         });
     }

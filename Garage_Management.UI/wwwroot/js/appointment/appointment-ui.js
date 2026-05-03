@@ -93,10 +93,12 @@ export const appointmentUI = {
                             <input type="date" id="filterDate" class="form-control-sm">
                             <select id="filterStatus">
                                 <option value="">Tất cả trạng thái</option>
-                                <option value="0">Chờ xác nhận</option>
-                                <option value="1">Đã xác nhận</option>
-                                <option value="2">Đã đến</option>
-                                <option value="3">Đã hủy</option>
+                                <option value="1">Chờ xác nhận</option>
+                                <option value="2">Đã xác nhận</option>
+                                <option value="3">Đang thực hiện</option>
+                                <option value="4">Vắng mặt (No-show)</option>
+                                <option value="5">Đã hủy</option>
+                                <option value="6">Đã hoàn thành</option>
                             </select>
                         </div>
                     </div>

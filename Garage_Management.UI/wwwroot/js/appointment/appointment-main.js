@@ -3,7 +3,7 @@
     import { jobcardUI } from '../jobcard/jobcard-ui.js';
     import { renderPagination, extractPaging } from '../common/pagination.js';
 
-    const APT_PAGE_SIZE = 20;
+    const APT_PAGE_SIZE = 10;
     let aptCurrentPage = 1;
 
     function initModalEvents(elements) {
@@ -65,49 +65,93 @@
 
         initCustomerLogic(createCustomerForm);
         initVehicleLogic(createVehicleForm);
-        // 2. Hàm tải dữ liệu
-        async function fetchData(page = aptCurrentPage) {
-            try {
-                const query = {
-                    Search: searchInput.value,
-                    Status: statusFilter.value,
-                    Date: dateFilter.value,
-                    Page: page,
-                    PageSize: APT_PAGE_SIZE
-                };
-                const res = await AppointmentAPI.getPaged(query);
-                if (res.success) {
-                    const paged = res.data || {};
-                    appointmentUI.renderTableRows(tbody, paged.pageData || []);
-                    bindRowEvents();
+        // ⚠️ BE hiện chưa hỗ trợ filter (Search/Status/Date) — nên load tất cả rồi filter client-side
+        let allAppointments = [];
 
-                    const { page: p, totalPages, total } = extractPaging(paged, APT_PAGE_SIZE);
-                    aptCurrentPage = p;
-                    renderPagination('appointmentPagination', {
-                        page: p, totalPages,
-                        callbackName: 'appointmentGoPage',
-                        onPageClick: (np) => fetchData(np)
-                    });
-                    const metaBox = document.getElementById('appointmentPagingMeta');
-                    if (metaBox) {
-                        if (!total) metaBox.textContent = '';
-                        else {
-                            const from = (p - 1) * APT_PAGE_SIZE + 1;
-                            const to = Math.min(p * APT_PAGE_SIZE, total);
-                            metaBox.textContent = `Hiển thị ${from}-${to} / ${total} lịch hẹn`;
-                        }
-                    }
+        async function fetchAllAppointments() {
+            try {
+                // Load nhiều record 1 lần, FE tự filter + phân trang
+                const res = await AppointmentAPI.getPaged({ Page: 1, PageSize: 500 });
+                if (res.success) {
+                    allAppointments = res.data?.pageData || [];
+                } else {
+                    allAppointments = [];
                 }
             } catch (err) {
                 console.error("Lỗi tải lịch hẹn:", err);
+                allAppointments = [];
+            }
+            renderFiltered(1);
+        }
+
+        function applyFilters(items) {
+            const kw = (searchInput.value || '').trim().toLowerCase();
+            const status = statusFilter.value;
+            const date = dateFilter.value;
+
+            return items.filter(it => {
+                if (kw) {
+                    const cust = it.customer || {};
+                    const name = `${cust.lastName || it.lastName || ''} ${cust.firstName || it.firstName || ''}`.toLowerCase();
+                    const phone = (cust.phoneNumber || it.phone || '').toLowerCase();
+                    const plate = (it.licensePlate || it.vehicle?.licensePlate || '').toLowerCase();
+                    if (!name.includes(kw) && !phone.includes(kw) && !plate.includes(kw)) return false;
+                }
+                if (status !== '' && String(it.status) !== status) return false;
+                if (date) {
+                    const aptDate = new Date(it.appointmentDateTime);
+                    const yyyy = aptDate.getFullYear();
+                    const mm = String(aptDate.getMonth() + 1).padStart(2, '0');
+                    const dd = String(aptDate.getDate()).padStart(2, '0');
+                    const aptDateStr = `${yyyy}-${mm}-${dd}`;
+                    if (aptDateStr !== date) return false;
+                }
+                return true;
+            });
+        }
+
+        function renderFiltered(page) {
+            const filtered = applyFilters(allAppointments);
+            const total = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(total / APT_PAGE_SIZE));
+            const p = Math.min(Math.max(1, page), totalPages);
+            aptCurrentPage = p;
+
+            const start = (p - 1) * APT_PAGE_SIZE;
+            const pageData = filtered.slice(start, start + APT_PAGE_SIZE);
+
+            appointmentUI.renderTableRows(tbody, pageData);
+            bindRowEvents();
+
+            renderPagination('appointmentPagination', {
+                page: p, totalPages,
+                callbackName: 'appointmentGoPage',
+                onPageClick: (np) => renderFiltered(np)
+            });
+
+            const metaBox = document.getElementById('appointmentPagingMeta');
+            if (metaBox) {
+                if (!total) {
+                    metaBox.textContent = 'Không tìm thấy lịch hẹn nào';
+                } else {
+                    const from = start + 1;
+                    const to = Math.min(p * APT_PAGE_SIZE, total);
+                    metaBox.textContent = `Hiển thị ${from}-${to} / ${total} lịch hẹn`;
+                }
             }
         }
 
-        // 3. Bắt sự kiện — đổi filter/search reset về trang 1
-        searchInput.oninput = debounce(() => fetchData(1), 500);
-        statusFilter.onchange = () => fetchData(1);
-        dateFilter.onchange = () => fetchData(1);
-        document.getElementById('btn-refresh-appointment').onclick = () => fetchData(aptCurrentPage);
+        // Giữ alias `fetchData` để các hàm cũ (modal, sau khi tạo lịch) gọi vẫn chạy
+        async function fetchData(page = aptCurrentPage) {
+            await fetchAllAppointments();
+            renderFiltered(page);
+        }
+
+        // 3. Bắt sự kiện — đổi filter/search reset về trang 1 (chỉ render lại, không gọi BE)
+        searchInput.oninput = debounce(() => renderFiltered(1), 350);
+        statusFilter.onchange = () => renderFiltered(1);
+        dateFilter.onchange = () => renderFiltered(1);
+        document.getElementById('btn-refresh-appointment').onclick = () => fetchAllAppointments();
 
         // --- Logic Mở Modal & Load Data dự phòng ---
         document.getElementById('btn-open-booking').onclick = async () => {
