@@ -8,13 +8,20 @@ const getHeaders = () => ({
     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
 });
 
+// Helper lấy branchId an toàn từ localStorage
+function getBranchId() {
+    const raw = localStorage.getItem('branchId');
+    if (!raw || raw === 'null' || raw === 'undefined') return null;
+    const id = parseInt(raw);
+    return isNaN(id) ? null : id;
+}
+
 export const inventoryAPI = {
     // Lấy danh sách tồn kho theo chi nhánh — endpoint /by-branch/{branchId}
     getInventory: async (query = "", page = 1) => {
-        const raw = localStorage.getItem('branchId');
-        const branchId = (raw && raw !== 'null' && raw !== 'undefined') ? parseInt(raw) : null;
-        if (!branchId || isNaN(branchId)) {
-            console.error('[Inventory] Thiếu branchId hợp lệ trong localStorage. Giá trị raw:', raw);
+        const branchId = getBranchId();
+        if (!branchId) {
+            console.error('[Inventory] Thiếu branchId hợp lệ trong localStorage');
             return { success: false, message: 'Không xác định được chi nhánh. Vui lòng đăng nhập lại.' };
         }
 
@@ -30,9 +37,13 @@ export const inventoryAPI = {
         return await response.json();
     },
 
-    // Lấy chi tiết một phụ tùng
+    // Lấy chi tiết một phụ tùng — BE giờ yêu cầu branchId qua query
     getInventoryById: async (id) => {
-        const response = await fetch(`${INVENTORY_URL}/${id}`, {
+        const branchId = getBranchId();
+        if (!branchId) {
+            return { success: false, message: 'Không xác định được chi nhánh. Vui lòng đăng nhập lại.' };
+        }
+        const response = await fetch(`${INVENTORY_URL}/${id}?branchId=${branchId}`, {
             headers: getHeaders()
         });
         return await response.json();
@@ -61,16 +72,22 @@ export const inventoryAPI = {
     },
 
     createInventory: async (data) => {
+        // BE bắt buộc branchId trong body request
+        const branchId = getBranchId();
+        const payload = { ...data, branchId: data.branchId ?? branchId };
         const response = await fetch(INVENTORY_URL, {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
         });
         return await response.json();
     },
 
+    // BE: PUT /Inventories/{id}?branchId=X
     updateInventory: async (id, data) => {
-        const response = await fetch(`${INVENTORY_URL}/${id}`, {
+        const branchId = getBranchId();
+        if (!branchId) return { success: false, message: 'Không xác định được chi nhánh. Vui lòng đăng nhập lại.' };
+        const response = await fetch(`${INVENTORY_URL}/${id}?branchId=${branchId}`, {
             method: 'PUT',
             headers: getHeaders(),
             body: JSON.stringify(data)
