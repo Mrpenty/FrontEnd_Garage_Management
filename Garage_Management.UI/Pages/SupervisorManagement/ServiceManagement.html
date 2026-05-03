@@ -57,6 +57,36 @@
                     <button class="btn-primary" onclick="showAddServiceModal()"><i class="fas fa-plus"></i> Thêm dịch vụ mới</button>
                 </div>
 
+                <div class="filter-bar" style="display:flex; gap:10px; align-items:center; padding:12px 0; flex-wrap:wrap;">
+                    <input type="text" id="service-search" placeholder="Tìm theo tên hoặc mô tả..."
+                        style="flex:1; min-width:220px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px;">
+
+                    <select id="service-filter-active" style="padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; background:#fff;">
+                        <option value="">-- Trạng thái --</option>
+                        <option value="true">Đang hoạt động</option>
+                        <option value="false">Ngừng</option>
+                    </select>
+
+                    <select id="service-filter-hasprice" style="padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; background:#fff;">
+                        <option value="">-- Giá --</option>
+                        <option value="true">Đã có giá</option>
+                        <option value="false">Chưa có giá</option>
+                    </select>
+
+                    <select id="service-sort" style="padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; background:#fff;">
+                        <option value="createdAt|true">Mới nhất</option>
+                        <option value="createdAt|false">Cũ nhất</option>
+                        <option value="serviceName|false">Tên A → Z</option>
+                        <option value="serviceName|true">Tên Z → A</option>
+                        <option value="basePrice|false">Giá tăng dần</option>
+                        <option value="basePrice|true">Giá giảm dần</option>
+                    </select>
+
+                    <button id="service-filter-reset" class="btn-secondary" style="padding:8px 14px;">
+                        <i class="fas fa-rotate-left"></i> Reset
+                    </button>
+                </div>
+
                 <div class="table-responsive">
                     <table class="data-table">
                         <thead>

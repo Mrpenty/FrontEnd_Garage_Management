@@ -7,11 +7,20 @@ const TASK_API = `${CONFIG.API_BASE_URL}/ServiceTasks`;
 const SERVICE_PAGE_SIZE = 20;
 let serviceCurrentPage = 1;
 
+const serviceFilters = {
+    keyword: '',
+    isActive: '',
+    hasPrice: '',
+    sortBy: 'createdAt',
+    sortDesc: true
+};
+
 const getAuthHeaders = () => ({
     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
     'Content-Type': 'application/json'
 });
 document.addEventListener('DOMContentLoaded', () => {
+    initServiceFilters();
     loadServices();
     const userInfoStr = localStorage.getItem('userInfo');
 
@@ -86,8 +95,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+function buildServiceQueryString(page) {
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('pageSize', SERVICE_PAGE_SIZE);
+    if (serviceFilters.keyword) params.set('keyword', serviceFilters.keyword);
+    if (serviceFilters.isActive !== '') params.set('isActive', serviceFilters.isActive);
+    if (serviceFilters.hasPrice !== '') params.set('hasPrice', serviceFilters.hasPrice);
+    if (serviceFilters.sortBy) params.set('sortBy', serviceFilters.sortBy);
+    params.set('sortDesc', serviceFilters.sortDesc);
+    return params.toString();
+}
+
 async function loadServices(page = serviceCurrentPage) {
-    const res = await fetch(`${SERVICE_API}?page=${page}&pageSize=${SERVICE_PAGE_SIZE}`, { headers: getAuthHeaders() });
+    const qs = buildServiceQueryString(page);
+    const res = await fetch(`${SERVICE_API}?${qs}`, { headers: getAuthHeaders() });
     const result = await res.json();
     const paged = result.data || {};
     const services = paged.pageData || [];
@@ -194,6 +216,68 @@ window.resetTaskForm = () => {
 window.showAddServiceModal = () => document.getElementById('service-modal').style.display = 'block';
 window.closeModals = () => {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+}
+
+function initServiceFilters() {
+    const searchEl = document.getElementById('service-search');
+    const activeEl = document.getElementById('service-filter-active');
+    const hasPriceEl = document.getElementById('service-filter-hasprice');
+    const sortEl = document.getElementById('service-sort');
+    const resetEl = document.getElementById('service-filter-reset');
+
+    let debounceTimer = null;
+    const reload = () => {
+        serviceCurrentPage = 1;
+        loadServices(1);
+    };
+
+    if (searchEl) {
+        searchEl.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                serviceFilters.keyword = e.target.value.trim();
+                reload();
+            }, 350);
+        });
+    }
+
+    if (activeEl) {
+        activeEl.addEventListener('change', (e) => {
+            serviceFilters.isActive = e.target.value;
+            reload();
+        });
+    }
+
+    if (hasPriceEl) {
+        hasPriceEl.addEventListener('change', (e) => {
+            serviceFilters.hasPrice = e.target.value;
+            reload();
+        });
+    }
+
+    if (sortEl) {
+        sortEl.addEventListener('change', (e) => {
+            const [sortBy, sortDesc] = e.target.value.split('|');
+            serviceFilters.sortBy = sortBy;
+            serviceFilters.sortDesc = sortDesc === 'true';
+            reload();
+        });
+    }
+
+    if (resetEl) {
+        resetEl.addEventListener('click', () => {
+            serviceFilters.keyword = '';
+            serviceFilters.isActive = '';
+            serviceFilters.hasPrice = '';
+            serviceFilters.sortBy = 'createdAt';
+            serviceFilters.sortDesc = true;
+            if (searchEl) searchEl.value = '';
+            if (activeEl) activeEl.value = '';
+            if (hasPriceEl) hasPriceEl.value = '';
+            if (sortEl) sortEl.value = 'createdAt|true';
+            reload();
+        });
+    }
 }
 
 window.toggleServiceActive = async (serviceId, newStatus) => {

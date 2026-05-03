@@ -1,6 +1,5 @@
 import { CustomerAPI } from './customer-api.js';
 import { customerUI } from './customer-ui.js';
-import { jobcardApi } from '../jobcard/jobcard-api.js';
 import { renderPagination, extractPaging } from '../common/pagination.js';
 
 const PAGE_SIZE = 20;
@@ -44,15 +43,9 @@ export async function initCustomerModule() {
         detailModal.style.display = 'block';
 
         try {
-            // Gọi song song: chi tiết khách + lịch sử sửa xe
-            const [custRes, jcRes] = await Promise.all([
-                CustomerAPI.getDetails(customerId),
-                jobcardApi.getMyJobCard(customerId).catch(() => ({ data: { pageData: [] } }))
-            ]);
-
+            const custRes = await CustomerAPI.getDetails(customerId);
             const customer = custRes.data || custRes;
-            const jobcards = jcRes.data?.pageData || jcRes.data?.items || (Array.isArray(jcRes.data) ? jcRes.data : []);
-
+            const jobcards = customer.repairHistory || [];
             customerUI.renderCustomerDetail(body, { customer, jobcards });
         } catch (err) {
             console.error('Lỗi tải chi tiết khách hàng:', err);
@@ -143,6 +136,37 @@ export async function initCustomerModule() {
         };
     });
 
+    const customerFilters = {
+        vehicleStatus: '',  // '', 'has', 'none'
+        sort: ''            // '', 'newest', 'oldest', 'name-asc', 'name-desc'
+    };
+
+    function applyClientFilters(items) {
+        let result = [...items];
+
+        if (customerFilters.vehicleStatus === 'has') {
+            result = result.filter(c => Array.isArray(c.vehicles) && c.vehicles.length > 0);
+        } else if (customerFilters.vehicleStatus === 'none') {
+            result = result.filter(c => !c.vehicles || c.vehicles.length === 0);
+        }
+
+        switch (customerFilters.sort) {
+            case 'newest':
+                result.sort((a, b) => (b.customerId || 0) - (a.customerId || 0));
+                break;
+            case 'oldest':
+                result.sort((a, b) => (a.customerId || 0) - (b.customerId || 0));
+                break;
+            case 'name-asc':
+                result.sort((a, b) => (`${a.lastName || ''} ${a.firstName || ''}`).localeCompare(`${b.lastName || ''} ${b.firstName || ''}`, 'vi'));
+                break;
+            case 'name-desc':
+                result.sort((a, b) => (`${b.lastName || ''} ${b.firstName || ''}`).localeCompare(`${a.lastName || ''} ${a.firstName || ''}`, 'vi'));
+                break;
+        }
+        return result;
+    }
+
     // --- Hàm tải danh sách ---
     async function loadCustomers(page = currentPage) {
         try {
@@ -150,7 +174,8 @@ export async function initCustomerModule() {
             const res = await CustomerAPI.getAll(query);
             const paged = res.data || res;
             const items = paged.pageData || [];
-            customerUI.renderTableRows(tbody, items);
+            const filtered = applyClientFilters(items);
+            customerUI.renderTableRows(tbody, filtered);
 
             const { page: p, totalPages, total } = extractPaging(paged, PAGE_SIZE);
             currentPage = p;
@@ -165,7 +190,8 @@ export async function initCustomerModule() {
                 else {
                     const from = (p - 1) * PAGE_SIZE + 1;
                     const to = Math.min(p * PAGE_SIZE, total);
-                    metaBox.textContent = `Hiển thị ${from}-${to} / ${total} khách hàng`;
+                    const filterNote = filtered.length !== items.length ? ` (đã lọc còn ${filtered.length})` : '';
+                    metaBox.textContent = `Hiển thị ${from}-${to} / ${total} khách hàng${filterNote}`;
                 }
             }
         } catch (err) {
@@ -237,6 +263,42 @@ export async function initCustomerModule() {
         clearTimeout(timer);
         timer = setTimeout(() => loadCustomers(1), 500);
     };
+
+    // Nút "Tìm" — search ngay không cần debounce
+    document.getElementById('btn-customer-search')?.addEventListener('click', () => {
+        clearTimeout(timer);
+        loadCustomers(1);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(timer);
+            loadCustomers(1);
+        }
+    });
+
+    // Filter theo trạng thái xe
+    document.getElementById('customer-filter-vehicle')?.addEventListener('change', (e) => {
+        customerFilters.vehicleStatus = e.target.value;
+        loadCustomers(currentPage);
+    });
+
+    // Sort
+    document.getElementById('customer-sort')?.addEventListener('change', (e) => {
+        customerFilters.sort = e.target.value;
+        loadCustomers(currentPage);
+    });
+
+    // Reset toàn bộ
+    document.getElementById('btn-customer-reset')?.addEventListener('click', () => {
+        searchInput.value = '';
+        customerFilters.vehicleStatus = '';
+        customerFilters.sort = '';
+        document.getElementById('customer-filter-vehicle').value = '';
+        document.getElementById('customer-sort').value = '';
+        loadCustomers(1);
+    });
 
     loadCustomers(1);
 }

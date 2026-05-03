@@ -5,11 +5,29 @@ export const customerUI = {
                 <h2 class="table-title-main">DANH SÁCH KHÁCH HÀNG</h2>
                 
                 <div class="table-toolbar">
-                    <div class="left-tools">
+                    <div class="left-tools" style="flex-wrap:wrap; gap:10px;">
                         <div class="search-box">
                             <i class="fa-solid fa-magnifying-glass"></i>
                             <input type="text" id="searchCustomer" placeholder="Tìm tên hoặc số điện thoại...">
                         </div>
+                        <button id="btn-customer-search" class="btn-primary" style="padding:8px 16px;">
+                            <i class="fa-solid fa-search"></i> Tìm
+                        </button>
+                        <select id="customer-filter-vehicle" style="padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; background:#fff;">
+                            <option value="">-- Trạng thái xe --</option>
+                            <option value="has">Có xe</option>
+                            <option value="none">Chưa có xe</option>
+                        </select>
+                        <select id="customer-sort" style="padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; background:#fff;">
+                            <option value="">-- Sắp xếp --</option>
+                            <option value="newest">Mới đăng ký nhất</option>
+                            <option value="oldest">Lâu nhất</option>
+                            <option value="name-asc">Tên A → Z</option>
+                            <option value="name-desc">Tên Z → A</option>
+                        </select>
+                        <button id="btn-customer-reset" class="btn-cancel" style="padding:8px 14px;">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
                     </div>
                     <div class="right-tools">
                         <button id="btn-add-customer-main" class="btn-primary">
@@ -22,7 +40,6 @@ export const customerUI = {
                     <table>
                         <thead>
                             <tr>
-                                <th>Mã KH</th>
                                 <th>Họ tên</th>
                                 <th>Số điện thoại</th>
                                 <th>Email</th>
@@ -33,7 +50,7 @@ export const customerUI = {
                             </tr>
                         </thead>
                         <tbody id="customer-table-body">
-                            <tr><td colspan="8" class="text-center">Đang tải dữ liệu...</td></tr>
+                            <tr><td colspan="7" class="text-center">Đang tải dữ liệu...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -63,7 +80,7 @@ export const customerUI = {
                             <div class="grid-2-cols">
                                 <div class="form-group">
                                     <label>Email</label>
-                                    <input type="email" id="newCustomerEmail" required placeholder="Nhập email...">
+                                    <input type="email" id="newCustomerEmail" placeholder="Nhập email (không bắt buộc)">
                                 </div>
                                 <div class="form-group">
                                     <label>Địa chỉ</label>
@@ -144,7 +161,7 @@ export const customerUI = {
 
     renderTableRows: (tbody, items) => {
         if (!items || items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center">Không tìm thấy khách hàng nào</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center">Không tìm thấy khách hàng nào</td></tr>`;
             return;
         }
 
@@ -170,7 +187,6 @@ export const customerUI = {
 
             return `
                 <tr>
-                    <td>#${item.customerId}</td>
                     <td><strong>${item.fullName}</strong></td>
                     <td>${item.phoneNumber}</td>
                     <td>${item.email || '<span class="text-muted">N/A</span>'}</td>
@@ -263,27 +279,33 @@ export const customerUI = {
                             <th>Mã phiếu</th>
                             <th>Ngày tiếp nhận</th>
                             <th>Biển số</th>
-                            <th>Dịch vụ</th>
+                            <th>Chi nhánh</th>
+                            <th class="text-center">Hạng mục</th>
+                            <th class="text-center">Tiến độ</th>
                             <th>Trạng thái</th>
-                            <th class="text-center">Tổng tiền</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${jcs.map(jc => {
-                            const s = statusMap[jc.status] || { text: 'N/A', color: '#94a3b8' };
+                            const s = statusMap[jc.status] || { text: jc.statusName || 'N/A', color: '#94a3b8' };
                             const date = jc.startDate ? new Date(jc.startDate).toLocaleString('vi-VN') : '';
-                            const services = (jc.services || []).map(sv => sv.serviceName).filter(Boolean).join(', ');
-                            const plate = jc.vehicles?.[0]?.licensePlate || jc.licensePlate || '';
-                            const total = (jc.services || []).reduce((sum, s) => sum + (s.price || 0), 0)
-                                        + (jc.spareParts || []).reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+                            const plate = jc.licensePlate || jc.vehicles?.[0]?.licensePlate || '';
+                            const branch = jc.branchName || `#${jc.branchId || ''}`;
+                            const svCount = jc.serviceCount || 0;
+                            const spCount = jc.sparePartCount || 0;
+                            const progress = jc.progressPercentage || 0;
                             return `
                                 <tr>
                                     <td><strong style="color:#4f46e5;">#JC-${jc.jobCardId}</strong></td>
                                     <td><small>${date}</small></td>
                                     <td><strong>${plate}</strong></td>
-                                    <td><small>${services || '<span class="text-muted">—</span>'}</small></td>
+                                    <td><small>${branch}</small></td>
+                                    <td class="text-center">
+                                        <span style="background:#eef2ff; color:#4338ca; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600;" title="Dịch vụ">${svCount} DV</span>
+                                        <span style="background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600; margin-left:4px;" title="Phụ tùng">${spCount} PT</span>
+                                    </td>
+                                    <td class="text-center"><strong>${progress}%</strong></td>
                                     <td><span style="background:${s.color}; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:600;">${s.text}</span></td>
-                                    <td class="text-center"><strong>${total > 0 ? total.toLocaleString('vi-VN') + 'đ' : '—'}</strong></td>
                                 </tr>`;
                         }).join('')}
                     </tbody>
