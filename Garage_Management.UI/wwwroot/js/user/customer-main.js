@@ -2,7 +2,7 @@ import { CustomerAPI } from './customer-api.js';
 import { customerUI } from './customer-ui.js';
 import { renderPagination, extractPaging } from '../common/pagination.js';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 let currentPage = 1;
 
 export async function initCustomerModule() {

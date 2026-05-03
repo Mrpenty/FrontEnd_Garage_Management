@@ -1,5 +1,5 @@
 // ⬇️ false = chạy local (BE chạy trên máy), true = deploy (BE trên Azure)
-const IS_PRODUCTION = false;
+const IS_PRODUCTION = true;
 
 // ⬇️ URL Azure (production)
 const AZURE_API_URL = 'https://msmg-api-fpt-e8bwcse7cjh9bdh7.southeastasia-01.azurewebsites.net/api';

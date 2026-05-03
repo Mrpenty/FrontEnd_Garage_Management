@@ -9,7 +9,7 @@ let selectedSpareParts = [];
 let allModels = [];
 let currentAppointmentId = null;
 
-const JOBCARD_PAGE_SIZE = 20;
+const JOBCARD_PAGE_SIZE = 10;
 let jobcardCurrentPage = 1;
 
 export async function initJobCardModule() {
