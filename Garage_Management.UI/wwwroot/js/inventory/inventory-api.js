@@ -9,17 +9,22 @@ const getHeaders = () => ({
 });
 
 export const inventoryAPI = {
-    // Lấy danh sách tồn kho có phân trang (filter theo chi nhánh của user)
+    // Lấy danh sách tồn kho theo chi nhánh — endpoint /by-branch/{branchId}
     getInventory: async (query = "", page = 1) => {
+        const raw = localStorage.getItem('branchId');
+        const branchId = (raw && raw !== 'null' && raw !== 'undefined') ? parseInt(raw) : null;
+        if (!branchId || isNaN(branchId)) {
+            console.error('[Inventory] Thiếu branchId hợp lệ trong localStorage. Giá trị raw:', raw);
+            return { success: false, message: 'Không xác định được chi nhánh. Vui lòng đăng nhập lại.' };
+        }
+
         const params = new URLSearchParams({
             Page: page,
             PageSize: 10
         });
         if (query) params.set('Search', query);
-        const branchId = localStorage.getItem('branchId');
-        if (branchId) params.set('BranchId', branchId);
 
-        const response = await fetch(`${INVENTORY_URL}?${params.toString()}`, {
+        const response = await fetch(`${INVENTORY_URL}/by-branch/${branchId}?${params.toString()}`, {
             headers: getHeaders()
         });
         return await response.json();

@@ -45,8 +45,11 @@ authUi.elements.form.addEventListener('submit', async (e) => {
             localStorage.setItem('accessToken', userData.accessToken);
             localStorage.setItem('refreshToken', userData.refreshToken);
             localStorage.setItem('userRole', role);
-            localStorage.setItem('branchId', userData.branchId);
-            localStorage.setItem('branchName', userData.branchName);
+            // Chỉ lưu khi có giá trị hợp lệ — tránh lưu chuỗi "null"/"undefined"
+            if (userData.branchId != null) localStorage.setItem('branchId', userData.branchId);
+            else localStorage.removeItem('branchId');
+            if (userData.branchName) localStorage.setItem('branchName', userData.branchName);
+            else localStorage.removeItem('branchName');
             localStorage.setItem('employeeId', employeeId);
             localStorage.setItem('userInfo', JSON.stringify({
                 userId: userData.userId,
