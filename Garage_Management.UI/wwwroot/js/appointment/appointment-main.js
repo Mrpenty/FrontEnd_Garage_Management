@@ -204,12 +204,12 @@
         const bookCustomerResults = document.getElementById('bookCustomerResults');
 
         bookSearchInput.oninput = debounce(async (e) => {
-            const val = e.target.value;
+            const val = e.target.value.trim();
             if (val.length < 2) return bookCustomerResults.style.display = 'none';
-            
-            // Giả sử dùng chung API search của JobCard
-            const res = await AppointmentAPI.getCustomer();
-            
+
+            // Truyền keyword cho BE để filter — không còn chỉ trả 10 khách đầu
+            const res = await AppointmentAPI.getCustomer(val);
+
             jobcardUI.renderCustomerSearchResults(bookCustomerResults, res.data.pageData, async (id, name, phone) => {
                 bookSearchInput.value = `${name} (${phone})`;
                 bookCustomerId.value = id;

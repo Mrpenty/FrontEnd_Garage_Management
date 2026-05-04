@@ -311,5 +311,23 @@ export const EstimateAPI = {
             }
         });
         return await response.json();
+    },
+
+    // Cập nhật trạng thái mechanic gắn với JobCard (giống pattern repairApi/inspectionApi)
+    // status 3 = released/finished mechanic
+    updateMechanicStatus: async (jobCardId, status, mechanicId = null) => {
+        const token = localStorage.getItem('accessToken');
+        const body = mechanicId != null ? { status, mechanicId } : { status };
+        const response = await fetch(`${CONFIG.API_BASE_URL}/JobCardMechanics/${jobCardId}/mechanic/status`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+        let parsed = null;
+        try { parsed = await response.json(); } catch (_) {}
+        return parsed ?? { success: response.ok };
     }
 };

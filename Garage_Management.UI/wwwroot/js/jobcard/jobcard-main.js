@@ -191,6 +191,21 @@ async function handleProxyApproval(jobCardId, selectedSparePartIds = [], selecte
         const finalStatus = (hasAnyApproval || hasOnHoldService) ? 7 : 10;
         await EstimateAPI.updateJobCardStatus(jobCardId, finalStatus);
 
+        // 7.1. Nếu JC bị hủy (status 10) — release mechanic về status 3
+        if (finalStatus === 10) {
+            const mechanic = (currentJC?.mechanics || [])[0];
+            const mechanicId = mechanic?.mechanicId ?? mechanic?.employeeId ?? mechanic?.id ?? null;
+            try {
+                if (mechanicId != null) {
+                    await EstimateAPI.updateMechanicStatus(jobCardId, 3, mechanicId);
+                } else {
+                    await EstimateAPI.updateMechanicStatus(jobCardId, 3);
+                }
+            } catch (e) {
+                console.warn('[handleProxyApproval] Không release được mechanic khi JC hủy:', e);
+            }
+        }
+
         Toast.success(hasAnyApproval ? "Đã duyệt báo giá hộ khách hàng!" : "Đã ghi nhận từ chối báo giá.");
         return true;
 

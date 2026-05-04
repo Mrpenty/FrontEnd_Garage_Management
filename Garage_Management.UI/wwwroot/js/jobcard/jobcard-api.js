@@ -340,6 +340,23 @@ export const EstimateAPI = {
             });
             return await response.json();
     },
+
+    // Release mechanic về status 3 khi JC kết thúc (no-fault hoặc bị customer hủy)
+    updateMechanicStatus: async (jobCardId, status, mechanicId = null) => {
+        const token = localStorage.getItem('accessToken');
+        const body = mechanicId != null ? { status, mechanicId } : { status };
+        const response = await fetch(`${CONFIG.API_BASE_URL}/JobCardMechanics/${jobCardId}/mechanic/status`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+        let parsed = null;
+        try { parsed = await response.json(); } catch (_) {}
+        return parsed ?? { success: response.ok };
+    },
 }
 
 export const PaymentAPI = {

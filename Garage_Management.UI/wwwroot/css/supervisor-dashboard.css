@@ -341,6 +341,9 @@ body {
     position: sticky;
     bottom: 0;
     z-index: 10;
+    max-height: 50vh;        /* Giới hạn chiều cao để không tràn ra ngoài modal */
+    overflow-y: auto;        /* Khi nhiều dịch vụ → tự có scroll riêng */
+    flex-shrink: 0;          /* Trong flex column của modal-content, không bị nén */
 }
 
 /* Điều chỉnh lại bảng báo cáo để gọn gàng hơn */

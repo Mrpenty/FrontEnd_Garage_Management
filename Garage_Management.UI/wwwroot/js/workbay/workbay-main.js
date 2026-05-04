@@ -363,6 +363,23 @@ window.viewWbQueue = async (wbId) => {
                 </button>`;
             } 
 
+            // Lịch hẹn — BE đã trả appointmentId + appointmentDateTime trên JobCardListDto
+            let apptCol = '<span style="color:#94a3b8; font-style:italic; font-size:0.8rem;">Khách vãng lai</span>';
+            if (job.appointmentId && job.appointmentDateTime) {
+                const d = new Date(job.appointmentDateTime);
+                const dateStr = d.toLocaleDateString('vi-VN');
+                const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                apptCol = `
+                    <div style="font-size:0.85rem;">
+                        <div style="color:#4338ca; font-weight:600;"><i class="far fa-calendar-check"></i> ${dateStr}</div>
+                        <div style="color:#64748b;"><i class="far fa-clock"></i> ${timeStr}</div>
+                        <small style="color:#94a3b8;">#APT-${job.appointmentId}</small>
+                    </div>`;
+            } else if (job.appointmentId) {
+                // Có appointmentId nhưng thiếu DateTime — fallback hiển thị badge nhẹ
+                apptCol = `<span style="color:#4338ca; font-size:0.8rem;"><i class="far fa-calendar-check"></i> #APT-${job.appointmentId}</span>`;
+            }
+
             return `
                 <tr>
                     <td style="text-align:center;">
@@ -383,6 +400,7 @@ window.viewWbQueue = async (wbId) => {
                     <td>
                         <div style="display:flex; flex-wrap:wrap; gap:4px">${servicesHtml}</div>
                     </td>
+                    <td>${apptCol}</td>
                     <td>
                         <div style="font-size:0.85rem; color:#1e293b">${mechHtml}</div>
                     </td>
@@ -398,7 +416,7 @@ window.viewWbQueue = async (wbId) => {
         }).join('');
 
     } catch (error) {
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Lỗi: ${error.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red">Lỗi: ${error.message}</td></tr>`;
     }
 };
 
@@ -1210,10 +1228,10 @@ window.confirmMechanicAssignFromQueue = async (jobCardId) => {
     }
 
     // --- DISABLE BUTTON & SELECT ---
-    const confirmBtn = document.querySelector(`button:has-text("Xác nhận")`);
-    const btnConfirm = Array.from(document.querySelectorAll('button')).find(btn => 
-        btn.textContent.includes('Xác nhận') && btn.parentElement?.querySelector('#temp-select-mechanic')
-    ) || document.querySelector('button[onclick*="confirmMechanicAssignFromQueue"]');
+    const btnConfirm = document.querySelector('button[onclick*="confirmMechanicAssignFromQueue"]')
+        || Array.from(document.querySelectorAll('button')).find(btn =>
+            btn.textContent.includes('Xác nhận') && btn.parentElement?.querySelector('#temp-select-mechanic')
+        );
     
     const originalBtnText = btnConfirm?.innerText || "Xác nhận";
     
@@ -1229,12 +1247,24 @@ window.confirmMechanicAssignFromQueue = async (jobCardId) => {
     }
 
     try {
+        // assignMechanic đã throw khi response.ok = false → đến được đây tức là thành công
+        // res có thể là string text hoặc empty — chỉ cần parse nếu là JSON dạng { success: false }
         const res = await workbayApi.assignMechanic(jobCardId, mechId, "Supervisor phân công từ hàng đợi");
-        
-        // Kiểm tra response.success từ API
-        if (!res || res.success === false) {
-            const errorMsg = res?.message || "Giao việc thất bại";
-            throw new Error(errorMsg);
+
+        // Phòng trường hợp BE trả 200 OK kèm body { success: false, message: "..." }
+        if (typeof res === 'string' && res.trim().startsWith('{')) {
+            try {
+                const parsed = JSON.parse(res);
+                if (parsed && parsed.success === false) {
+                    throw new Error(parsed.message || 'Giao việc thất bại');
+                }
+            } catch (parseErr) {
+                if (parseErr instanceof Error && parseErr.message !== 'Giao việc thất bại') {
+                    // Lỗi parse JSON — coi như success vì status đã 2xx
+                } else {
+                    throw parseErr;
+                }
+            }
         }
 
         Swal.fire({

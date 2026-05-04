@@ -358,6 +358,21 @@ async function handleCustomerApproval(estimate, selectedSparePartIds, selectedSe
 
         await EstimateAPI.updateJobCardStatus(jcId, finalJobCardStatus);
 
+        // --- BƯỚC 6.1: NẾU JC HỦY (status 10) — Release mechanic về status 3
+        if (finalJobCardStatus === 10) {
+            const mechanic = (currentJC?.mechanics || [])[0];
+            const mechanicId = mechanic?.mechanicId ?? mechanic?.employeeId ?? mechanic?.id ?? null;
+            try {
+                if (mechanicId != null) {
+                    await EstimateAPI.updateMechanicStatus(jcId, 3, mechanicId);
+                } else {
+                    await EstimateAPI.updateMechanicStatus(jcId, 3);
+                }
+            } catch (e) {
+                console.warn('[handleProxyApproval] Không release được mechanic khi JC hủy:', e);
+            }
+        }
+
         alert(hasAnyApproval ? "Duyệt báo giá thành công!" : (hasOnHoldService ? "Đã từ chối các lỗi phát sinh, thợ tiếp tục công việc cũ." : "Đã từ chối báo giá."));
         return true;
 

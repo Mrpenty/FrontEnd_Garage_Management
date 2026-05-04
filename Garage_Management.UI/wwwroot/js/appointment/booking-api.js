@@ -66,10 +66,10 @@ export const BookingAPI = {
         }
     },
 
-    // Lấy danh sách dịch vụ
+    // Lấy danh sách dịch vụ — pageSize lớn để lấy hết về 1 lần (form đặt lịch cần list đầy đủ)
     getServices: async () => {
-        const res = await fetch(`${SERVICE_URL}`, { 
-            headers: getHeaders() 
+        const res = await fetch(`${SERVICE_URL}?page=1&pageSize=1000`, {
+            headers: getHeaders()
         });
         if (!res.ok) throw new Error("Không thể tải danh sách dịch vụ");
         return await res.json();
@@ -156,8 +156,15 @@ export const AppointmentAPI = {
     },
 
     //Lấy danh sách khách hàng
-    getCustomer: async () => {
-        const res = await fetch(`${CUSTOMER_URL}?Filter=Customer` , {
+    // Search khách hàng theo keyword (tên / SĐT / email) — BE-side filter qua param Search
+    getCustomer: async (keyword = '') => {
+        const params = new URLSearchParams({
+            Filter: 'Customer',
+            Page: 1,
+            PageSize: 20
+        });
+        if (keyword) params.set('Search', keyword);
+        const res = await fetch(`${CUSTOMER_URL}?${params.toString()}`, {
             method: 'GET',
             headers: getHeaders()
         });
